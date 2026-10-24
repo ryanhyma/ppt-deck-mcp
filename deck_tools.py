@@ -60,7 +60,11 @@ def _output_dir() -> Path:
 
 
 def _slug(text: str, fallback: str = "deck") -> str:
-    s = re.sub(r"[^A-Za-z0-9]+", "-", (text or "").strip().lower()).strip("-")
+    raw = (text or "").strip().lower()
+    for suffix in (".pptx", ".potx", ".ppt", ".pdf"):
+        if raw.endswith(suffix):
+            raw = raw[: -len(suffix)]
+    s = re.sub(r"[^A-Za-z0-9]+", "-", raw).strip("-")
     return (s or fallback)[:60]
 
 
@@ -549,3 +553,85 @@ def register_deck_tools(app, template_dirs_fn) -> None:
             "visuals": visuals,
             "hint": "The deck is saved. Reply with the file path and a one-line summary.",
         }
+
+
+# ---------------------------------------------------------------- read-back / edit loop
+
+
+def _outline(path: Path) -> Dict[str, Any]:
+    """Read a deck back into the same shape build_deck accepts, so an agent can edit it."""
+    prs = Presentation(str(path))
+    slides: List[Dict[str, Any]] = []
+    title_text = ""
+    subtitle_text = ""
+
+    for i, slide in enumerate(prs.slides, start=1):
+        entry: Dict[str, Any] = {"index": i}
+
+        # Text comes from placeholders only: the decorated shapes (footer wordmark, page
+        # number, title rule) are chrome, and reading them back would smuggle
+        # "Acme Corp | Confidential" into the outline as body text.
+        for ph in slide.placeholders:
+            idx = ph.placeholder_format.idx
+            if not ph.has_text_frame or not ph.text_frame.text.strip():
+                continue
+            if i == 1:
+                if idx == 0:
+                    title_text = ph.text_frame.text.strip()
+                elif idx == 1:
+                    subtitle_text = ph.text_frame.text.strip()
+            elif idx == 0:
+                entry["title"] = ph.text_frame.text.strip().split("\n")[0]
+            elif idx == 1:
+                entry["bullets"] = [b.strip() for b in ph.text_frame.text.split("\n") if b.strip()]
+
+        # Visuals can live in any shape, placeholder or not.
+        for shape in slide.shapes:
+            if shape.has_chart:
+                chart = shape.chart
+                plot = chart.plots[0]
+                entry["chart"] = {
+                    "type": "column",
+                    "title": (chart.chart_title.text_frame.text if chart.has_title else ""),
+                    "categories": [str(c) for c in plot.categories],
+                    "series": [
+                        {"name": s.name, "values": [round(float(v), 4) for v in s.values]}
+                        for s in plot.series
+                    ],
+                }
+            elif shape.has_table:
+                rows = [[cell.text for cell in row.cells] for row in shape.table.rows]
+                entry["table"] = {"headers": rows[0], "rows": rows[1:]} if rows else {}
+
+        entry["role"] = "title" if i == 1 else "content"
+        if slide.has_notes_slide and slide.notes_slide.notes_text_frame.text.strip():
+            entry["notes"] = slide.notes_slide.notes_text_frame.text.strip()
+        slides.append(entry)
+
+    return {
+        "file": str(path),
+        "title": title_text,
+        "subtitle": subtitle_text,
+        "slide_count": len(slides),
+        "slides": slides,
+        "hint": "Edit the entries you were asked to change, then call build_deck with the same "
+                "title and the full slides list (title slide excluded).",
+    }
+
+
+def register_readback_tools(app, output_dir_getter) -> None:
+    @app.tool()
+    def get_deck_outline(file: str) -> Dict[str, Any]:
+        """Read an existing .pptx back as an editable outline (titles, bullets, chart data, tables).
+
+        Use this before changing a deck: fetch the outline, modify only what the user asked for,
+        then call build_deck (same title + full slides list) and preview_deck. Never guess the
+        current content.
+
+        Args:
+            file: absolute path of a .pptx (from build_deck or list_decks)
+        """
+        path = Path(file)
+        if not path.is_file():
+            raise FileNotFoundError(f"deck not found: {file}")
+        return _outline(path)
