@@ -1,0 +1,448 @@
+{
+ "stamp": "20261024-175420",
+ "results": [
+  {
+   "id": "basic-04",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 5-slide deck about solar adoption in 2026 for a general audience.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "6a2728d7-39de-423c-ac7e-f4f4b1a4a5f0",
+   "url": "http://localhost:3080/c/6a2728d7-39de-423c-ac7e-f4f4b1a4a5f0",
+   "file": "/home/hyma/dev/librechat/uploads/decks/solar-adoption-in-2026-175527.pptx",
+   "deck_id": "solar-adoption-in-2026-175527",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 17,
+    "max_bullet_chars": 60,
+    "titles": [
+     "Solar Adoption in 2026",
+     "Why Solar Is Booming",
+     "How It Works for Homeowners",
+     "Cost and Savings",
+     "What's Next in Solar"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "**File:** `/home/hyma/dev/librechat/uploads/decks/solar-adoption-in-2026-175527.pptx`\n\nA 5-slide deck covering why solar is booming, how it works for homeowners, cost and savings, and what's next in solar technology \u2014 designed for a general audience using the Corporate Teal template.",
+   "seconds": 77.4
+  },
+  {
+   "id": "basic-06",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 8-slide deck about why sleep matters for a general audience.",
+   "expect": {
+    "slides": 8,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "a5871b83-2910-42cc-b323-681be8620fd6",
+   "url": "http://localhost:3080/c/a5871b83-2910-42cc-b323-681be8620fd6",
+   "file": "/home/hyma/dev/librechat/uploads/decks/why-sleep-matters-175637.pptx",
+   "deck_id": "why-sleep-matters-175637",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 8,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 29,
+    "max_bullet_chars": 61,
+    "titles": [
+     "Why Sleep Matters",
+     "The Hidden Superpower",
+     "Brain Boost",
+     "Body Repair",
+     "Emotional Balance",
+     "Immune Defense",
+     "The Cost of Skipping Sleep",
+     "Better Sleep, Better Life"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "Here are 8 slides (1 title + 7 content). Building now:\n\n**File:** `/home/hyma/dev/librechat/uploads/decks/why-sleep-matters-175637.pptx`\n\n**Summary:** An 8-slide presentation covering the science of sleep \u2014 from brain function and body repair to emotional health, immune defense, the cost of sleep loss, and actionable tips for better rest.",
+   "seconds": 68.2
+  },
+  {
+   "id": "basic-07",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 4-slide deck about cybersecurity basics for a general audience.",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "f48b0cf4-d5be-4e59-82b6-3f979c47aa5b",
+   "url": "http://localhost:3080/c/f48b0cf4-d5be-4e59-82b6-3f979c47aa5b",
+   "file": "/home/hyma/dev/librechat/uploads/decks/cybersecurity-basics-175749.pptx",
+   "deck_id": "cybersecurity-basics-175749",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 4,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 12,
+    "max_bullet_chars": 77,
+    "titles": [
+     "Cybersecurity Basics",
+     "What Is Cybersecurity?",
+     "Common Cyber Threats",
+     "Everyday Best Practices"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "**File:** `/home/hyma/dev/librechat/uploads/decks/cybersecurity-basics-175749.pptx`\n\n**Summary:** 4-slide deck covering what cybersecurity is, common threats (phishing, malware, social engineering, unpatched software), and everyday best practices for a general audience.",
+   "seconds": 74.3
+  },
+  {
+   "id": "basic-10",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 7-slide deck about electric vehicles for a general audience.",
+   "expect": {
+    "slides": 7,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "852b555c-015d-4196-8d13-9584cc83b20e",
+   "url": "http://localhost:3080/c/852b555c-015d-4196-8d13-9584cc83b20e",
+   "file": "/home/hyma/dev/librechat/uploads/decks/electric-vehicles-overview-175912.pptx",
+   "deck_id": "electric-vehicles-overview-175912",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 7,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 31,
+    "max_bullet_chars": 64,
+    "titles": [
+     "Electric Vehicles: A General Overview",
+     "What Is an Electric Vehicle?",
+     "How EVs Work",
+     "Environmental Benefits",
+     "Cost Considerations",
+     "Charging Infrastructure",
+     "The Future of EVs"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "**File:** `/home/hyma/dev/librechat/uploads/decks/electric-vehicles-overview-175912.pptx`\n\nA 7-slide deck covering what EVs are, how they work, environmental benefits, cost considerations, charging infrastructure, and the future of electric vehicles.",
+   "seconds": 81.0
+  },
+  {
+   "id": "basic-12",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 4-slide deck about the history of the bicycle for a general audience.",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "19d3a674-0831-4249-9cb7-9930a80994e4",
+   "url": "http://localhost:3080/c/19d3a674-0831-4249-9cb7-9930a80994e4",
+   "file": "/home/hyma/dev/librechat/uploads/decks/history-of-the-bicycle-180034.pptx",
+   "deck_id": "history-of-the-bicycle-180034",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 4,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 13,
+    "max_bullet_chars": 95,
+    "titles": [
+     "The History of the Bicycle",
+     "Early Inventions (1817\u20131865)",
+     "The Safety Bicycle Revolution",
+     "Modern Era (1900s\u2013Present)"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "**File:** `/home/hyma/dev/librechat/uploads/decks/history-of-the-bicycle-180034.pptx`\n\nA 4-slide deck tracing the bicycle's evolution from the 1817 Draisine through Penny Farthings, the safety bicycle revolution, and into modern mountain, electric, and shared bikes.",
+   "seconds": 85.6
+  },
+  {
+   "id": "basic-13",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 5-slide deck introducing our new analytics dashboard.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "5464e782-1385-4d62-a286-83340664bdc3",
+   "url": "http://localhost:3080/c/5464e782-1385-4d62-a286-83340664bdc3",
+   "file": "/home/hyma/dev/librechat/uploads/decks/analytics-dashboard-intro-180138.pptx",
+   "deck_id": "analytics-dashboard-intro-180138",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 18,
+    "max_bullet_chars": 48,
+    "titles": [
+     "New Analytics Dashboard",
+     "Why We Built It",
+     "Key Features",
+     "What Changes for You",
+     "Rollout Plan"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "Done. Here's your deck:\n\n**File:** `/home/hyma/dev/librechat/uploads/decks/analytics-dashboard-intro-180138.pptx`\n\n**Summary:** 5-slide introduction covering the problem, key features, user impact, and phased rollout plan for the new analytics dashboard.",
+   "seconds": 58.7
+  },
+  {
+   "id": "basic-14",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 4-slide deck summarising last quarter's customer feedback.",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "29d968cd-9b3c-4b69-a470-590c963f7d39",
+   "url": "http://localhost:3080/c/29d968cd-9b3c-4b69-a470-590c963f7d39",
+   "file": "/home/hyma/dev/librechat/uploads/decks/customer-feedback-q4-180234.pptx",
+   "deck_id": "customer-feedback-q4-180234",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 4,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 13,
+    "max_bullet_chars": 54,
+    "titles": [
+     "Q4 Customer Feedback Summary",
+     "Key Findings",
+     "Common Pain Points",
+     "Action Plan & Next Steps"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "**`/home/hyma/dev/librechat/uploads/decks/customer-feedback-q4-180234.pptx`** \u2014 4-slide deck covering Q4 customer feedback: key findings, common pain points, and action items, built on the Corporate Teal template.",
+   "seconds": 58.6
+  },
+  {
+   "id": "basic-15",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 6-slide deck explaining our data retention policy to staff.",
+   "expect": {
+    "slides": 6,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "d3f13975-dcae-4698-888e-4a3834fd7301",
+   "url": "http://localhost:3080/c/d3f13975-dcae-4698-888e-4a3834fd7301",
+   "file": "/home/hyma/dev/librechat/uploads/decks/data-retention-policy-180340.pptx",
+   "deck_id": "data-retention-policy-180340",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 6,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 25,
+    "max_bullet_chars": 74,
+    "titles": [
+     "Data Retention Policy",
+     "Why We Retain Data",
+     "Retention Periods by Data Type",
+     "Secure Disposal Process",
+     "Your Responsibilities",
+     "Questions & Resources"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "**File:** `/home/hyma/dev/librechat/uploads/decks/data-retention-policy-180340.pptx`\n\nThe deck contains 6 slides (title + 5 content) covering why we retain data, retention periods by type, secure disposal, employee responsibilities, and where to find resources \u2014 all using the Corporate Teal template.",
+   "seconds": 64.8
+  },
+  {
+   "id": "chart-01",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 5-slide deck about our business that includes a column chart of revenue by quarter (Q1 40, Q2 52, Q3 61, Q4 78).",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "46dbe810-54b5-4359-84ec-3a27ef6f0b9f",
+   "url": "http://localhost:3080/c/46dbe810-54b5-4359-84ec-3a27ef6f0b9f",
+   "file": "/home/hyma/dev/librechat/uploads/decks/business-overview-180449.pptx",
+   "deck_id": "business-overview-180449",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 12,
+    "max_bullet_chars": 43,
+    "titles": [
+     "Business Overview",
+     "Company Overview",
+     "Our Products",
+     "Quarterly Revenue",
+     "Growth Outlook"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "**File:** `/home/hyma/dev/librechat/uploads/decks/business-overview-180449.pptx`\n\nA 5-slide Business Overview deck with company overview, products, quarterly revenue column chart (Q1 40 \u2192 Q2 52 \u2192 Q3 61 \u2192 Q4 78), and growth outlook slides.",
+   "seconds": 70.6
+  },
+  {
+   "id": "chart-02",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 5-slide deck about our business that includes a bar chart comparing team headcount (Eng 24, Sales 12, Support 9, Design 6).",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "34cb5598-d8db-4ad7-a487-a3f7a9a92bf3",
+   "url": "http://localhost:3080/c/34cb5598-d8db-4ad7-a487-a3f7a9a92bf3",
+   "file": "/home/hyma/dev/librechat/uploads/decks/business-deck-180557.pptx",
+   "deck_id": "business-deck-180557",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 10,
+    "max_bullet_chars": 54,
+    "titles": [
+     "Our Business",
+     "Company Overview",
+     "Team Headcount",
+     "Key Metrics",
+     "What's Next"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "The 5-slide deck has been created: `/home/hyma/dev/librechat/uploads/decks/business-deck-180557.pptx` \u2014 featuring a title slide, company overview, bar chart of team headcount, key metrics, and what's next.",
+   "seconds": 67.7
+  }
+ ]
+}

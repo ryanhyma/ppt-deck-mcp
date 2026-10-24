@@ -157,13 +157,19 @@ def is_tool_error(output: str) -> bool:
             or '"iserror": true' in (output or "").lower())
 
 
-def judge(case: dict, got: dict, calls: list[dict], error: str | None) -> tuple[bool, list[str]]:
+def judge(case: dict, got: dict, calls: list[dict], error: str | None) -> tuple[bool, list[str], list[str]]:
+    """Returns (output_ok, failures, process_warnings).
+
+    pass/fail is about the artefact — did the deck match the request. Tool errors and a missing
+    preview_deck are process signals: the agent may have failed once, corrected itself, and still
+    produced the right file, which is a different (and less interesting) problem.
+    """
     exp, fails = case["expect"], []
     if error:
         fails.append(f"error: {error[:120]}")
     if got is None:
         fails.append("no deck produced")
-        return False, fails
+        return False, fails, []
     if exp["slides"] and got["slides"] != exp["slides"]:
         fails.append(f"slides {got['slides']}≠{exp['slides']}")
     if exp["chart"] and got["charts"] < 1:
@@ -176,9 +182,13 @@ def judge(case: dict, got: dict, calls: list[dict], error: str | None) -> tuple[
         fails.append(f"bullet too long ({got['max_bullet_chars']})")
     if got["bullet_overflow_slides"]:
         fails.append(f"{len(got['bullet_overflow_slides'])} slides >5 bullets")
-    if any(is_tool_error(c.get("output") or "") for c in calls):
-        fails.append("tool error")
-    return (not fails), fails
+    warnings = []
+    errs = [c["name"] for c in calls if is_tool_error(c.get("output") or "")]
+    if errs:
+        warnings.append(f"tool errors: {','.join(sorted(set(errs)))}")
+    if not any(c["name"].startswith("preview_deck") for c in calls):
+        warnings.append("preview_deck not called")
+    return (not fails), fails, warnings
 
 
 def run_case(case: dict, token: str, agent_id: str) -> dict:
@@ -199,10 +209,7 @@ def run_case(case: dict, token: str, agent_id: str) -> dict:
     err = None
     if not file:
         err = "no build_deck/preview_deck result"
-    ok, fails = judge(case, got, calls, err)
-    warnings = []
-    if not any(c["name"].startswith("preview_deck") for c in calls):
-        warnings.append("preview_deck not called (deck not shown in the pane)")
+    ok, fails, warnings = judge(case, got, calls, err)
     return {
         "id": case["id"],
         "category": case["category"],
@@ -265,6 +272,8 @@ def main() -> int:
     ap.add_argument("--email", default="hyma@local.test")
     ap.add_argument("--password", default="PiTest!2026")
     ap.add_argument("--outdir", default=str(HERE / "results"))
+    ap.add_argument("--resume", action="store_true",
+                    help="skip cases that already passed in any results/*.json")
     args = ap.parse_args()
 
     corpus = json.loads(Path(args.cases).read_text())["cases"]
@@ -274,17 +283,38 @@ def main() -> int:
     if args.ids:
         ids = {i.strip() for i in args.ids.split(",")}
         corpus = [c for c in corpus if c["id"] in ids]
+
+    outdir = Path(args.outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
+    if args.resume:
+        passed = set()
+        for f in sorted(outdir.glob("*.json")):
+            try:
+                for r in json.loads(f.read_text()).get("results", []):
+                    if r.get("pass"):
+                        passed.add(r["id"])
+            except Exception:
+                continue
+        before = len(corpus)
+        corpus = [c for c in corpus if c["id"] not in passed]
+        print(f"resume: {before - len(corpus)} already passed, {len(corpus)} to run", flush=True)
     if args.limit:
         corpus = corpus[: args.limit]
 
     token = login(args.email, args.password)
-    agent_id = json.loads(Path("/tmp/agent.json").read_text())["id"] if Path("/tmp/agent.json").is_file() else ""
-    if not agent_id:
+    agent_file = Path("/tmp/agent.json")
+    if not agent_file.is_file():
         print("agent id missing (/tmp/agent.json)", file=sys.stderr)
         return 2
+    agent_id = json.loads(agent_file.read_text())["id"]
 
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    results = []
+    results: list[dict] = []
+
+    def flush() -> None:
+        (outdir / f"{stamp}.json").write_text(json.dumps({"stamp": stamp, "results": results}, indent=1))
+        (outdir / f"{stamp}.md").write_text(report(results, stamp))
+
     for i, case in enumerate(corpus, 1):
         print(f"[{i}/{len(corpus)}] {case['id']:<12} {case['prompt'][:70]}", flush=True)
         try:
@@ -294,22 +324,18 @@ def main() -> int:
                 print("      ~ session expired, re-authenticating", flush=True)
                 token = login(args.email, args.password)
                 r = run_case(case, token, agent_id)
-        except Exception as exc:  # keep the suite going
+        except Exception as exc:
             r = {"id": case["id"], "category": case["category"], "prompt": case["prompt"],
                  "expect": case["expect"], "pass": False, "failures": [f"runner: {exc}"],
                  "conversationId": None, "url": "", "file": None, "deck_id": None,
                  "tools": [], "tool_errors": [], "got": None, "final_text": "", "seconds": 0,
-                 "note": case.get("note", "")}
+                 "warnings": [], "note": case.get("note", "")}
         results.append(r)
-        print(f"      -> {'PASS' if r['pass'] else 'FAIL ' + '; '.join(r['failures'])}"
+        flush()
+        print(f"      -> {'PASS' if r['pass'] else 'FAIL: ' + '; '.join(r['failures'])}"
               f"  {r['seconds']}s  {r['url']}", flush=True)
 
-    outdir = Path(args.outdir)
-    outdir.mkdir(parents=True, exist_ok=True)
-    (outdir / f"{stamp}.json").write_text(json.dumps({"stamp": stamp, "results": results}, indent=1))
-    md = report(results, stamp)
-    (outdir / f"{stamp}.md").write_text(md)
-    print("\n" + md.split("## Failures")[0])
+    print("\n" + report(results, stamp).split("## Failures")[0])
     print(f"report: {outdir / (stamp + '.md')}")
     return 0
 

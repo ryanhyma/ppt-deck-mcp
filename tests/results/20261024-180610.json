@@ -1,0 +1,460 @@
+{
+ "stamp": "20261024-180610",
+ "results": [
+  {
+   "id": "chart-03",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 5-slide deck about our business that includes a line chart of monthly active users (Jan 1200, Feb 1350, Mar 1500, Apr 1720, May 1900).",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "4980bed3-d96b-4da9-9825-98de8cd1a2a5",
+   "url": "http://localhost:3080/c/4980bed3-d96b-4da9-9825-98de8cd1a2a5",
+   "file": "/home/hyma/dev/librechat/uploads/decks/business-review-180723.pptx",
+   "deck_id": "business-review-180723",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 13,
+    "max_bullet_chars": 52,
+    "titles": [
+     "Our Business",
+     "Company Overview",
+     "Monthly Active Users",
+     "Key Growth Metrics",
+     "Strategic Priorities"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "**File:** `/home/hyma/dev/librechat/uploads/decks/business-review-180723.pptx`\n\n5-slide deck with a title slide, company overview bullets, a line chart tracking monthly active users (Jan\u2192May: 1,200\u21921,900), key growth metrics, and strategic priorities.",
+   "seconds": 81.9
+  },
+  {
+   "id": "chart-05",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 4-slide deck about our business that includes a doughnut chart of device share (Mobile 58, Desktop 34, Tablet 8) as percentages.",
+   "expect": {
+    "slides": 4,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "065882d5-a149-4b9e-bfe2-4e72285f5a9c",
+   "url": "http://localhost:3080/c/065882d5-a149-4b9e-bfe2-4e72285f5a9c",
+   "file": "/home/hyma/dev/librechat/uploads/decks/business-overview-180837.pptx",
+   "deck_id": "business-overview-180837",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 4,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 9,
+    "max_bullet_chars": 60,
+    "titles": [
+     "Business Overview",
+     "Who We Are",
+     "Device Share",
+     "Growth Strategy"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "**File:** `/home/hyma/dev/librechat/uploads/decks/business-overview-180837.pptx`\n\n4-slide deck with title, company overview, device share doughnut chart (Mobile 58%, Desktop 34%, Tablet 8%), and growth strategy bullets.",
+   "seconds": 81.4
+  },
+  {
+   "id": "chart-06",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 6-slide deck about our business that includes a stacked column chart of support tickets by channel over 2 months.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "81e5ab9c-c633-4006-96ec-54d7ec50b6f3",
+   "url": "http://localhost:3080/c/81e5ab9c-c633-4006-96ec-54d7ec50b6f3",
+   "file": "/home/hyma/dev/librechat/uploads/decks/business-overview-181010.pptx",
+   "deck_id": "business-overview-181010",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 6,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 20,
+    "max_bullet_chars": 51,
+    "titles": [
+     "Our Business Overview",
+     "Mission and Vision",
+     "Core Services",
+     "Support Tickets by Channel",
+     "Growth Highlights",
+     "Next Steps"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "**File:** `/home/hyma/dev/librechat/uploads/decks/business-overview-181010.pptx`\n\n**Summary:** 6-slide business overview deck with title, mission, core services, stacked column chart of support tickets by channel (Phone, Email, Chat, Self-Service) across October/November 2024, growth highlights, and next steps.",
+   "seconds": 88.2
+  },
+  {
+   "id": "chart-08",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 6-slide deck about our business that includes two slides with charts: one column chart of shipments, one line chart of returns.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "fda09348-7763-4123-b26a-6a9c12fb5abf",
+   "url": "http://localhost:3080/c/fda09348-7763-4123-b26a-6a9c12fb5abf",
+   "file": "/home/hyma/dev/librechat/uploads/decks/our-business-181154.pptx",
+   "deck_id": "our-business-181154",
+   "tools": [
+    "skill",
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 6,
+    "charts": 2,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 23,
+    "max_bullet_chars": 51,
+    "titles": [
+     "Our Business",
+     "Company Overview",
+     "Quarterly Shipments",
+     "Market Position",
+     "Returns Trend",
+     "Strategic Outlook"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "I'll design a 6-slide deck (1 title + 5 content slides) with the two requested charts. Since no specific data was provided, I'll use illustrative placeholder values for the charts.\n\n**Outline:**\n1. **Title:** Our Business\n2. **Company Overview** \u2014 bullets\n3. **Quarterly Shipments** \u2014 column chart\n4. **Market Position** \u2014 bullets\n5. **Returns Trend** \u2014 line chart\n6. **Strategic Outlook** \u2014 bullets\n",
+   "seconds": 101.6
+  },
+  {
+   "id": "chart-09",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 6-slide deck about our business that includes a chart of churn by month and a table of top 5 accounts.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "11a122a8-890a-45ad-a1c8-a5483bcf1762",
+   "url": "http://localhost:3080/c/11a122a8-890a-45ad-a1c8-a5483bcf1762",
+   "file": "/home/hyma/dev/librechat/uploads/decks/business-overview-181323.pptx",
+   "deck_id": "business-overview-181323",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 6,
+    "charts": 1,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 16,
+    "max_bullet_chars": 71,
+    "titles": [
+     "Business Overview",
+     "Company Summary",
+     "Churn by Month",
+     "Top 5 Accounts",
+     "Growth Initiatives",
+     "Next Steps"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "**File:** `/home/hyma/dev/librechat/uploads/decks/business-overview-181323.pptx`\n\nYour 6-slide deck is ready: title slide \u2192 Company Summary \u2192 Churn by Month (column chart) \u2192 Top 5 Accounts (5\u00d75 table) \u2192 Growth Initiatives \u2192 Next Steps.",
+   "seconds": 88.7
+  },
+  {
+   "id": "chart-10",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 5-slide deck on supply chain resilience; include a chart of plausible example numbers and label it clearly as illustrative.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "ee8c4a84-46a7-4cf1-90c0-26a2a44e5bf8",
+   "url": "http://localhost:3080/c/ee8c4a84-46a7-4cf1-90c0-26a2a44e5bf8",
+   "file": "/home/hyma/dev/librechat/uploads/decks/supply-chain-resilience-181424.pptx",
+   "deck_id": "supply-chain-resilience-181424",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 15,
+    "max_bullet_chars": 62,
+    "titles": [
+     "Supply Chain Resilience",
+     "Why Resilience Matters",
+     "Common Vulnerabilities",
+     "Disruption Impact (Illustrative)",
+     "Strategic Pillars for Resilience"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "**File:** `/home/hyma/dev/librechat/uploads/decks/supply-chain-resilience-181424.pptx`\n\n**Summary:** 5-slide deck covering why resilience matters, common vulnerabilities, an illustrative stacked-column chart showing recovery time & revenue loss by disruption type, and 5 strategic pillars \u2014 chart title explicitly labeled \"(Illustrative Data)\".",
+   "seconds": 61.0
+  },
+  {
+   "id": "chart-11",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 6-slide deck on customer support metrics; include a chart of plausible example numbers and label it clearly as illustrative.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "22c5c709-ed62-4114-8bbf-6c596ed4bfa1",
+   "url": "http://localhost:3080/c/22c5c709-ed62-4114-8bbf-6c596ed4bfa1",
+   "file": "/home/hyma/dev/librechat/uploads/decks/customer-support-metrics-181618.pptx",
+   "deck_id": "customer-support-metrics-181618",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 6,
+    "charts": 3,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 14,
+    "max_bullet_chars": 66,
+    "titles": [
+     "Customer Support Metrics",
+     "Key Metrics Overview",
+     "Ticket Volume Trends",
+     "Response Time by Channel",
+     "Customer Satisfaction & NPS",
+     "Actionable Insights & Next Steps"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "The deck looks great with 6 slides (title + 5 content). The chart titles already include \"(Illustrative)\" labels. Let me also add a clarifying bullet on each chart slide to make the illustrative nature unmistakable.\n\n**File:** `/home/hyma/dev/librechat/uploads/decks/customer-support-metrics-181618.pptx`\n\n**Summary:** 6-slide deck (title + 5 content) covering CSAT, NPS, FRT, FCR, and ticket volume ",
+   "seconds": 126.2
+  },
+  {
+   "id": "chart-12",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 7-slide deck on data governance; include a chart of plausible example numbers and label it clearly as illustrative.",
+   "expect": {
+    "slides": 7,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "8ea85e2a-6727-421d-9ba9-dc9895926ddc",
+   "url": "http://localhost:3080/c/8ea85e2a-6727-421d-9ba9-dc9895926ddc",
+   "file": "/home/hyma/dev/librechat/uploads/decks/data-governance-deck-181821.pptx",
+   "deck_id": "data-governance-deck-181821",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 7,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 29,
+    "max_bullet_chars": 54,
+    "titles": [
+     "Data Governance Framework",
+     "Why Data Governance Matters",
+     "Key Pillars of Data Governance",
+     "Roles and Responsibilities",
+     "Data Quality Assessment",
+     "Compliance and Regulatory Alignment",
+     "Next Steps and Roadmap"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "I notice I included the title slide inside the `slides` array, which added an extra slide. The `title` parameter already creates the title slide, so I need exactly 6 content slides for a 7-slide deck. Let me rebuild correctly.\n\nHere is your 7-slide **Data Governance Framework** deck:\n\n**`/home/hyma/dev/librechat/uploads/decks/data-governance-deck-181821.pptx`**\n\nThe deck covers: (1) title slide, (",
+   "seconds": 110.7
+  },
+  {
+   "id": "chart-13",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 5-slide deck on office relocation plan; include a chart of plausible example numbers and label it clearly as illustrative.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "3aff1dcc-e736-4a8e-ba99-89ed6a211929",
+   "url": "http://localhost:3080/c/3aff1dcc-e736-4a8e-ba99-89ed6a211929",
+   "file": "/home/hyma/dev/librechat/uploads/decks/office-relocation-plan-181944.pptx",
+   "deck_id": "office-relocation-plan-181944",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 19,
+    "max_bullet_chars": 80,
+    "titles": [
+     "Office Relocation Plan",
+     "Why We're Moving",
+     "Timeline Overview",
+     "Illustrative Cost Breakdown (Example Numbers)",
+     "Key Risks & Mitigations"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "Now I'll build the 5-slide deck (1 title + 4 content slides) with an illustrative cost chart.\n\n**`/home/hyma/dev/librechat/uploads/decks/office-relocation-plan-181944.pptx`** \u2014 5-slide deck covering relocation rationale, timeline, an illustrative cost column chart with labeled example figures, and key risks with mitigations.",
+   "seconds": 81.6
+  },
+  {
+   "id": "chart-14",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 6-slide deck on product launch readiness; include a chart of plausible example numbers and label it clearly as illustrative.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": false,
+   "failures": [
+    "2 slides >5 bullets"
+   ],
+   "warnings": [],
+   "conversationId": "d2828e38-ff14-4615-8e68-98326e02736d",
+   "url": "http://localhost:3080/c/d2828e38-ff14-4615-8e68-98326e02736d",
+   "file": "/home/hyma/dev/librechat/uploads/decks/product-launch-readiness-182055.pptx",
+   "deck_id": "product-launch-readiness-182055",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 6,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 24,
+    "max_bullet_chars": 64,
+    "titles": [
+     "Product Launch Readiness",
+     "Executive Summary",
+     "Readiness Scorecard",
+     "Launch Timeline & Milestones",
+     "Risk Assessment",
+     "Next Steps & Go/No-Go Decision"
+    ],
+    "bullet_overflow_slides": [
+     6,
+     6
+    ]
+   },
+   "final_text": "I'll build this deck for you. Let me start by checking available templates, then create the presentation.\n\nNow I'll build the 6-slide deck. 6 slides = 1 title + 5 content slides. The chart will be on the Readiness Scorecard slide, clearly labeled as illustrative.\n\n**File:** `/home/hyma/dev/librechat/uploads/decks/product-launch-readiness-182055.pptx`\n\n**Summary:** 6-slide product launch readiness ",
+   "seconds": 71.7
+  }
+ ]
+}
