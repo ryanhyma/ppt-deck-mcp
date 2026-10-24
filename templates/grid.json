@@ -1,0 +1,13 @@
+{
+ "label": "Grid",
+ "description": "Cobalt accent rail on the left edge. Modern product / tech tone.",
+ "background": "#FFFFFF",
+ "title": "#0F172A",
+ "body": "#334155",
+ "accent": "#2563EB",
+ "muted": "#94A3B8",
+ "font": "Calibri",
+ "rule_width": 1.1,
+ "rail": true,
+ "file": "grid.pptx"
+}

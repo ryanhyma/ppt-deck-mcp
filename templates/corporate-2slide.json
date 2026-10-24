@@ -1,0 +1,13 @@
+{
+ "label": "Corporate Teal",
+ "description": "Navy titles, teal accent bar, Calibri. The default.",
+ "background": "#FFFFFF",
+ "title": "#1F3864",
+ "body": "#333333",
+ "accent": "#2A9D8F",
+ "muted": "#9AA0A6",
+ "font": "Calibri",
+ "rule_width": 1.1,
+ "rail": false,
+ "file": "corporate-2slide.pptx"
+}

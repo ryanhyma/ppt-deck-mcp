@@ -1,0 +1,13 @@
+{
+ "label": "Ledger",
+ "description": "Serif, bronze accent, generous margins. Financial / board tone.",
+ "background": "#FFFFFF",
+ "title": "#111827",
+ "body": "#374151",
+ "accent": "#B08968",
+ "muted": "#9CA3AF",
+ "font": "Georgia",
+ "rule_width": 0.7,
+ "rail": false,
+ "file": "ledger.pptx"
+}

@@ -1,0 +1,96 @@
+{
+ "stamp": "20261024-172512",
+ "results": [
+  {
+   "id": "table-01",
+   "category": "tables",
+   "note": "",
+   "prompt": "Make a 5-slide deck with a table comparing comparison of 4 vendors (columns: vendors, price, contract length).",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "2dd186e3-6a20-4d3f-966f-0e7821af0cef",
+   "url": "http://localhost:3080/c/2dd186e3-6a20-4d3f-966f-0e7821af0cef",
+   "file": "/home/hyma/dev/librechat/uploads/decks/vendor-comparison-172622.pptx",
+   "deck_id": "vendor-comparison-172622",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 12,
+    "max_bullet_chars": 66,
+    "titles": [
+     "Vendor Comparison",
+     "Executive Summary",
+     "Vendor Comparison",
+     "Key Differentiators",
+     "Recommendation"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "`/home/hyma/dev/librechat/uploads/decks/vendor-comparison-172622.pptx` \u2014 5-slide deck with a native table comparing 4 vendors on price and contract length, plus executive summary, key differentiators, and recommendation slides.",
+   "seconds": 81.1
+  },
+  {
+   "id": "visual-01",
+   "category": "visuals",
+   "note": "",
+   "prompt": "Make a 5-slide deck about fish anatomy. On one slide add a simple diagram you draw yourself as SVG.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "4485a902-d88c-4112-89a9-1d826acf4570",
+   "url": "http://localhost:3080/c/4485a902-d88c-4112-89a9-1d826acf4570",
+   "file": "/home/hyma/dev/librechat/uploads/decks/fish-anatomy-172955.pptx",
+   "deck_id": "fish-anatomy-172955",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "render_svg_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 1,
+    "bullets": 15,
+    "max_bullet_chars": 77,
+    "titles": [
+     "Fish Anatomy",
+     "Fish Anatomy: An Overview",
+     "External Anatomy",
+     "Internal Systems",
+     "Sensory Organs & Adaptations"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "I'll create the fish anatomy deck with 5 slides. Let me first design the SVG diagram, then build the deck.\n\nNow let me build the deck with all 5 slides:\n\nThe deck has 6 slides but you asked for 5 total (including the title). Let me fix that by combining the internal systems slides.\n\nThe `slide_count: 6` includes the title slide + 5 content slides. You asked for 5 total, so I need 4 content slides.",
+   "seconds": 211.6
+  }
+ ]
+}

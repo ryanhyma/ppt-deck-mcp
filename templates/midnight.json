@@ -1,0 +1,13 @@
+{
+ "label": "Midnight",
+ "description": "Dark deck, sky-blue accent. High contrast for screen presentations.",
+ "background": "#0B1220",
+ "title": "#E8EDF4",
+ "body": "#C3CDDB",
+ "accent": "#38BDF8",
+ "muted": "#64748B",
+ "font": "Calibri",
+ "rule_width": 1.1,
+ "rail": false,
+ "file": "midnight.pptx"
+}

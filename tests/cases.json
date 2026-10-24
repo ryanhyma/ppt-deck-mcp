@@ -1,0 +1,1305 @@
+{
+ "version": 1,
+ "cases": [
+  {
+   "id": "basic-01",
+   "category": "basics",
+   "prompt": "Make a 2-slide deck about coffee roasting for a general audience.",
+   "expect": {
+    "slides": 2,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "basic-02",
+   "category": "basics",
+   "prompt": "Make a 3-slide deck about the water cycle for a general audience.",
+   "expect": {
+    "slides": 3,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "basic-03",
+   "category": "basics",
+   "prompt": "Make a 5-slide deck about remote work policy for a general audience.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "basic-04",
+   "category": "basics",
+   "prompt": "Make a 5-slide deck about solar adoption in 2026 for a general audience.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "basic-05",
+   "category": "basics",
+   "prompt": "Make a 6-slide deck about onboarding a new engineer for a general audience.",
+   "expect": {
+    "slides": 6,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "basic-06",
+   "category": "basics",
+   "prompt": "Make a 8-slide deck about why sleep matters for a general audience.",
+   "expect": {
+    "slides": 8,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "basic-07",
+   "category": "basics",
+   "prompt": "Make a 4-slide deck about cybersecurity basics for a general audience.",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "basic-08",
+   "category": "basics",
+   "prompt": "Make a 5-slide deck about quarterly sales review for a general audience.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "basic-09",
+   "category": "basics",
+   "prompt": "Make a 3-slide deck about urban gardening for a general audience.",
+   "expect": {
+    "slides": 3,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "basic-10",
+   "category": "basics",
+   "prompt": "Make a 7-slide deck about electric vehicles for a general audience.",
+   "expect": {
+    "slides": 7,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "basic-11",
+   "category": "basics",
+   "prompt": "Make a 5-slide deck about hiring plan for next year for a general audience.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "basic-12",
+   "category": "basics",
+   "prompt": "Make a 4-slide deck about the history of the bicycle for a general audience.",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "basic-13",
+   "category": "basics",
+   "prompt": "Make a 5-slide deck introducing our new analytics dashboard.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "basic-14",
+   "category": "basics",
+   "prompt": "Make a 4-slide deck summarising last quarter's customer feedback.",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "basic-15",
+   "category": "basics",
+   "prompt": "Make a 6-slide deck explaining our data retention policy to staff.",
+   "expect": {
+    "slides": 6,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-01",
+   "category": "charts",
+   "prompt": "Make a 5-slide deck about our business that includes a column chart of revenue by quarter (Q1 40, Q2 52, Q3 61, Q4 78).",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-02",
+   "category": "charts",
+   "prompt": "Make a 5-slide deck about our business that includes a bar chart comparing team headcount (Eng 24, Sales 12, Support 9, Design 6).",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-03",
+   "category": "charts",
+   "prompt": "Make a 5-slide deck about our business that includes a line chart of monthly active users (Jan 1200, Feb 1350, Mar 1500, Apr 1720, May 1900).",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-04",
+   "category": "charts",
+   "prompt": "Make a 5-slide deck about our business that includes a pie chart of budget allocation (Product 45, Marketing 25, Ops 20, Other 10) as percentages.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-05",
+   "category": "charts",
+   "prompt": "Make a 4-slide deck about our business that includes a doughnut chart of device share (Mobile 58, Desktop 34, Tablet 8) as percentages.",
+   "expect": {
+    "slides": 4,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-06",
+   "category": "charts",
+   "prompt": "Make a 6-slide deck about our business that includes a stacked column chart of support tickets by channel over 2 months.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-07",
+   "category": "charts",
+   "prompt": "Make a 5-slide deck about our business that includes a column chart with two series comparing 2025 and 2026 sales across 3 regions.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-08",
+   "category": "charts",
+   "prompt": "Make a 6-slide deck about our business that includes two slides with charts: one column chart of shipments, one line chart of returns.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-09",
+   "category": "charts",
+   "prompt": "Make a 6-slide deck about our business that includes a chart of churn by month and a table of top 5 accounts.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-10",
+   "category": "charts",
+   "prompt": "Make a 5-slide deck on supply chain resilience; include a chart of plausible example numbers and label it clearly as illustrative.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-11",
+   "category": "charts",
+   "prompt": "Make a 6-slide deck on customer support metrics; include a chart of plausible example numbers and label it clearly as illustrative.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-12",
+   "category": "charts",
+   "prompt": "Make a 7-slide deck on data governance; include a chart of plausible example numbers and label it clearly as illustrative.",
+   "expect": {
+    "slides": 7,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-13",
+   "category": "charts",
+   "prompt": "Make a 5-slide deck on office relocation plan; include a chart of plausible example numbers and label it clearly as illustrative.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-14",
+   "category": "charts",
+   "prompt": "Make a 6-slide deck on product launch readiness; include a chart of plausible example numbers and label it clearly as illustrative.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-15",
+   "category": "charts",
+   "prompt": "A 5-slide deck about coffee roasting with one chart that supports the main point.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-16",
+   "category": "charts",
+   "prompt": "A 5-slide deck about the water cycle with one chart that supports the main point.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-17",
+   "category": "charts",
+   "prompt": "A 5-slide deck about remote work policy with one chart that supports the main point.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-18",
+   "category": "charts",
+   "prompt": "A 5-slide deck about solar adoption in 2026 with one chart that supports the main point.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-19",
+   "category": "charts",
+   "prompt": "A 5-slide deck about onboarding a new engineer with one chart that supports the main point.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "chart-20",
+   "category": "charts",
+   "prompt": "A 5-slide deck about why sleep matters with one chart that supports the main point.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "table-01",
+   "category": "tables",
+   "prompt": "Make a 5-slide deck with a table comparing comparison of 4 vendors (columns: vendors, price, contract length).",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "table-02",
+   "category": "tables",
+   "prompt": "Make a 5-slide deck with a table comparing Q3 vs Q4 results (columns: metric, Q3, Q4, change).",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "table-03",
+   "category": "tables",
+   "prompt": "Make a 6-slide deck with a table comparing project risks (columns: risk, likelihood, impact, owner).",
+   "expect": {
+    "slides": 6,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "table-04",
+   "category": "tables",
+   "prompt": "Make a 4-slide deck with a table comparing pricing tiers (columns: tier, seats, price, support).",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "table-05",
+   "category": "tables",
+   "prompt": "Make a 5-slide deck with a table comparing hiring pipeline (columns: candidate, role, stage, next step).",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "table-06",
+   "category": "tables",
+   "prompt": "Make a 5-slide deck with a table comparing travel options (columns: mode, cost, duration, comfort).",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "table-07",
+   "category": "tables",
+   "prompt": "Make a 5-slide deck about coffee roasting that includes one summary table.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "table-08",
+   "category": "tables",
+   "prompt": "Make a 5-slide deck about the water cycle that includes one summary table.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "table-09",
+   "category": "tables",
+   "prompt": "Make a 5-slide deck about remote work policy that includes one summary table.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "table-10",
+   "category": "tables",
+   "prompt": "Make a 5-slide deck about solar adoption in 2026 that includes one summary table.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "table-11",
+   "category": "tables",
+   "prompt": "Make a 5-slide deck about onboarding a new engineer that includes one summary table.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "table-12",
+   "category": "tables",
+   "prompt": "Make a 5-slide deck about why sleep matters that includes one summary table.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "visual-01",
+   "category": "visuals",
+   "prompt": "Make a 5-slide deck about fish anatomy. On one slide add a simple diagram you draw yourself as SVG.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "visual-02",
+   "category": "visuals",
+   "prompt": "Make a 5-slide deck about the water cycle. On one slide add a simple diagram you draw yourself as SVG.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "visual-03",
+   "category": "visuals",
+   "prompt": "Make a 5-slide deck about a laptop stack. On one slide add a simple diagram you draw yourself as SVG.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "visual-04",
+   "category": "visuals",
+   "prompt": "Make a 5-slide deck about solar panels. On one slide add a simple diagram you draw yourself as SVG.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "visual-05",
+   "category": "visuals",
+   "prompt": "Make a 5-slide deck about a factory line. On one slide add a simple diagram you draw yourself as SVG.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "visual-06",
+   "category": "visuals",
+   "prompt": "Make a 5-slide deck about a delivery route. On one slide add a simple diagram you draw yourself as SVG.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "visual-07",
+   "category": "visuals",
+   "prompt": "Make a 4-slide deck about coffee roasting with a simple icon graphic on the title slide.",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "visual-08",
+   "category": "visuals",
+   "prompt": "Make a 4-slide deck about the water cycle with a simple icon graphic on the title slide.",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "visual-09",
+   "category": "visuals",
+   "prompt": "Make a 4-slide deck about remote work policy with a simple icon graphic on the title slide.",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "visual-10",
+   "category": "visuals",
+   "prompt": "Make a 4-slide deck about solar adoption in 2026 with a simple icon graphic on the title slide.",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "stress-01",
+   "category": "stress",
+   "prompt": "Make a 5-slide deck about our platform where every bullet is a full sentence of about 85 characters.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": "long bullets"
+  },
+  {
+   "id": "stress-02",
+   "category": "stress",
+   "prompt": "Make a 6-slide deck where each content slide has 5 bullets.",
+   "expect": {
+    "slides": 6,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": "many bullets"
+  },
+  {
+   "id": "stress-03",
+   "category": "stress",
+   "prompt": "Make a 3-slide deck whose slide titles are long, around 55 characters each.",
+   "expect": {
+    "slides": 3,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": "long title"
+  },
+  {
+   "id": "stress-04",
+   "category": "stress",
+   "prompt": "Make a 10-slide deck about company history.",
+   "expect": {
+    "slides": 10,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": "ten slides"
+  },
+  {
+   "id": "stress-05",
+   "category": "stress",
+   "prompt": "Make a 4-slide deck where each content slide has exactly one bullet.",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": "one bullet"
+  },
+  {
+   "id": "stress-06",
+   "category": "stress",
+   "prompt": "Make a 2-slide deck: a title slide and one closing slide.",
+   "expect": {
+    "slides": 2,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": "minimal"
+  },
+  {
+   "id": "stress-07",
+   "category": "stress",
+   "prompt": "Make a 5-slide deck about energy prices with percentages in most bullets.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": "numbers heavy"
+  },
+  {
+   "id": "stress-08",
+   "category": "stress",
+   "prompt": "Make a 6-slide deck explaining how TLS handshakes work, for engineers.",
+   "expect": {
+    "slides": 6,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": "technical"
+  },
+  {
+   "id": "stress-09",
+   "category": "stress",
+   "prompt": "Make a 5-slide deck about cybersecurity basics, concise bullets, no visuals.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": "plain"
+  },
+  {
+   "id": "stress-10",
+   "category": "stress",
+   "prompt": "Make a 5-slide deck about quarterly sales review, concise bullets, no visuals.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": "plain"
+  },
+  {
+   "id": "stress-11",
+   "category": "stress",
+   "prompt": "Make a 5-slide deck about urban gardening, concise bullets, no visuals.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": "plain"
+  },
+  {
+   "id": "stress-12",
+   "category": "stress",
+   "prompt": "Make a 5-slide deck about electric vehicles, concise bullets, no visuals.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": "plain"
+  },
+  {
+   "id": "style-01",
+   "category": "templates",
+   "prompt": "Use template midnight.pptx for a 5-slide deck about our roadmap.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "midnight.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-02",
+   "category": "templates",
+   "prompt": "Use template midnight.pptx for a 5-slide deck about cost reduction.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "midnight.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-03",
+   "category": "templates",
+   "prompt": "Use template midnight.pptx for a 5-slide deck about customer research.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "midnight.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-04",
+   "category": "templates",
+   "prompt": "Use template midnight.pptx for a 5-slide deck about hiring plan.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "midnight.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-05",
+   "category": "templates",
+   "prompt": "Use template midnight.pptx for a 5-slide deck about brand refresh.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "midnight.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-06",
+   "category": "templates",
+   "prompt": "Use template ledger.pptx for a 5-slide deck about our roadmap.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "ledger.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-07",
+   "category": "templates",
+   "prompt": "Use template ledger.pptx for a 5-slide deck about cost reduction.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "ledger.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-08",
+   "category": "templates",
+   "prompt": "Use template ledger.pptx for a 5-slide deck about customer research.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "ledger.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-09",
+   "category": "templates",
+   "prompt": "Use template ledger.pptx for a 5-slide deck about hiring plan.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "ledger.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-10",
+   "category": "templates",
+   "prompt": "Use template ledger.pptx for a 5-slide deck about brand refresh.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "ledger.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-11",
+   "category": "templates",
+   "prompt": "Use template sandstone.pptx for a 5-slide deck about our roadmap.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "sandstone.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-12",
+   "category": "templates",
+   "prompt": "Use template sandstone.pptx for a 5-slide deck about cost reduction.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "sandstone.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-13",
+   "category": "templates",
+   "prompt": "Use template sandstone.pptx for a 5-slide deck about customer research.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "sandstone.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-14",
+   "category": "templates",
+   "prompt": "Use template sandstone.pptx for a 5-slide deck about hiring plan.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "sandstone.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-15",
+   "category": "templates",
+   "prompt": "Use template sandstone.pptx for a 5-slide deck about brand refresh.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "sandstone.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-16",
+   "category": "templates",
+   "prompt": "Use template grid.pptx for a 5-slide deck about our roadmap.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "grid.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-17",
+   "category": "templates",
+   "prompt": "Use template grid.pptx for a 5-slide deck about cost reduction.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "grid.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-18",
+   "category": "templates",
+   "prompt": "Use template grid.pptx for a 5-slide deck about customer research.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "grid.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-19",
+   "category": "templates",
+   "prompt": "Use template grid.pptx for a 5-slide deck about hiring plan.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "grid.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "style-20",
+   "category": "templates",
+   "prompt": "Use template grid.pptx for a 5-slide deck about brand refresh.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "grid.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "mixed-01",
+   "category": "mixed",
+   "prompt": "Make a 7-slide deck about product review including a chart, a table, a simple SVG diagram.",
+   "expect": {
+    "slides": 7,
+    "chart": true,
+    "table": true,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "mixed-02",
+   "category": "mixed",
+   "prompt": "Make a 6-slide deck about market entry plan including a chart, a table.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "mixed-03",
+   "category": "mixed",
+   "prompt": "Make a 8-slide deck about annual report summary including a chart, a table.",
+   "expect": {
+    "slides": 8,
+    "chart": true,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "mixed-04",
+   "category": "mixed",
+   "prompt": "Make a 5-slide deck about safety briefing including a table, a simple SVG diagram.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "mixed-05",
+   "category": "mixed",
+   "prompt": "Make a 6-slide deck about research findings including a chart, a simple SVG diagram.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "mixed-06",
+   "category": "mixed",
+   "prompt": "Make a 5-slide deck about vendor selection including a table.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "mixed-07",
+   "category": "mixed",
+   "prompt": "Make a 6-slide deck about training overview including a simple SVG diagram.",
+   "expect": {
+    "slides": 6,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "mixed-08",
+   "category": "mixed",
+   "prompt": "Make a 5-slide deck about pricing proposal including a chart, a table.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "mixed-09",
+   "category": "mixed",
+   "prompt": "Use template ledger.pptx for a 6-slide deck about product review with a chart and a table.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": true,
+    "image": false,
+    "template": "ledger.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "mixed-10",
+   "category": "mixed",
+   "prompt": "Use template grid.pptx for a 6-slide deck about hiring plan with a chart and a table.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": true,
+    "image": false,
+    "template": "grid.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "mixed-11",
+   "category": "mixed",
+   "prompt": "Use template midnight.pptx for a 6-slide deck about cost audit with a chart and a table.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": true,
+    "image": false,
+    "template": "midnight.pptx"
+   },
+   "note": ""
+  }
+ ]
+}

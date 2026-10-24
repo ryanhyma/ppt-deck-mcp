@@ -10,6 +10,7 @@ Everything is deterministic: the model emits an outline, never layout code.
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 from datetime import datetime
@@ -23,7 +24,7 @@ from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
 from pptx.enum.text import MSO_ANCHOR, MSO_AUTO_SIZE, PP_ALIGN
 from pptx.util import Inches, Pt
 
-from deck_style import CHART_PALETTE, GRAY, INK, LIGHT, NAVY, decorate, page_number, title_rule
+from deck_style import Theme, decorate, page_number, title_rule
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
@@ -123,6 +124,17 @@ def _resolve_template(template: str, dirs: List[str]) -> Path:
     )
 
 
+def _load_theme(template_path: Path) -> Theme:
+    """Sidecar manifest next to the .pptx: templates/<name>.json."""
+    manifest = template_path.with_suffix(".json")
+    if manifest.is_file():
+        try:
+            return Theme(json.loads(manifest.read_text(encoding="utf-8")))
+        except Exception:
+            pass
+    return Theme()
+
+
 def _delete_all_slides(prs: Presentation) -> None:
     sldIdLst = prs.slides._sldIdLst
     for sldId in list(sldIdLst):
@@ -133,7 +145,7 @@ def _delete_all_slides(prs: Presentation) -> None:
 # ---------------------------------------------------------------- text styling
 
 
-def _style_text_frame(shape, size: int, bold: bool, color) -> None:
+def _style_text_frame(shape, size: int, bold: bool, color, font: str = "Calibri") -> None:
     tf = shape.text_frame
     tf.word_wrap = True
     for p in tf.paragraphs:
@@ -142,18 +154,18 @@ def _style_text_frame(shape, size: int, bold: bool, color) -> None:
             r.font.size = Pt(size)
             r.font.bold = bold
             r.font.color.rgb = color
-            r.font.name = FONT
+            r.font.name = font
 
 
-def _fill_title_slide(slide, title: str, subtitle: str) -> None:
+def _fill_title_slide(slide, title: str, subtitle: str, theme: Theme) -> None:
     for ph in slide.placeholders:
         idx = ph.placeholder_format.idx
         if idx == 0:
             ph.text = title
-            _style_text_frame(ph, 40, True, NAVY)
+            _style_text_frame(ph, 40, True, theme.title, theme.font)
         elif idx == 1:
             ph.text = subtitle
-            _style_text_frame(ph, 20, False, GRAY)
+            _style_text_frame(ph, 20, False, theme.body, theme.font)
         else:
             ph._element.getparent().remove(ph._element)
 
@@ -161,7 +173,7 @@ def _fill_title_slide(slide, title: str, subtitle: str) -> None:
 # ---------------------------------------------------------------- visuals
 
 
-def _add_chart(slide, spec: Dict[str, Any], left, top, width, height) -> str:
+def _add_chart(slide, spec: Dict[str, Any], left, top, width, height, theme: Theme) -> str:
     kind = str(spec.get("type", "column")).lower()
     chart_type = CHART_TYPES.get(kind, XL_CHART_TYPE.COLUMN_CLUSTERED)
     categories = [str(c) for c in (spec.get("categories") or [])]
@@ -185,16 +197,16 @@ def _add_chart(slide, spec: Dict[str, Any], left, top, width, height) -> str:
     graphic = slide.shapes.add_chart(chart_type, left, top, width, height, data)
     chart = graphic.chart
     chart.font.size = Pt(12)
-    chart.font.name = FONT
-    chart.font.color.rgb = INK
+    chart.font.name = theme.font
+    chart.font.color.rgb = theme.body
     if spec.get("title"):
         chart.has_title = True
         chart.chart_title.text_frame.text = str(spec["title"])
         for r in chart.chart_title.text_frame.paragraphs[0].runs:
             r.font.size = Pt(14)
             r.font.bold = True
-            r.font.color.rgb = NAVY
-            r.font.name = FONT
+            r.font.color.rgb = theme.title
+            r.font.name = theme.font
     else:
         chart.has_title = False
 
@@ -211,8 +223,8 @@ def _add_chart(slide, spec: Dict[str, Any], left, top, width, height) -> str:
     if plot.has_data_labels:
         labels = plot.data_labels
         labels.font.size = Pt(11)
-        labels.font.name = FONT
-        labels.font.color.rgb = INK
+        labels.font.name = theme.font
+        labels.font.color.rgb = theme.body
         if is_pie:
             labels.show_value = False
             labels.show_percentage = True
@@ -220,8 +232,9 @@ def _add_chart(slide, spec: Dict[str, Any], left, top, width, height) -> str:
         else:
             labels.show_value = True
 
+    palette = theme.chart_palette()
     for i, series in enumerate(plot.series):
-        color = CHART_PALETTE[i % len(CHART_PALETTE)]
+        color = palette[i % len(palette)]
         if kind == "line":
             series.format.line.color.rgb = color
             series.format.line.width = Pt(2.5)
@@ -232,13 +245,13 @@ def _add_chart(slide, spec: Dict[str, Any], left, top, width, height) -> str:
     if is_pie or kind == "doughnut":
         for i, point in enumerate(plot.series[0].points):
             point.format.fill.solid()
-            point.format.fill.fore_color.rgb = CHART_PALETTE[i % len(CHART_PALETTE)]
+            point.format.fill.fore_color.rgb = palette[i % len(palette)]
 
     if not is_pie:
         try:
             va = chart.value_axis
             va.has_major_gridlines = True
-            va.major_gridlines.format.line.color.rgb = LIGHT
+            va.major_gridlines.format.line.color.rgb = theme.panel_alt
             va.major_gridlines.format.line.width = Pt(0.75)
             va.tick_labels.font.size = Pt(11)
             va.format.line.fill.background()
@@ -251,7 +264,7 @@ def _add_chart(slide, spec: Dict[str, Any], left, top, width, height) -> str:
     return f"{kind} chart"
 
 
-def _add_table(slide, spec: Dict[str, Any], left, top, width) -> str:
+def _add_table(slide, spec: Dict[str, Any], left, top, width, theme: Theme) -> str:
     headers = [str(h) for h in (spec.get("headers") or [])]
     rows = [[str(c) for c in row] for row in (spec.get("rows") or [])]
     if not headers or not rows:
@@ -270,27 +283,27 @@ def _add_table(slide, spec: Dict[str, Any], left, top, width) -> str:
         cell = table.cell(0, c)
         cell.text = text
         cell.fill.solid()
-        cell.fill.fore_color.rgb = NAVY
+        cell.fill.fore_color.rgb = theme.title
         for p in cell.text_frame.paragraphs:
             for r in p.runs:
                 r.font.size = Pt(12)
                 r.font.bold = True
-                r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
-                r.font.name = FONT
+                r.font.color.rgb = theme.bg if theme.dark else RGBColor(0xFF, 0xFF, 0xFF)
+                r.font.name = theme.font
 
     for r_i, row in enumerate(rows, start=1):
         for c_i, text in enumerate(row):
             cell = table.cell(r_i, c_i)
             cell.text = text
             cell.fill.solid()
-            cell.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF) if r_i % 2 else RGBColor(0xF5, 0xF7, 0xF9)
+            cell.fill.fore_color.rgb = theme.panel if r_i % 2 else theme.panel_alt
             cell.margin_top = Inches(0.03)
             cell.margin_bottom = Inches(0.03)
             for p in cell.text_frame.paragraphs:
                 for r in p.runs:
                     r.font.size = Pt(11)
-                    r.font.color.rgb = INK
-                    r.font.name = FONT
+                    r.font.color.rgb = theme.body
+                    r.font.name = theme.font
     return f"table {len(rows)}x{cols}"
 
 
@@ -319,13 +332,14 @@ def _fill_content_slide(
     bullets: List[str],
     notes: str | None,
     visual: Dict[str, Any] | None,
+    theme: Theme,
 ) -> str | None:
     body = None
     for ph in slide.placeholders:
         idx = ph.placeholder_format.idx
         if idx == 0:
             ph.text = title
-            _style_text_frame(ph, 28, True, NAVY)
+            _style_text_frame(ph, 28, True, theme.title, theme.font)
         elif idx == 1:
             body = ph
         else:
@@ -357,8 +371,8 @@ def _fill_content_slide(
                 p.space_after = Pt(10)
                 for r in p.runs:
                     r.font.size = Pt(20)
-                    r.font.color.rgb = INK
-                    r.font.name = FONT
+                    r.font.color.rgb = theme.body
+                    r.font.name = theme.font
 
     if visual:
         kind = visual.get("kind")
@@ -373,14 +387,14 @@ def _fill_content_slide(
         top = Inches(1.55)
 
         if kind == "chart":
-            visual_note = _add_chart(slide, visual["spec"], left, top, width, Inches(4.55))
+            visual_note = _add_chart(slide, visual["spec"], left, top, width, Inches(4.55), theme)
         elif kind == "table":
-            visual_note = _add_table(slide, visual["spec"], left, top, width)
+            visual_note = _add_table(slide, visual["spec"], left, top, width, theme)
         elif kind == "image":
             visual_note = _add_picture(slide, visual["path"], left, top, width)
 
-    title_rule(slide)
-    page_number(slide, number)
+    title_rule(slide, theme)
+    page_number(slide, number, theme)
 
     if notes:
         slide.notes_slide.notes_text_frame.text = notes
@@ -388,6 +402,37 @@ def _fill_content_slide(
 
 
 # ---------------------------------------------------------------- tool registration
+
+
+def _validate_slides(slides: List[Dict[str, Any]]) -> None:
+    """Fail loudly on an unusable chart/table spec.
+
+    Silently skipping a visual produces a deck that looks fine and is wrong — the exact failure a
+    small model cannot notice. An error message naming the missing field gets it to retry.
+    """
+    for i, item in enumerate(slides or [], start=2):
+        if not isinstance(item, dict):
+            raise ValueError(f"slide {i}: expected an object, got {type(item).__name__}")
+        chart = item.get("chart")
+        if chart is not None:
+            if not isinstance(chart, dict):
+                raise ValueError(f"slide {i}: 'chart' must be an object")
+            if not chart.get("categories"):
+                raise ValueError(f"slide {i}: chart needs 'categories' (non-empty list)")
+            rows = chart.get("series") or []
+            if not rows:
+                raise ValueError(f"slide {i}: chart needs 'series': [{{'name': str, 'values': [num]}}]")
+            for row in rows:
+                if not isinstance(row, dict) or not row.get("values"):
+                    raise ValueError(f"slide {i}: every chart series needs 'values': [num]")
+        table = item.get("table")
+        if table is not None:
+            if not isinstance(table, dict):
+                raise ValueError(f"slide {i}: 'table' must be an object")
+            if not table.get("headers"):
+                raise ValueError(f"slide {i}: table needs 'headers' (list of column names)")
+            if not table.get("rows"):
+                raise ValueError(f"slide {i}: table needs 'rows' (list of rows, each a list of cells)")
 
 
 def register_deck_tools(app, template_dirs_fn) -> None:
@@ -405,9 +450,25 @@ def register_deck_tools(app, template_dirs_fn) -> None:
                 try:
                     prs = Presentation(str(f))
                     t_idx, c_idx = _pick_layouts(prs)
+                    theme = _load_theme(f)
+                    try:
+                        from deck_preview import template_preview_urls
+
+                        preview = template_preview_urls(f)
+                    except Exception:
+                        preview = []
                     rows.append(
                         {
                             "template": f.name,
+                            "label": theme.label,
+                            "description": theme.raw.get("description", ""),
+                            "theme": {
+                                "background": theme.raw.get("background"),
+                                "accent": theme.raw.get("accent"),
+                                "font": theme.font,
+                                "dark": theme.dark,
+                            },
+                            "preview": preview,
                             "path": str(f),
                             "title_layout": t_idx,
                             "content_layout": c_idx,
@@ -498,15 +559,17 @@ def register_deck_tools(app, template_dirs_fn) -> None:
 
         Returns: {"file": <absolute path>, "slide_count": N, "visuals": [...]}
         """
+        _validate_slides(slides)
         dirs = _template_dirs(template_dirs_fn)
         tpl = _resolve_template(template, dirs)
         prs = Presentation(str(tpl))
+        theme = _load_theme(tpl)
         title_idx, content_idx = _pick_layouts(prs)
         _delete_all_slides(prs)
 
         title_slide = prs.slides.add_slide(prs.slide_layouts[title_idx])
-        _fill_title_slide(title_slide, title, subtitle)
-        decorate(title_slide)
+        _fill_title_slide(title_slide, title, subtitle, theme)
+        decorate(title_slide, theme)
 
         default_image = Path(image) if image and Path(image).is_file() else None
 
@@ -534,6 +597,7 @@ def register_deck_tools(app, template_dirs_fn) -> None:
                 [str(b) for b in (item.get("bullets") or [])],
                 (str(item["notes"]) if item.get("notes") else None),
                 visual,
+                theme,
             )
             if visual and note:
                 visuals.append(f"slide {made + 2}: {note}")
@@ -550,6 +614,7 @@ def register_deck_tools(app, template_dirs_fn) -> None:
             "content_slides": made,
             "template": tpl.name,
             "layouts_used": {"title": title_idx, "content": content_idx},
+            "theme": theme.label,
             "visuals": visuals,
             "hint": "The deck is saved. Reply with the file path and a one-line summary.",
         }

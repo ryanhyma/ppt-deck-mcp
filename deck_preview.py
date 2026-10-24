@@ -19,6 +19,9 @@ from pptx import Presentation
 APP_URI = "ui://deck-studio/index.html"
 PREVIEW_ROOT = "previews"
 
+# Set by register_preview_tools(): lets the view show the template gallery.
+_TEMPLATE_DIRS_FN = None
+
 
 def public_base() -> str:
     return os.environ.get("PPT_PUBLIC_BASE", "http://host.docker.internal:8931").rstrip("/")
@@ -100,6 +103,7 @@ def build_preview(pptx_path: str | Path, title: str = "") -> Dict[str, Any]:
         for i in range(1, count + 1)
     ]
     data = {
+        "templates": _template_gallery(),
         "deck_id": deck_id,
         "title": title or labels[0] if labels else (title or src.stem),
         "file": str(src),
@@ -108,6 +112,37 @@ def build_preview(pptx_path: str | Path, title: str = "") -> Dict[str, Any]:
     }
     (outdir / "deck.json").write_text(json.dumps(data, indent=1), encoding="utf-8")
     return data
+
+
+def _template_gallery() -> List[Dict[str, Any]]:
+    if _TEMPLATE_DIRS_FN is None:
+        return []
+    rows: List[Dict[str, Any]] = []
+    seen = set()
+    for d in _TEMPLATE_DIRS_FN():
+        for f in sorted(Path(d).glob("*.pptx")):
+            if f.name in seen:
+                continue
+            seen.add(f.name)
+            label, description = f.stem.replace("-", " ").title(), ""
+            manifest = f.with_suffix(".json")
+            if manifest.is_file():
+                try:
+                    m = json.loads(manifest.read_text(encoding="utf-8"))
+                    label = m.get("label") or label
+                    description = m.get("description") or ""
+                except Exception:
+                    pass
+            urls = template_preview_urls(f)
+            rows.append(
+                {
+                    "file": f.name,
+                    "label": label,
+                    "description": description,
+                    "thumb": urls[-1] if urls else "",
+                }
+            )
+    return rows
 
 
 def last_preview() -> Dict[str, Any] | None:
@@ -125,7 +160,9 @@ def last_preview() -> Dict[str, Any] | None:
     return None
 
 
-def register_preview_tools(app) -> None:
+def register_preview_tools(app, template_dirs_fn=None) -> None:
+    global _TEMPLATE_DIRS_FN
+    _TEMPLATE_DIRS_FN = template_dirs_fn
     meta = {"ui": {"resourceUri": APP_URI}}
 
     @app.tool(meta=meta)
@@ -145,7 +182,7 @@ def register_preview_tools(app) -> None:
     def get_last_deck() -> Dict[str, Any]:
         """Return the most recently previewed deck (the view uses this on open)."""
         data = last_preview()
-        return data or {"slides": [], "deck_id": None, "title": "No deck yet"}
+        return data or {"slides": [], "templates": _template_gallery(), "deck_id": None, "title": "No deck yet"}
 
     @app.tool()
     def list_decks() -> Dict[str, Any]:
@@ -162,3 +199,18 @@ def register_preview_tools(app) -> None:
                 except Exception:
                     continue
         return {"decks": rows[:20]}
+
+
+def template_preview_urls(pptx_path: str | Path) -> List[str]:
+    """Render a template's example slides once and return URL(s) for the gallery."""
+    src = Path(pptx_path)
+    outdir = preview_root() / f"tpl-{_deck_id(src)}"
+    if not (outdir / "slide-1.png").is_file():
+        outdir.mkdir(parents=True, exist_ok=True)
+        try:
+            _render(src, outdir)
+        except Exception:
+            return []
+    base = public_base()
+    files = sorted(outdir.glob("slide-*.png"), key=lambda p: int(p.stem.split("-")[1]))
+    return [f"{base}/decks/{outdir.name}/{f.name}" for f in files]

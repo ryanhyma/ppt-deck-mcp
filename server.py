@@ -32,7 +32,7 @@ from deck_tools import register_deck_tools, register_readback_tools  # noqa: E40
 
 register_deck_tools(app, get_template_search_directories)
 register_readback_tools(app, None)
-register_preview_tools(app)
+register_preview_tools(app, get_template_search_directories)
 
 APP_DIR = HERE / "apps" / "deck_studio"
 

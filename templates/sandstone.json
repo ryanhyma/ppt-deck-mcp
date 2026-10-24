@@ -1,0 +1,13 @@
+{
+ "label": "Sandstone",
+ "description": "Warm paper background, terracotta accent. Editorial / human tone.",
+ "background": "#FBF7F0",
+ "title": "#3E2C23",
+ "body": "#4B3F36",
+ "accent": "#C4703C",
+ "muted": "#A1887F",
+ "font": "Calibri",
+ "rule_width": 1.1,
+ "rail": false,
+ "file": "sandstone.pptx"
+}

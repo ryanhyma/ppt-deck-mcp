@@ -1,0 +1,181 @@
+{
+ "stamp": "20261024-171551",
+ "results": [
+  {
+   "id": "chart-07",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 5-slide deck about our business that includes a column chart with two series comparing 2025 and 2026 sales across 3 regions.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "conversationId": "46fe6263-1905-4f87-aa50-67bec3bf4f5f",
+   "url": "http://localhost:3080/c/46fe6263-1905-4f87-aa50-67bec3bf4f5f",
+   "file": "/home/hyma/dev/librechat/uploads/decks/business-overview-171721.pptx",
+   "deck_id": "business-overview-171721",
+   "tools": [
+    "skill",
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 14,
+    "max_bullet_chars": 63,
+    "titles": [
+     "Business Overview",
+     "About Our Business",
+     "Sales by Region",
+     "Growth Drivers",
+     "Looking Ahead"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "I'll build a 5-slide business overview deck using the default Corporate Teal template, with a column chart comparing 2025 vs 2026 sales across 3 regions.\n\n**`/home/hyma/dev/librechat/uploads/decks/business-overview-171721.pptx`** \u2014 5-slide business overview deck with a title slide, company overview, a column chart comparing 2025/2026 sales across North America, Europe, and Asia-Pacific, growth dri",
+   "seconds": 96.8
+  },
+  {
+   "id": "table-04",
+   "category": "tables",
+   "note": "",
+   "prompt": "Make a 4-slide deck with a table comparing pricing tiers (columns: tier, seats, price, support).",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "conversationId": "d9490ea4-1d7a-4d49-b113-2ea1cfe33edb",
+   "url": "http://localhost:3080/c/d9490ea4-1d7a-4d49-b113-2ea1cfe33edb",
+   "file": "/home/hyma/dev/librechat/uploads/decks/pricing-tiers-171829.pptx",
+   "deck_id": "pricing-tiers-171829",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 4,
+    "charts": 0,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 8,
+    "max_bullet_chars": 37,
+    "titles": [
+     "Pricing Tiers",
+     "Why Tiered Pricing?",
+     "Pricing Comparison",
+     "Next Steps"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "`/home/hyma/dev/librechat/uploads/decks/pricing-tiers-171829.pptx` \u2014 4-slide deck with a title slide, rationale bullets, a 3-row pricing comparison table (Starter/Professional/Enterprise), and next-steps bullets.",
+   "seconds": 71.4
+  },
+  {
+   "id": "style-16",
+   "category": "templates",
+   "note": "",
+   "prompt": "Use template grid.pptx for a 5-slide deck about our roadmap.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "grid.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "conversationId": "d75e5231-3969-43b5-9163-75fcce2780be",
+   "url": "http://localhost:3080/c/d75e5231-3969-43b5-9163-75fcce2780be",
+   "file": "/home/hyma/dev/librechat/uploads/decks/roadmap-171944.pptx",
+   "deck_id": "roadmap-171944",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 13,
+    "max_bullet_chars": 39,
+    "titles": [
+     "Our Roadmap",
+     "Q1 Priorities",
+     "Q2\u2013Q3 Initiatives",
+     "Key Milestones",
+     "Next Steps"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "Got it \u2014 5 slides total (title + 4 content) using `grid.pptx`. Building now.\n\n`/home/hyma/dev/librechat/uploads/decks/roadmap-171944.pptx` \u2014 5-slide roadmap deck using the Grid template with Q1 priorities, Q2\u2013Q3 initiatives, a milestones table, and next steps.",
+   "seconds": 73.5
+  },
+  {
+   "id": "mixed-01",
+   "category": "mixed",
+   "note": "",
+   "prompt": "Make a 7-slide deck about product review including a chart, a table, a simple SVG diagram.",
+   "expect": {
+    "slides": 7,
+    "chart": true,
+    "table": true,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "conversationId": "f0c6c18f-45ad-4220-9a9b-a91c54fc8c30",
+   "url": "http://localhost:3080/c/f0c6c18f-45ad-4220-9a9b-a91c54fc8c30",
+   "file": "/home/hyma/dev/librechat/uploads/decks/product-review-172203.pptx",
+   "deck_id": "product-review-172203",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "render_svg_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 7,
+    "charts": 2,
+    "tables": 1,
+    "pictures": 1,
+    "bullets": 9,
+    "max_bullet_chars": 61,
+    "titles": [
+     "Product Review",
+     "Product Overview",
+     "User Satisfaction Scores",
+     "Feature Comparison",
+     "Product Architecture",
+     "Growth Metrics",
+     "Key Takeaways & Next Steps"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "I'll create a 7-slide product review deck using the \"grid\" template (modern product/tech tone). First, let me render the SVG diagram, then build the deck.\n\nGreat, the SVG architecture diagram is ready. Now let me build the full 7-slide deck:\n\nThe deck has 8 slides (1 title + 7 content), but you asked for 7 total including the title slide. Let me fix that by merging the last two slides.\n\n**File:** ",
+   "seconds": 140.0
+  }
+ ]
+}

@@ -8,6 +8,9 @@ const app = new App({ name: "Deck Studio", version: "1.0.0" }, {});
 const titleEl = document.getElementById("title");
 const countEl = document.getElementById("count");
 const stage = document.getElementById("stage");
+const styleRow = document.createElement("div");
+styleRow.className = "styles";
+stage.before(styleRow);
 const foot = document.getElementById("foot");
 const lightbox = document.getElementById("lightbox");
 const editor = document.getElementById("editor");
@@ -50,10 +53,10 @@ document.getElementById("edit-cancel").addEventListener("click", () => {
 
 document.getElementById("edit-send").addEventListener("click", async () => {
   const text = editorInput.value.trim();
-  if (!text || !editTarget) return;
-  const message =
-    `Edit ${currentFile}: slide ${editTarget.index} — ${text}. ` +
-    "Keep every other slide exactly as it is.";
+  if (!text) return;
+  const message = editTarget
+    ? `Edit ${currentFile}: slide ${editTarget.index} — ${text}. Keep every other slide exactly as it is.`
+    : text;
   try {
     await app.sendMessage({ role: "user", content: [{ type: "text", text: message }] });
     statusEl.textContent = "Sent to the agent — watch the chat for the updated deck.";
@@ -65,8 +68,46 @@ document.getElementById("edit-send").addEventListener("click", async () => {
   }
 });
 
+function renderStyles(templates) {
+  if (!Array.isArray(templates) || templates.length === 0) return;
+  styleRow.innerHTML = "";
+  const head = document.createElement("div");
+  head.className = "styles-head";
+  head.textContent = "Styles — pick one, then say what the deck is about";
+  styleRow.append(head);
+  const row = document.createElement("div");
+  row.className = "styles-row";
+  for (const t of templates) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "style-card";
+    card.title = t.description || t.label;
+    if (t.thumb) {
+      const img = document.createElement("img");
+      img.src = t.thumb;
+      img.alt = t.label;
+      img.loading = "lazy";
+      card.append(img);
+    }
+    const name = document.createElement("span");
+    name.textContent = t.label;
+    card.append(name);
+    card.addEventListener("click", () => {
+      editor.classList.add("open");
+      editorInput.value = `Use template ${t.file} for a 5-slide deck about `;
+      editTarget = null;
+      editorInput.focus();
+      editorInput.setSelectionRange(editorInput.value.length, editorInput.value.length);
+      statusEl.textContent = `Style: ${t.label} — finish the sentence and press Ask agent.`;
+    });
+    row.append(card);
+  }
+  styleRow.append(row);
+}
+
 function render(data) {
   if (!data || !Array.isArray(data.slides) || data.slides.length === 0) return;
+  renderStyles(data.templates);
   titleEl.textContent = data.title || "Deck";
   countEl.textContent = `${data.slides.length} slides`;
 
