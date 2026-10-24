@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Entry point: vendored Office-PowerPoint server + our two small-model deck tools.
+"""Entry point: vendored Office-PowerPoint server + our deck tools + the Deck Studio app.
 
 Run (host, no container):
     .venv/bin/python server.py --transport http --host 172.17.0.1 --port 8931
@@ -8,24 +8,92 @@ Run (host, no container):
 Env:
     PPT_TEMPLATE_PATH  template dirs (colon-separated)
     PPT_OUTPUT_DIR     where generated decks are written
+    PPT_PUBLIC_BASE    origin the LibreChat sandbox can reach (default host.docker.internal:8931)
 """
 import argparse
 import os
 import sys
+from contextlib import asynccontextmanager
+from pathlib import Path
 
-from mcp.server.transport_security import TransportSecuritySettings
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE / "upstream"))
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, "upstream"))
-
+import uvicorn  # noqa: E402
+from mcp.server.transport_security import TransportSecuritySettings  # noqa: E402
 from ppt_mcp_server import app, get_template_search_directories  # noqa: E402
+from starlette.applications import Starlette  # noqa: E402
+from starlette.responses import FileResponse, PlainTextResponse  # noqa: E402
+from starlette.routing import Mount, Route  # noqa: E402
+
+from deck_preview import APP_URI, preview_root, public_base, register_preview_tools  # noqa: E402
 from deck_tools import register_deck_tools  # noqa: E402
 
 register_deck_tools(app, get_template_search_directories)
+register_preview_tools(app)
+
+APP_DIR = HERE / "apps" / "deck_studio"
+
+
+# ---------------------------------------------------------------- MCP App resources
+@app.resource(
+    APP_URI,
+    name="Deck Studio",
+    title="Deck Studio",
+    description="Slide thumbnails and click-to-zoom for the last built deck.",
+    mime_type="text/html;profile=mcp-app",
+    meta={"ui": {"csp": {"resourceDomains": [public_base()]}}},
+)
+def deck_studio_html() -> str:
+    html = (APP_DIR / "index.html").read_text(encoding="utf-8")
+    return html.replace("__APP_JS__", f"{public_base()}/apps/deck_studio/app.js")
+
+
+# ---------------------------------------------------------------- HTTP assets
+def _safe_file(base: Path, rel: str) -> Path | None:
+    p = (base / rel).resolve()
+    try:
+        p.relative_to(base.resolve())
+    except ValueError:
+        return None
+    return p if p.is_file() else None
+
+
+def build_http_app():
+    inner = app.streamable_http_app()
+
+    async def app_asset(request):
+        p = _safe_file(APP_DIR, request.path_params["path"])
+        if p is None:
+            return PlainTextResponse("not found", status_code=404)
+        # The App runs in a srcdoc iframe (opaque origin "null"), so module scripts
+        # must be CORS-readable.
+        return FileResponse(p, headers={"Access-Control-Allow-Origin": "*", "Cache-Control": "no-store"})
+
+    async def deck_asset(request):
+        p = _safe_file(preview_root() / request.path_params["deck_id"], request.path_params["name"])
+        if p is None:
+            return PlainTextResponse("not found", status_code=404)
+        return FileResponse(p)
+
+    @asynccontextmanager
+    async def lifespan(root_app):
+        async with inner.router.lifespan_context(root_app):
+            yield
+
+    return Starlette(
+        routes=[
+            Route("/apps/deck_studio/{path:path}", app_asset),
+            Route("/decks/{deck_id}/{name}", deck_asset),
+            Mount("/", app=inner),
+        ],
+        lifespan=lifespan,
+    )
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="PPT deck MCP server (upstream + build_deck)")
+    parser = argparse.ArgumentParser(description="PPT deck MCP server (upstream + build_deck + Deck Studio app)")
     parser.add_argument("--transport", default="http", choices=["stdio", "http", "sse"])
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8931)
@@ -54,7 +122,7 @@ def main() -> None:
         allowed_origins=[f"http://{h}" for h in hosts],
     )
 
-    app.run(transport="streamable-http" if args.transport == "http" else "sse")
+    uvicorn.run(build_http_app(), host=args.host, port=args.port, log_level="info")
 
 
 if __name__ == "__main__":

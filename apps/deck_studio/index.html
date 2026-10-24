@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Deck Studio</title>
+<style>
+  :root {
+    --ink: #1f2937; --muted: #6b7280; --line: #e5e7eb;
+    --card: #ffffff; --bg: #f8fafc; --teal: #2a9d8f; --navy: #1f3864;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ink: #e5e7eb; --muted: #9ca3af; --line: #374151;
+            --card: #111827; --bg: #0b1220; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--ink);
+         font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Calibri, sans-serif; }
+  header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+  h1 { font-size: 17px; margin: 0; letter-spacing: -0.01em; }
+  .badge { font-size: 11px; color: var(--muted); border: 1px solid var(--line);
+           border-radius: 999px; padding: 2px 9px; }
+  .empty { color: var(--muted); padding: 28px 6px; text-align: center; }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  @media (min-width: 820px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  figure { margin: 0; background: var(--card); border: 1px solid var(--line);
+           border-radius: 10px; overflow: hidden; cursor: zoom-in; }
+  figure img { display: block; width: 100%; height: auto; }
+  figcaption { font-size: 11px; color: var(--muted); padding: 6px 9px;
+               border-top: 1px solid var(--line); }
+  #lightbox { position: fixed; inset: 0; background: rgba(8, 12, 20, 0.86);
+              display: none; align-items: center; justify-content: center; padding: 18px; z-index: 9; }
+  #lightbox.open { display: flex; }
+  #lightbox img { max-width: 100%; max-height: 100%; border-radius: 8px; background: #fff; }
+  footer { margin-top: 14px; font-size: 11px; color: var(--muted); word-break: break-all; }
+  footer code { color: var(--teal); }
+</style>
+</head>
+<body>
+  <header>
+    <h1 id="title">Deck Studio</h1>
+    <span class="badge" id="count">waiting for a tool result</span>
+  </header>
+  <div id="stage"><div class="empty">Build a deck (or call <code>preview_deck</code>) and its slides appear here.</div></div>
+  <footer id="foot"></footer>
+  <div id="lightbox"><img alt="slide" /></div>
+
+  <script type="module" src="__APP_JS__"></script>
+</body>
+</html>
