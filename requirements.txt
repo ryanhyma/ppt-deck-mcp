@@ -1,0 +1,8 @@
+# Runtime + test dependencies for the deck MCP server.
+mcp[cli]>=1.30,<2      # upstream imports mcp.server.fastmcp, removed in SDK 2.x
+python-pptx>=1.0
+Pillow>=10
+fonttools>=4
+cairosvg>=2.7
+uvicorn>=0.30
+starlette>=0.37

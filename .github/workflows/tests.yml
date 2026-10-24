@@ -1,0 +1,32 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: System libs (cairo, for SVG rasterisation)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libcairo2
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Regression tests
+        run: python -m unittest discover -s tests -v
+
+  # The browser test needs the full LibreChat stack, so it stays manual:
+  # RUN_E2E=1 CONVO=<conversation-id> tests/run_all.sh
