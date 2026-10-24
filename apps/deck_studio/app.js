@@ -143,6 +143,21 @@ function render(data) {
   stage.append(grid);
   currentFile = data.file || currentFile;
   foot.innerHTML = data.file ? `Saved to <code>${data.file}</code>` : "";
+  if (data.download) {
+    const link = document.createElement("button");
+    link.type = "button";
+    link.className = "download";
+    link.textContent = "Download .pptx";
+    link.addEventListener("click", async () => {
+      try {
+        await app.openLink({ url: data.download });
+      } catch (err) {
+        statusEl.textContent = "The host did not open the link.";
+        console.error(err);
+      }
+    });
+    foot.append(" ", link);
+  }
 }
 
 app.ontoolresult = (params) => render(payload(params));

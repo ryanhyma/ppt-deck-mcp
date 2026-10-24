@@ -90,6 +90,10 @@ def build_preview(pptx_path: str | Path, title: str = "") -> Dict[str, Any]:
         shutil.rmtree(outdir)
     outdir.mkdir(parents=True)
 
+    # Copy the deck next to its previews so the browser can download it from this server.
+    shipped = outdir / "deck.pptx"
+    shutil.copyfile(src, shipped)
+
     count = _render(src, outdir)
     labels = _slide_labels(src)
     base = public_base()
@@ -108,6 +112,7 @@ def build_preview(pptx_path: str | Path, title: str = "") -> Dict[str, Any]:
         "title": title or labels[0] if labels else (title or src.stem),
         "file": str(src),
         "slide_count": count,
+        "download": f"{base}/decks/{deck_id}/deck.pptx",
         "slides": slides,
     }
     (outdir / "deck.json").write_text(json.dumps(data, indent=1), encoding="utf-8")

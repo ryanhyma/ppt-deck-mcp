@@ -76,7 +76,10 @@ def build_http_app():
         p = _safe_file(preview_root() / request.path_params["deck_id"], request.path_params["name"])
         if p is None:
             return PlainTextResponse("not found", status_code=404)
-        return FileResponse(p)
+        headers = {"Cache-Control": "no-store"}
+        if p.suffix.lower() in {".pptx", ".potx"}:
+            headers["Content-Disposition"] = f'attachment; filename="{p.name}"'
+        return FileResponse(p, headers=headers)
 
     @asynccontextmanager
     async def lifespan(root_app):
