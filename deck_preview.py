@@ -11,6 +11,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -219,3 +220,64 @@ def template_preview_urls(pptx_path: str | Path) -> List[str]:
     base = public_base()
     files = sorted(outdir.glob("slide-*.png"), key=lambda p: int(p.stem.split("-")[1]))
     return [f"{base}/decks/{outdir.name}/{f.name}" for f in files]
+
+
+# ---------------------------------------------------------------- import an uploaded deck
+
+UPLOAD_DIR = os.environ.get("PPT_UPLOAD_DIR", "/home/hyma/dev/librechat/uploads")
+
+
+def _resolve_input(name: str) -> Path:
+    """Find a deck by absolute path, container path, or a filename inside LibreChat uploads."""
+    raw = (name or "").strip().strip('"')
+    direct = Path(os.path.expanduser(raw))
+    if direct.is_file():
+        return direct
+    for prefix in ("/app/uploads/", "/app/client/public/images/"):
+        if raw.startswith(prefix):
+            cand = Path(UPLOAD_DIR) / raw[len(prefix):]
+            if cand.is_file():
+                return cand
+    base = Path(UPLOAD_DIR)
+    if base.is_dir():
+        exact = sorted(base.rglob(raw), key=lambda p: p.stat().st_mtime, reverse=True)
+        if exact:
+            return exact[0]
+        loose = sorted(base.rglob(f"*{raw}*"), key=lambda p: p.stat().st_mtime, reverse=True)
+        if loose:
+            return loose[0]
+    raise FileNotFoundError(
+        f"'{name}' not found. Pass an absolute path, or the filename of a file uploaded to the chat."
+    )
+
+
+def register_import_tools(app) -> None:
+    meta = {"ui": {"resourceUri": APP_URI}}
+
+    @app.tool(meta=meta)
+    def import_deck(file: str) -> Dict[str, Any]:
+        """Open a .pptx the user uploaded to the chat, so it can be edited or restyled.
+
+        Accepts the uploaded filename (e.g. "Q3 review.pptx"), a container path
+        ("/app/uploads/...") or an absolute path. Copies it into the deck workspace, renders
+        previews, and returns the outline as well, so a follow-up edit can preserve content.
+
+        Args:
+            file: uploaded filename or path to a .pptx
+        """
+        src = _resolve_input(file)
+        if src.suffix.lower() not in (".pptx", ".potx"):
+            raise ValueError("only .pptx files can be imported (legacy .pot/.ppt is not supported)")
+
+        from deck_tools import _outline
+
+        root = Path(os.environ.get("PPT_OUTPUT_DIR", Path(__file__).resolve().parent / "out"))
+        root.mkdir(parents=True, exist_ok=True)
+        stem = _deck_id(src)
+        dest = root / f"{stem}-imported-{datetime.now().strftime('%H%M%S')}{src.suffix.lower()}"
+        shutil.copyfile(src, dest)
+
+        data = build_preview(dest, title="")
+        data["imported_from"] = str(src)
+        data["outline"] = _outline(dest)
+        return data

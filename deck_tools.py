@@ -404,6 +404,75 @@ def _fill_content_slide(
 # ---------------------------------------------------------------- tool registration
 
 
+def _run_style(shape) -> Dict[str, Any] | None:
+    """First run's effective formatting, as a build_deck style object."""
+    if not shape.has_text_frame:
+        return None
+    for para in shape.text_frame.paragraphs:
+        align = str(para.alignment).split(".")[-1].lower() if para.alignment else None
+        for run in para.runs:
+            color = None
+            try:
+                if run.font.color and run.font.color.type is not None:
+                    color = "#" + str(run.font.color.rgb)
+            except Exception:
+                color = None
+            return {
+                "size": run.font.size.pt if run.font.size else None,
+                "font": run.font.name,
+                "color": color,
+                "align": align if align in ("left", "center", "right", "justify") else None,
+            }
+    return None
+
+
+def _style_for_slide(slide) -> Dict[str, Any]:
+    style: Dict[str, Any] = {}
+    for ph in slide.placeholders:
+        idx = ph.placeholder_format.idx
+        run_style = _run_style(ph)
+        if not run_style:
+            continue
+        prefix = "title" if idx == 0 else "body" if idx == 1 else None
+        if prefix is None:
+            continue
+        for key, value in run_style.items():
+            if value is None:
+                continue
+            style[f"{prefix}_{key}" if key in ("size", "color") else key] = value
+    return style
+
+
+def _apply_style(slide, style: Dict[str, Any], theme: Theme) -> List[str]:
+    """Apply a saved style object to a freshly built slide. Returns applied keys."""
+    applied: List[str] = []
+    if not style:
+        return applied
+    for ph in slide.placeholders:
+        idx = ph.placeholder_format.idx
+        is_title = idx == 0
+        size = style.get("title_size" if is_title else "body_size")
+        color = style.get("title_color" if is_title else "body_color")
+        font = style.get("font")
+        align = style.get("align")
+        if not ph.has_text_frame:
+            continue
+        for para in ph.text_frame.paragraphs:
+            if align in ALIGNMENTS:
+                para.alignment = ALIGNMENTS[align]
+            for run in para.runs:
+                if size:
+                    run.font.size = Pt(int(size))
+                    applied.append(f"idx{idx}:size")
+                if color and re.fullmatch(r"#[0-9A-Fa-f]{6}", str(color)):
+                    run.font.color.rgb = hex_rgb(color)
+                    applied.append(f"idx{idx}:color")
+                if font:
+                    run.font.name = str(font)
+                    applied.append(f"idx{idx}:font")
+    return applied
+
+
 def _validate_slides(slides: List[Dict[str, Any]]) -> None:
     """Fail loudly on an unusable chart/table spec.
 
@@ -534,6 +603,7 @@ def register_deck_tools(app, template_dirs_fn) -> None:
         subtitle: str = "",
         output_name: str = "",
         image: str = "",
+        base: str = "",
     ) -> Dict[str, Any]:
         """Build a .pptx from a template and a plain outline — one call, no layout code.
 
@@ -556,10 +626,19 @@ def register_deck_tools(app, template_dirs_fn) -> None:
             output_name: optional file stem for the result
             image: optional default image placed on every content slide that has no
                    own chart/table/image (right half; bullets then use the left half)
+            base: optional .pptx whose per-slide styles (size/colour/font/align) are
+                  re-applied to matching slides when a slide spec has no own "style"
 
         Returns: {"file": <absolute path>, "slide_count": N, "visuals": [...]}
         """
         _validate_slides(slides)
+        base_styles: List[Dict[str, Any]] = []
+        if base:
+            base_path = Path(base)
+            if not base_path.is_file():
+                raise FileNotFoundError(f"base deck not found: {base}")
+            base_prs = Presentation(str(base_path))
+            base_styles = [_style_for_slide(sl) for sl in base_prs.slides]
         dirs = _template_dirs(template_dirs_fn)
         tpl = _resolve_template(template, dirs)
         prs = Presentation(str(tpl))
@@ -574,6 +653,7 @@ def register_deck_tools(app, template_dirs_fn) -> None:
         default_image = Path(image) if image and Path(image).is_file() else None
 
         visuals: List[str] = []
+        styled: List[str] = []
         made = 0
         for item in slides or []:
             if not isinstance(item, dict):
@@ -601,6 +681,10 @@ def register_deck_tools(app, template_dirs_fn) -> None:
             )
             if visual and note:
                 visuals.append(f"slide {made + 2}: {note}")
+            inherited = item.get("style") or (base_styles[made + 1] if made + 1 < len(base_styles) else None)
+            if inherited:
+                if _apply_style(slide, inherited, theme):
+                    styled.append(f"slide {made + 2}")
             made += 1
 
         stem = _slug(output_name or title, "deck")
@@ -616,6 +700,7 @@ def register_deck_tools(app, template_dirs_fn) -> None:
             "layouts_used": {"title": title_idx, "content": content_idx},
             "theme": theme.label,
             "visuals": visuals,
+            "styled_slides": styled,
             "hint": "The deck is saved. Reply with the file path and a one-line summary.",
         }
 
@@ -669,6 +754,9 @@ def _outline(path: Path) -> Dict[str, Any]:
                 entry["table"] = {"headers": rows[0], "rows": rows[1:]} if rows else {}
 
         entry["role"] = "title" if i == 1 else "content"
+        style = _style_for_slide(slide)
+        if style:
+            entry["style"] = style
         if slide.has_notes_slide and slide.notes_slide.notes_text_frame.text.strip():
             entry["notes"] = slide.notes_slide.notes_text_frame.text.strip()
         slides.append(entry)
