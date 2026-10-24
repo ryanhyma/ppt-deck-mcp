@@ -233,8 +233,9 @@ def _add_chart(slide, spec: Dict[str, Any], left, top, width, height, theme: The
             labels.show_value = True
 
     palette = theme.chart_palette()
+    custom = [c for c in (spec.get("colors") or []) if re.fullmatch(r"#[0-9A-Fa-f]{6}", str(c))]
     for i, series in enumerate(plot.series):
-        color = palette[i % len(palette)]
+        color = hex_rgb(custom[i]) if i < len(custom) else palette[i % len(palette)]
         if kind == "line":
             series.format.line.color.rgb = color
             series.format.line.width = Pt(2.5)
@@ -245,7 +246,8 @@ def _add_chart(slide, spec: Dict[str, Any], left, top, width, height, theme: The
     if is_pie or kind == "doughnut":
         for i, point in enumerate(plot.series[0].points):
             point.format.fill.solid()
-            point.format.fill.fore_color.rgb = palette[i % len(palette)]
+            point.format.fill.fore_color.rgb = (
+                hex_rgb(custom[i]) if i < len(custom) else palette[i % len(palette)])
 
     if not is_pie:
         try:
@@ -333,6 +335,7 @@ def _fill_content_slide(
     notes: str | None,
     visual: Dict[str, Any] | None,
     theme: Theme,
+    layout: str = "split",
 ) -> str | None:
     body = None
     for ph in slide.placeholders:
@@ -365,18 +368,30 @@ def _fill_content_slide(
             for extra in bullets[1:]:
                 p = tf.add_paragraph()
                 p.text = str(extra)
+            # Only shrink when the slide is genuinely dense; 6 short bullets at 17 pt look anaemic.
+            dense = len(bullets) > 5 and sum(len(b) for b in bullets) > 260
             for p in tf.paragraphs:
                 p.level = 0
                 p.alignment = PP_ALIGN.LEFT
                 p.space_after = Pt(10)
                 for r in p.runs:
-                    r.font.size = Pt(20)
+                    r.font.size = Pt(17 if dense else 20)
                     r.font.color.rgb = theme.body
                     r.font.name = theme.font
 
     if visual:
         kind = visual.get("kind")
-        if bullets and body is not None:
+        layout = (layout or "split").lower()
+        if layout == "visual-full" and body is not None:
+            body._element.getparent().remove(body._element)
+            body = None
+        if layout == "image-left" and body is not None:
+            body.left, body.width = Inches(6.55), Inches(5.4)
+            for p in body.text_frame.paragraphs:
+                for r in p.runs:
+                    r.font.size = Pt(18)
+            left, width = Inches(0.9), Inches(5.4)
+        elif bullets and body is not None:
             body.width = Inches(5.4)
             for p in body.text_frame.paragraphs:
                 for r in p.runs:
@@ -398,6 +413,8 @@ def _fill_content_slide(
 
     if notes:
         slide.notes_slide.notes_text_frame.text = notes
+    if len(bullets) > 5 and sum(len(b) for b in bullets) > 260:
+        return f"{len(bullets)} bullets (auto-shrunk to 17pt)" if not visual_note else f"{visual_note}; {len(bullets)} bullets shrunk"
     return visual_note
 
 
@@ -654,6 +671,7 @@ def register_deck_tools(app, template_dirs_fn) -> None:
 
         visuals: List[str] = []
         styled: List[str] = []
+        warnings: List[str] = []
         made = 0
         for item in slides or []:
             if not isinstance(item, dict):
@@ -670,6 +688,7 @@ def register_deck_tools(app, template_dirs_fn) -> None:
             elif default_image is not None:
                 visual = {"kind": "image", "path": default_image}
 
+            layout = str(item.get("layout") or (item.get("style") or {}).get("layout") or "split")
             note = _fill_content_slide(
                 slide,
                 made + 2,
@@ -678,9 +697,12 @@ def register_deck_tools(app, template_dirs_fn) -> None:
                 (str(item["notes"]) if item.get("notes") else None),
                 visual,
                 theme,
+                layout,
             )
             if visual and note:
                 visuals.append(f"slide {made + 2}: {note}")
+            elif note:
+                warnings.append(f"slide {made + 2}: {note}")
             inherited = item.get("style") or (base_styles[made + 1] if made + 1 < len(base_styles) else None)
             if inherited:
                 if _apply_style(slide, inherited, theme):
@@ -701,6 +723,7 @@ def register_deck_tools(app, template_dirs_fn) -> None:
             "theme": theme.label,
             "visuals": visuals,
             "styled_slides": styled,
+            "warnings": warnings,
             "hint": "The deck is saved. Reply with the file path and a one-line summary.",
         }
 
@@ -899,6 +922,104 @@ def register_style_tools(app) -> None:
             "slide_index": int(slide_index),
             "applied": sorted(set(changed)),
             "slide_count": preview["slide_count"],
+            "slides": preview["slides"],
+            "download": preview.get("download"),
+        }
+
+
+# ---------------------------------------------------------------- per-run emphasis
+
+
+def register_text_tools(app) -> None:
+    @app.tool()
+    def style_text(
+        file: str,
+        slide_index: int,
+        phrase: str,
+        placeholder: str = "any",
+        bold: bool | None = None,
+        italic: bool | None = None,
+        underline: bool | None = None,
+        color: str | None = None,
+        size: int | None = None,
+    ) -> Dict[str, Any]:
+        """Emphasise a specific phrase on one slide — bold/italic/underline/colour/size on the runs
+        containing it. This is the per-run counterpart to style_slide (which formats a whole
+        placeholder).
+
+        Args:
+            file: absolute path of the .pptx
+            slide_index: 1-based slide number
+            phrase: text to match, case-insensitive substring (e.g. "retention"). Keep it short.
+            placeholder: "any" (default), "title" or "body"
+            bold / italic / underline: emphasis to set on the matched runs
+            color: hex like "#C4703C"
+            size: points 8..72
+
+        Returns: {"runs_changed": n, "matches": [str, ...]} — an empty match list means the phrase
+        spans several runs; use a shorter phrase.
+        """
+        path = Path(file)
+        if not path.is_file():
+            raise FileNotFoundError(f"deck not found: {file}")
+        if not phrase or not phrase.strip():
+            raise ValueError("phrase must not be empty")
+        if color is not None and not re.fullmatch(r"#[0-9A-Fa-f]{6}", color):
+            raise ValueError("color must be a hex colour like #1F3864")
+        if size is not None and not 8 <= int(size) <= 72:
+            raise ValueError("size must be 8..72 points")
+        if all(v is None for v in (bold, italic, underline, color, size)):
+            raise ValueError("pass at least one of bold, italic, underline, color, size")
+
+        prs = Presentation(str(path))
+        total = len(prs.slides)
+        if not 1 <= int(slide_index) <= total:
+            raise ValueError(f"slide_index must be 1..{total}")
+        slide = prs.slides[int(slide_index) - 1]
+
+        needle = phrase.strip().lower()
+        wanted = {"title": 0, "body": 1}.get(placeholder.lower())
+        changed, matches = 0, []
+
+        for ph in slide.placeholders:
+            idx = ph.placeholder_format.idx
+            if wanted is not None and idx != wanted:
+                continue
+            if idx not in (0, 1) or not ph.has_text_frame:
+                continue
+            for para in ph.text_frame.paragraphs:
+                for run in para.runs:
+                    if needle not in run.text.lower():
+                        continue
+                    if bold is not None:
+                        run.font.bold = bool(bold)
+                    if italic is not None:
+                        run.font.italic = bool(italic)
+                    if underline is not None:
+                        run.font.underline = bool(underline)
+                    if color is not None:
+                        run.font.color.rgb = hex_rgb(color)
+                    if size is not None:
+                        run.font.size = Pt(int(size))
+                    changed += 1
+                    matches.append(run.text[:60])
+
+        if changed == 0:
+            raise ValueError(
+                f"'{phrase}' not found as a single run on slide {slide_index}. "
+                "Use a shorter phrase, or style the whole placeholder with style_slide."
+            )
+        prs.save(path)
+
+        from deck_preview import build_preview
+
+        preview = build_preview(path)
+        return {
+            "file": str(path),
+            "slide_index": int(slide_index),
+            "phrase": phrase,
+            "runs_changed": changed,
+            "matches": matches,
             "slides": preview["slides"],
             "download": preview.get("download"),
         }

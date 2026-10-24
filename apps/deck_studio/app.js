@@ -64,6 +64,42 @@ const on = (id, event, fn) => {
   else console.warn("missing control", id);
 };
 
+on("st-clear", "click", () => {
+  for (const id of ["st-phrase", "st-color"]) { const el = si(id); if (el) el.value = ""; }
+  const st = si("st-style"); if (st) st.value = "";
+});
+
+on("st-apply", "click", async () => {
+  if (!styleTarget) return;
+  const phrase = (si("st-phrase")?.value || "").trim();
+  if (!phrase) { statusEl.textContent = "Type the phrase to emphasise first."; return; }
+  const args = { file: currentFile, slide_index: styleTarget.index, phrase };
+  const colour = (si("st-color")?.value || "").trim();
+  const emphasis = si("st-style")?.value || "";
+  if (colour) args.color = colour;
+  if (emphasis) args[emphasis] = true;
+  if (!args.color && !emphasis) { statusEl.textContent = "Pick a colour or an emphasis."; return; }
+  try {
+    const res = await app.callServerTool({ name: "style_text", arguments: args });
+    const raw = res?.structuredContent ?? null;
+    let data = unwrap(raw);
+    if (!data) {
+      const text = (res?.content || []).find((c) => c.type === "text")?.text || "";
+      try { data = unwrap(JSON.parse(text)); } catch { data = null; statusEl.textContent = text.slice(0, 160); }
+    }
+    if (data?.slides) {
+      const bust = Date.now();
+      for (const slide of data.slides) {
+        const img = document.querySelector(`img[data-slide="${slide.index}"]`);
+        if (img) img.src = `${slide.url}?v=${bust}`;
+      }
+      statusEl.textContent = `Styled "${data.phrase}" on slide ${data.slide_index} (${data.runs_changed} run${data.runs_changed > 1 ? "s" : ""}).`;
+    }
+  } catch (err) {
+    statusEl.textContent = "Phrase styling failed: " + String(err).slice(0, 90);
+  }
+});
+
 on("si-cancel", "click", () => {
   stylePanel.classList.remove("open");
   styleTarget = null;

@@ -92,6 +92,15 @@
     <div><label for="si-bcolor">Body colour</label><input id="si-bcolor" placeholder="#333333" /></div>
     <div><label for="si-align">Align</label><select id="si-align"><option value="">—</option>
       <option>left</option><option>center</option><option>right</option></select></div>
+    <div><label for="st-phrase">Phrase (bold just this)</label><input id="st-phrase" placeholder="e.g. retention" /></div>
+    <div><label for="st-color">Phrase colour</label><input id="st-color" placeholder="#C4703C" /></div>
+    <div><label for="st-style">Emphasis</label><select id="st-style"><option value="">—</option>
+      <option value="bold">bold</option><option value="italic">italic</option><option value="underline">underline</option></select></div>
+    <div class="actions">
+      <button id="st-apply">Apply to phrase</button>
+      <button class="ghost" id="st-clear">Clear phrase</button>
+      <span style="font-size:11px;color:var(--muted);align-self:center">phrase targets one run; keep it short</span>
+    </div>
     <div class="actions">
       <button id="si-apply">Apply to slide</button>
       <button class="ghost" id="si-cancel">Cancel</button>
