@@ -32,6 +32,20 @@
               display: none; align-items: center; justify-content: center; padding: 18px; z-index: 9; }
   #lightbox.open { display: flex; }
   #lightbox img { max-width: 100%; max-height: 100%; border-radius: 8px; background: #fff; }
+  .edit { position: absolute; top: 8px; right: 8px; font-size: 11px; padding: 3px 8px;
+          border-radius: 6px; border: 1px solid var(--line); background: var(--card);
+          color: var(--muted); cursor: pointer; opacity: 0; transition: opacity .12s; }
+  figure { position: relative; }
+  figure:hover .edit { opacity: 1; }
+  .editor { margin-top: 10px; display: none; gap: 8px; }
+  .editor.open { display: flex; }
+  .editor input { flex: 1; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
+                  background: var(--card); color: var(--ink); font: inherit; }
+  .editor button { padding: 8px 12px; border-radius: 8px; border: 0; cursor: pointer;
+                   background: var(--teal); color: #fff; font: inherit; font-weight: 600; }
+  .editor button.ghost { background: transparent; color: var(--muted);
+                         border: 1px solid var(--line); font-weight: 400; }
+  #status { font-size: 11px; color: var(--teal); margin-top: 8px; min-height: 14px; }
   footer { margin-top: 14px; font-size: 11px; color: var(--muted); word-break: break-all; }
   footer code { color: var(--teal); }
 </style>
@@ -42,6 +56,12 @@
     <span class="badge" id="count">waiting for a tool result</span>
   </header>
   <div id="stage"><div class="empty">Build a deck (or call <code>preview_deck</code>) and its slides appear here.</div></div>
+  <div class="editor" id="editor">
+    <input id="edit-input" placeholder="What should change on this slide?" />
+    <button id="edit-send">Ask agent</button>
+    <button class="ghost" id="edit-cancel">Cancel</button>
+  </div>
+  <div id="status"></div>
   <footer id="foot"></footer>
   <div id="lightbox"><img alt="slide" /></div>
 

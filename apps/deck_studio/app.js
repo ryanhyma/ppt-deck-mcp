@@ -10,6 +10,11 @@ const countEl = document.getElementById("count");
 const stage = document.getElementById("stage");
 const foot = document.getElementById("foot");
 const lightbox = document.getElementById("lightbox");
+const editor = document.getElementById("editor");
+const editorInput = document.getElementById("edit-input");
+const statusEl = document.getElementById("status");
+let editTarget = null;
+let currentFile = "";
 const lightboxImg = lightbox.querySelector("img");
 
 lightbox.addEventListener("click", () => lightbox.classList.remove("open"));
@@ -28,6 +33,37 @@ function payload(params) {
   if (!text) return null;
   try { return unwrap(JSON.parse(text)); } catch { return null; }
 }
+
+function openEditor(slide, file) {
+  editTarget = slide;
+  currentFile = file;
+  editor.classList.add("open");
+  editorInput.value = "";
+  editorInput.placeholder = `What should change on slide ${slide.index}?`;
+  editorInput.focus();
+}
+
+document.getElementById("edit-cancel").addEventListener("click", () => {
+  editor.classList.remove("open");
+  editTarget = null;
+});
+
+document.getElementById("edit-send").addEventListener("click", async () => {
+  const text = editorInput.value.trim();
+  if (!text || !editTarget) return;
+  const message =
+    `Edit ${currentFile}: slide ${editTarget.index} — ${text}. ` +
+    "Keep every other slide exactly as it is.";
+  try {
+    await app.sendMessage({ role: "user", content: [{ type: "text", text: message }] });
+    statusEl.textContent = "Sent to the agent — watch the chat for the updated deck.";
+    editor.classList.remove("open");
+    editTarget = null;
+  } catch (err) {
+    statusEl.textContent = "The host did not accept the message.";
+    console.error(err);
+  }
+});
 
 function render(data) {
   if (!data || !Array.isArray(data.slides) || data.slides.length === 0) return;
@@ -50,10 +86,21 @@ function render(data) {
     });
     const cap = document.createElement("figcaption");
     cap.textContent = slide.label ? `${slide.index}. ${slide.label}` : `Slide ${slide.index}`;
-    fig.append(img, cap);
+
+    const editBtn = document.createElement("button");
+    editBtn.className = "edit";
+    editBtn.type = "button";
+    editBtn.textContent = "Ask agent to edit";
+    editBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openEditor(slide, data.file);
+    });
+
+    fig.append(img, editBtn, cap);
     grid.append(fig);
   }
   stage.append(grid);
+  currentFile = data.file || currentFile;
   foot.innerHTML = data.file ? `Saved to <code>${data.file}</code>` : "";
 }
 
