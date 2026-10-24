@@ -238,12 +238,15 @@ def _resolve_input(name: str) -> Path:
             cand = Path(UPLOAD_DIR) / raw[len(prefix):]
             if cand.is_file():
                 return cand
+    if Path(raw).is_absolute():
+        raise FileNotFoundError(f"no file at '{raw}' — check the path, or pass just the filename")
     base = Path(UPLOAD_DIR)
     if base.is_dir():
-        exact = sorted(base.rglob(raw), key=lambda p: p.stat().st_mtime, reverse=True)
+        name = Path(raw).name
+        exact = sorted(base.rglob(name), key=lambda p: p.stat().st_mtime, reverse=True)
         if exact:
             return exact[0]
-        loose = sorted(base.rglob(f"*{raw}*"), key=lambda p: p.stat().st_mtime, reverse=True)
+        loose = sorted(base.rglob(f"*{name}*"), key=lambda p: p.stat().st_mtime, reverse=True)
         if loose:
             return loose[0]
     raise FileNotFoundError(

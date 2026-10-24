@@ -810,6 +810,12 @@ def register_style_tools(app) -> None:
         body_color: str | None = None,
         font: str | None = None,
         align: str | None = None,
+        title_bold: bool | None = None,
+        body_bold: bool | None = None,
+        title_italic: bool | None = None,
+        body_italic: bool | None = None,
+        bold: bool | None = None,
+        italic: bool | None = None,
     ) -> Dict[str, Any]:
         """Restyle ONE slide of an existing deck, in place. No rebuild, no content change.
 
@@ -824,6 +830,8 @@ def register_style_tools(app) -> None:
             font: one of Calibri, Georgia, Arial, Times New Roman, Verdana, Trebuchet MS,
                   Liberation Sans/Serif, Carlito
             align: left | center | right | justify
+            title_bold / body_bold / title_italic / body_italic: per-placeholder emphasis.
+                (bold/italic are kept as aliases that apply to both; prefer the explicit ones.)
         """
         path = Path(file)
         if not path.is_file():
@@ -852,12 +860,22 @@ def register_style_tools(app) -> None:
             is_title = idx == 0
             size = title_size if is_title else body_size
             color = title_color if is_title else body_color
+            want_bold = (title_bold if is_title else body_bold)
+            want_bold = want_bold if want_bold is not None else bold
+            want_italic = (title_italic if is_title else body_italic)
+            want_italic = want_italic if want_italic is not None else italic
             if not ph.has_text_frame:
                 continue
             for para in ph.text_frame.paragraphs:
                 if align is not None:
                     para.alignment = ALIGNMENTS[align.lower()]
                 for run in para.runs:
+                    if want_bold is not None:
+                        run.font.bold = bool(want_bold)
+                        changed.append(f"idx{idx}:bold={bool(want_bold)}")
+                    if want_italic is not None:
+                        run.font.italic = bool(want_italic)
+                        changed.append(f"idx{idx}:italic={bool(want_italic)}")
                     if size is not None:
                         run.font.size = Pt(int(size))
                         changed.append(f"idx{idx}:size={size}")
@@ -870,7 +888,7 @@ def register_style_tools(app) -> None:
 
         if not changed:
             raise ValueError("nothing to change: pass at least one of title_size, body_size, "
-                             "title_color, body_color, font, align")
+                             "title_color, body_color, font, align, bold, italic")
         prs.save(path)
 
         from deck_preview import build_preview
