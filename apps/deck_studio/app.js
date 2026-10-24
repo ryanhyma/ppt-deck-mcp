@@ -14,6 +14,9 @@ stage.before(styleRow);
 const foot = document.getElementById("foot");
 const lightbox = document.getElementById("lightbox");
 const editor = document.getElementById("editor");
+const stylePanel = document.getElementById("stylepanel");
+const si = (id) => document.getElementById(id);
+let styleTarget = null;
 const editorInput = document.getElementById("edit-input");
 const statusEl = document.getElementById("status");
 let editTarget = null;
@@ -46,12 +49,82 @@ function openEditor(slide, file) {
   editorInput.focus();
 }
 
-document.getElementById("edit-cancel").addEventListener("click", () => {
+function openStyle(slide, file) {
+  styleTarget = slide;
+  currentFile = file;
+  stylePanel.classList.add("open");
+  si("si-target").textContent = `slide ${slide.index} — ${slide.label || ""}`;
+  for (const id of ["si-title", "si-body", "si-tcolor", "si-bcolor", "si-font", "si-align"]) si(id).value = "";
+  si("si-title").focus();
+}
+
+const on = (id, event, fn) => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener(event, fn);
+  else console.warn("missing control", id);
+};
+
+on("si-cancel", "click", () => {
+  stylePanel.classList.remove("open");
+  styleTarget = null;
+});
+
+on("si-apply", "click", async () => {
+  if (!styleTarget) return;
+  const args = { file: currentFile, slide_index: styleTarget.index };
+  const title = si("si-title").value.trim();
+  const body = si("si-body").value.trim();
+  const font = si("si-font").value;
+  const tcolor = si("si-tcolor").value.trim();
+  const bcolor = si("si-bcolor").value.trim();
+  const align = si("si-align").value;
+  if (title) args.title_size = Number(title);
+  if (body) args.body_size = Number(body);
+  if (font) args.font = font;
+  if (tcolor) args.title_color = tcolor;
+  if (bcolor) args.body_color = bcolor;
+  if (align) args.align = align;
+  if (Object.keys(args).length <= 2) {
+    statusEl.textContent = "Pick at least one style change.";
+    return;
+  }
+  try {
+    const res = await app.callServerTool({ name: "style_slide", arguments: args });
+    const raw = res?.structuredContent ?? null;
+    let data = unwrap(raw);
+    if (!data) {
+      const text = (res?.content || []).find((c) => c.type === "text")?.text || "";
+      try {
+        data = text ? unwrap(JSON.parse(text)) : null;
+      } catch {
+        data = null;
+        statusEl.textContent = text.slice(0, 160) || "Tool error";
+      }
+    }
+    if (data?.slides) {
+      const bust = Date.now();
+      for (const slide of data.slides) {
+        const img = document.querySelector(`img[data-slide="${slide.index}"]`);
+        if (img) img.src = `${slide.url}?v=${bust}`;
+      }
+      statusEl.textContent = `Slide ${data.slide_index} restyled (${(data.applied || []).join(", ")}).`;
+      stylePanel.classList.remove("open");
+      styleTarget = null;
+    } else {
+      statusEl.textContent = "The tool returned no slide data.";
+    }
+  } catch (err) {
+    statusEl.textContent = "Style change failed: " + String(err).slice(0, 90);
+    console.error(err);
+  }
+});
+
+on("edit-cancel", "click", () => {
   editor.classList.remove("open");
   editTarget = null;
 });
 
-document.getElementById("edit-send").addEventListener("click", async () => {
+on("edit-send", "click", async () => {
   const text = editorInput.value.trim();
   if (!text) return;
   const message = editTarget
@@ -128,6 +201,17 @@ function render(data) {
     const cap = document.createElement("figcaption");
     cap.textContent = slide.label ? `${slide.index}. ${slide.label}` : `Slide ${slide.index}`;
 
+    img.dataset.slide = String(slide.index);
+
+    const styleBtn = document.createElement("button");
+    styleBtn.className = "stylebtn";
+    styleBtn.type = "button";
+    styleBtn.textContent = "Style";
+    styleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openStyle(slide, data.file);
+    });
+
     const editBtn = document.createElement("button");
     editBtn.className = "edit";
     editBtn.type = "button";
@@ -137,7 +221,7 @@ function render(data) {
       openEditor(slide, data.file);
     });
 
-    fig.append(img, editBtn, cap);
+    fig.append(img, styleBtn, editBtn, cap);
     grid.append(fig);
   }
   stage.append(grid);

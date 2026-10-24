@@ -28,10 +28,11 @@ from starlette.responses import FileResponse, PlainTextResponse  # noqa: E402
 from starlette.routing import Mount, Route  # noqa: E402
 
 from deck_preview import APP_URI, preview_root, public_base, register_preview_tools  # noqa: E402
-from deck_tools import register_deck_tools, register_readback_tools  # noqa: E402
+from deck_tools import register_deck_tools, register_readback_tools, register_style_tools  # noqa: E402
 
 register_deck_tools(app, get_template_search_directories)
 register_readback_tools(app, None)
+register_style_tools(app)
 register_preview_tools(app, get_template_search_directories)
 
 APP_DIR = HERE / "apps" / "deck_studio"

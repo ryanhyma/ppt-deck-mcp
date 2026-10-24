@@ -24,7 +24,7 @@ from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
 from pptx.enum.text import MSO_ANCHOR, MSO_AUTO_SIZE, PP_ALIGN
 from pptx.util import Inches, Pt
 
-from deck_style import Theme, decorate, page_number, title_rule
+from deck_style import Theme, decorate, hex_rgb, page_number, title_rule
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
@@ -700,3 +700,99 @@ def register_readback_tools(app, output_dir_getter) -> None:
         if not path.is_file():
             raise FileNotFoundError(f"deck not found: {file}")
         return _outline(path)
+
+
+# ---------------------------------------------------------------- per-slide styling
+
+
+SAFE_FONTS = {"Calibri", "Georgia", "Arial", "Times New Roman", "Verdana", "Trebuchet MS",
+              "Liberation Sans", "Liberation Serif", "Carlito"}
+ALIGNMENTS = {"left": PP_ALIGN.LEFT, "center": PP_ALIGN.CENTER,
+              "right": PP_ALIGN.RIGHT, "justify": PP_ALIGN.JUSTIFY}
+
+
+def register_style_tools(app) -> None:
+    @app.tool()
+    def style_slide(
+        file: str,
+        slide_index: int,
+        title_size: int | None = None,
+        body_size: int | None = None,
+        title_color: str | None = None,
+        body_color: str | None = None,
+        font: str | None = None,
+        align: str | None = None,
+    ) -> Dict[str, Any]:
+        """Restyle ONE slide of an existing deck, in place. No rebuild, no content change.
+
+        Parameterised on purpose: the Deck Studio pane calls this directly for a selected
+        slide, so styling never depends on a model interpreting words like "bigger".
+
+        Args:
+            file: absolute path of the .pptx (from build_deck / list_decks)
+            slide_index: 1-based slide number
+            title_size / body_size: points, 8..72
+            title_color / body_color: hex like "#1F3864"
+            font: one of Calibri, Georgia, Arial, Times New Roman, Verdana, Trebuchet MS,
+                  Liberation Sans/Serif, Carlito
+            align: left | center | right | justify
+        """
+        path = Path(file)
+        if not path.is_file():
+            raise FileNotFoundError(f"deck not found: {file}")
+
+        for name, value in (("title_size", title_size), ("body_size", body_size)):
+            if value is not None and not 8 <= int(value) <= 72:
+                raise ValueError(f"{name} must be 8..72 points")
+        for name, value in (("title_color", title_color), ("body_color", body_color)):
+            if value is not None and not re.fullmatch(r"#[0-9A-Fa-f]{6}", value):
+                raise ValueError(f"{name} must be a hex colour like #1F3864")
+        if font is not None and font not in SAFE_FONTS:
+            raise ValueError(f"font must be one of: {', '.join(sorted(SAFE_FONTS))}")
+        if align is not None and align.lower() not in ALIGNMENTS:
+            raise ValueError("align must be left, center, right or justify")
+
+        prs = Presentation(str(path))
+        total = len(prs.slides)
+        if not 1 <= int(slide_index) <= total:
+            raise ValueError(f"slide_index must be 1..{total}")
+        slide = prs.slides[int(slide_index) - 1]
+
+        changed: List[str] = []
+        for ph in slide.placeholders:
+            idx = ph.placeholder_format.idx
+            is_title = idx == 0
+            size = title_size if is_title else body_size
+            color = title_color if is_title else body_color
+            if not ph.has_text_frame:
+                continue
+            for para in ph.text_frame.paragraphs:
+                if align is not None:
+                    para.alignment = ALIGNMENTS[align.lower()]
+                for run in para.runs:
+                    if size is not None:
+                        run.font.size = Pt(int(size))
+                        changed.append(f"idx{idx}:size={size}")
+                    if color is not None:
+                        run.font.color.rgb = hex_rgb(color)
+                        changed.append(f"idx{idx}:color={color}")
+                    if font is not None:
+                        run.font.name = font
+                        changed.append(f"idx{idx}:font={font}")
+
+        if not changed:
+            raise ValueError("nothing to change: pass at least one of title_size, body_size, "
+                             "title_color, body_color, font, align")
+        prs.save(path)
+
+        from deck_preview import build_preview
+
+        preview = build_preview(path)
+        return {
+            "file": str(path),
+            "slide_index": int(slide_index),
+            "applied": sorted(set(changed)),
+            "slide_count": preview["slide_count"],
+            "slides": preview["slides"],
+            "download": preview.get("download"),
+        }

@@ -54,6 +54,21 @@
   .style-card img { display: block; width: 100%; height: 94px; object-fit: cover; }
   .style-card span { display: block; font-size: 11px; padding: 5px 7px; color: var(--muted); }
   .style-card:hover { border-color: var(--teal); }
+  .stylebtn { position: absolute; top: 8px; left: 8px; font-size: 11px; padding: 3px 8px;
+              border-radius: 6px; border: 1px solid var(--line); background: var(--card);
+              color: var(--muted); cursor: pointer; opacity: 0; transition: opacity .12s; }
+  figure:hover .stylebtn { opacity: 1; }
+  .stylepanel { margin-top: 10px; display: none; grid-template-columns: repeat(3, minmax(0,1fr));
+                gap: 8px; align-items: end; padding: 10px; border: 1px solid var(--line);
+                border-radius: 10px; background: var(--card); }
+  .stylepanel.open { display: grid; }
+  .stylepanel label { font-size: 10px; color: var(--muted); display: block; margin-bottom: 3px; }
+  .stylepanel input, .stylepanel select { width: 100%; padding: 5px 7px; border-radius: 6px;
+                border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; font-size: 12px; }
+  .stylepanel .actions { grid-column: 1 / -1; display: flex; gap: 8px; }
+  .stylepanel button { padding: 6px 12px; border-radius: 7px; border: 0; cursor: pointer;
+                background: var(--teal); color: #fff; font: inherit; font-size: 12px; font-weight: 600; }
+  .stylepanel button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); font-weight: 400; }
   .download { margin-left: 6px; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--line);
               background: var(--card); color: var(--teal); font: inherit; font-size: 11px; cursor: pointer; }
   #status { font-size: 11px; color: var(--teal); margin-top: 8px; min-height: 14px; }
@@ -67,6 +82,22 @@
     <span class="badge" id="count">waiting for a tool result</span>
   </header>
   <div id="stage"><div class="empty">Build a deck (or call <code>preview_deck</code>) and its slides appear here.</div></div>
+  <div class="stylepanel" id="stylepanel">
+    <div><label for="si-title">Title pt</label><input id="si-title" type="number" min="8" max="72" placeholder="auto" /></div>
+    <div><label for="si-body">Body pt</label><input id="si-body" type="number" min="8" max="72" placeholder="auto" /></div>
+    <div><label for="si-font">Font</label><select id="si-font"><option value="">—</option>
+      <option>Calibri</option><option>Georgia</option><option>Arial</option><option>Verdana</option>
+      <option>Trebuchet MS</option><option>Times New Roman</option></select></div>
+    <div><label for="si-tcolor">Title colour</label><input id="si-tcolor" placeholder="#1F3864" /></div>
+    <div><label for="si-bcolor">Body colour</label><input id="si-bcolor" placeholder="#333333" /></div>
+    <div><label for="si-align">Align</label><select id="si-align"><option value="">—</option>
+      <option>left</option><option>center</option><option>right</option></select></div>
+    <div class="actions">
+      <button id="si-apply">Apply to slide</button>
+      <button class="ghost" id="si-cancel">Cancel</button>
+      <span id="si-target" style="font-size:11px;color:var(--muted);align-self:center"></span>
+    </div>
+  </div>
   <div class="editor" id="editor">
     <input id="edit-input" placeholder="What should change on this slide?" />
     <button id="edit-send">Ask agent</button>
