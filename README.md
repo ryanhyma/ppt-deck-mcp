@@ -124,5 +124,8 @@ docs/                windows setup, renderers, decisions, suite report
 
 ## Licence / provenance
 
-Our code: see `LICENSE` if present, otherwise treat as the repo owner's. `upstream/` is MIT
-(GongRzhe/Office-PowerPoint-MCP-Server v2.0.7); upstream demo media was removed to keep the repo small.
+**No top-level licence file yet** — the repo is public but all-rights-reserved until one is added
+(MIT or Apache-2.0 would fit the rest of the stack; proprietary is also fine, just say so).
+
+`upstream/` is MIT (GongRzhe/Office-PowerPoint-MCP-Server v2.0.7) and keeps its own `LICENSE`;
+upstream demo media (67 MB of gif/mp4) was removed to keep the repo small.
