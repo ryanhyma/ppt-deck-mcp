@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -659,9 +660,29 @@ class DeckStudioAppAccessibility(unittest.TestCase):
 
     def test_every_slide_image_gets_a_text_alternative(self):
         self.assertIn('img.alt =', self.js)
-        self.assertIn('View slide', self.js)
+        self.assertIn('viewSlide', self.js)
         # Decorative thumbnails must stay out of the accessibility tree.
         self.assertIn('img.alt = ""', self.js)
+
+    def test_both_languages_define_every_ui_string(self):
+        """A missing fr-CA string would silently fall back to English in a French UI."""
+        keys = set(re.findall(r'data-i18n(?:-aria|-placeholder)?="([^"]+)"', self.html))
+        keys |= set(re.findall(r'\bt\("([A-Za-z][A-Za-z0-9_]*)', self.js))
+        self.assertGreater(len(keys), 20, "expected the UI strings to be externalised")
+        missing = sorted(k for k in keys if self.js.count(f'{k}: "') < 2)
+        self.assertEqual(missing, [], f"missing en/fr entries: {missing}")
+
+    def test_language_switch_carries_its_own_lang_and_state(self):
+        self.assertIn('id="lang-fr"', self.html)
+        self.assertIn('id="lang-en"', self.html)
+        self.assertIn('aria-pressed', self.html)
+        # <html lang> must follow the switch, or screen readers keep the English voice.
+        self.assertIn("document.documentElement.lang", self.js)
+        self.assertIn('fr-CA', self.js)
+
+    def test_french_strings_are_canadian(self):
+        for phrase in ('Fermer', 'Diapositive', 'Télécharger', 'Annuler'):
+            self.assertIn(phrase, self.js, f"missing French wording: {phrase}")
 
     def test_no_teal_button_below_contrast_minimum(self):
         # #2a9d8f on white is 3.3:1 and fails AA for body text; the UI uses #17766a (5.5:1).

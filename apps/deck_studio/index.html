@@ -11,7 +11,8 @@
      - text contrast >= 4.5:1, focus ring >= 3:1 against both backgrounds
      - targets >= 24x24 CSS px (2.5.8), primary controls 36px+
      - slide viewer is a native <dialog> (modality + focus trap + Esc from the UA)
-     - reduced motion honoured; status changes announced politely */
+     - reduced motion honoured; status changes announced politely
+     - English and French (fr-CA) strings; the active language is on <html lang> */
   :root {
     --ink: #1f2937; --muted: #5b6270; --line: #d8dde5;
     --card: #ffffff; --bg: #f8fafc;
@@ -33,7 +34,7 @@
          font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Calibri, sans-serif; }
 
   /* Focus ring that survives on light, dark, and over slide images. */
-  :where(a, button, input, select, [tabindex]):focus-visible {
+  :where(a, button, input, select, summary, [tabindex]):focus-visible {
     outline: 3px solid var(--focus);
     outline-offset: 2px;
     border-radius: 6px;
@@ -41,13 +42,27 @@
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
              overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
-  header { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin-bottom: 5px; }
+  .top { display: flex; align-items: flex-start; justify-content: space-between;
+         gap: 12px; flex-wrap: wrap; }
+  .titles { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; min-width: 0; }
   h1 { font-size: 18px; margin: 0; letter-spacing: -0.01em; }
   .badge { font-size: 12px; color: var(--muted); border: 1px solid var(--line);
-           border-radius: 999px; padding: 2px 10px; margin: 0; }
-  .lede { margin: 0 0 14px; font-size: 12px; color: var(--muted); }
+           border-radius: 999px; padding: 2px 10px; margin: 0; white-space: nowrap; }
+  .lede { margin: 2px 0 12px; font-size: 12px; color: var(--muted); max-width: 60ch; }
 
+  /* Language switch: two labelled buttons, so the current choice is announced
+     (aria-pressed) and each label is read in its own language. */
+  .lang { display: flex; gap: 0; border: 1px solid var(--line); border-radius: 8px;
+          overflow: hidden; background: var(--card); }
+  .lang button { font: inherit; font-size: 12px; min-height: 32px; padding: 4px 10px;
+                 border: 0; background: transparent; color: var(--ink); cursor: pointer; }
+  .lang button + button { border-inline-start: 1px solid var(--line); }
+  .lang button[aria-pressed="true"] { background: var(--btn-bg); color: var(--btn-ink);
+                                      font-weight: 600; }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
   .empty { color: var(--muted); padding: 28px 6px; text-align: center; }
+  .empty strong { display: block; color: var(--ink); margin-bottom: 4px; font-size: 13px; }
 
   /* Auto-fit means a wider chat column shows more slides per row instead of
      bigger thumbnails — the pane stays usable from 320px to full width. */
@@ -95,9 +110,14 @@
                          align-items: center; }
   .hint { font-size: 12px; color: var(--muted); }
 
-  .styles { margin-bottom: 18px; }
-  .styles-head { font-size: 12px; color: var(--muted); margin: 0 0 8px; }
-  .styles-row { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 8px; }
+  /* Styles gallery collapses so the slides stay first; <details> is keyboard
+     operable for free and announces expanded/collapsed. */
+  details.styles { margin-bottom: 16px; border: 1px solid var(--line); border-radius: var(--radius);
+                   background: var(--card); padding: 8px 10px; }
+  details.styles > summary { font-size: 12px; color: var(--ink); cursor: pointer;
+                             padding: 4px 2px; }
+  details.styles > summary::marker { color: var(--accent); }
+  .styles-row { display: flex; gap: 10px; overflow-x: auto; padding: 8px 2px 4px; }
   .style-card { flex: 0 0 176px; padding: 0; border: 1px solid var(--line); border-radius: var(--radius);
                 background: var(--card); cursor: pointer; overflow: hidden; text-align: left;
                 color: var(--ink); font: inherit; min-height: 44px; }
@@ -109,7 +129,6 @@
   .status { font-size: 12px; color: var(--accent); margin: 10px 0 0; min-height: 16px; }
   footer { margin-top: 14px; font-size: 12px; color: var(--muted); word-break: break-all; }
   footer code { color: var(--accent); }
-  .download { margin-inline-start: 6px; }
 
   /* ---- Slide viewer -------------------------------------------------- */
   /* The dialog lives inside a fixed-height MCP App iframe, so it must fit the
@@ -150,54 +169,65 @@
 </style>
 </head>
 <body>
-  <header>
-    <h1 id="title">Deck Studio</h1>
-    <p class="badge" id="count">waiting for a tool result</p>
-  </header>
-  <p class="lede">Slides below are live images of the latest deck. Open one to view it larger.</p>
+  <div class="top">
+    <div class="titles">
+      <h1 id="title">Deck Studio</h1>
+      <p class="badge" id="count">waiting for a tool result</p>
+    </div>
+    <div class="lang" role="group" aria-label="Language / Langue">
+      <button type="button" id="lang-en" lang="en" aria-pressed="true">English</button>
+      <button type="button" id="lang-fr" lang="fr" aria-pressed="false">Français</button>
+    </div>
+  </div>
+  <p class="lede" id="lede" data-i18n="lede">Slides below are live images of the latest deck. Open one to view it larger.</p>
 
-  <section class="styles" id="styles" aria-labelledby="styles-head" hidden>
-    <p class="styles-head" id="styles-head">Styles — pick one, then say what the deck is about</p>
+  <div class="toolbar" id="toolbar"></div>
+
+  <details class="styles" id="styles" open>
+    <summary data-i18n="stylesHead">Styles — pick one, then say what the deck is about</summary>
     <div class="styles-row" id="styles-row"></div>
-  </section>
+  </details>
 
   <main id="stage">
-    <p class="empty">Build a deck (or call <code>preview_deck</code>) and its slides appear here.</p>
+    <p class="empty">
+      <strong data-i18n="emptyTitle">No deck yet</strong>
+      <span data-i18n="emptyBody">Build a deck (or call preview_deck) and its slides appear here.</span>
+    </p>
   </main>
 
   <section class="stylepanel" id="stylepanel" aria-labelledby="stylepanel-head">
-    <h2 class="sr-only" id="stylepanel-head">Slide formatting</h2>
-    <div><label for="si-title">Title size (pt)</label><input id="si-title" type="number" min="8" max="72" placeholder="auto" inputmode="numeric" /></div>
-    <div><label for="si-body">Body size (pt)</label><input id="si-body" type="number" min="8" max="72" placeholder="auto" inputmode="numeric" /></div>
-    <div><label for="si-font">Font</label><select id="si-font"><option value="">—</option>
+    <h2 class="sr-only" id="stylepanel-head" data-i18n="stylepanelHead">Slide formatting</h2>
+    <div><label for="si-title" data-i18n="siTitle">Title size (pt)</label><input id="si-title" type="number" min="8" max="72" placeholder="auto" inputmode="numeric" /></div>
+    <div><label for="si-body" data-i18n="siBody">Body size (pt)</label><input id="si-body" type="number" min="8" max="72" placeholder="auto" inputmode="numeric" /></div>
+    <div><label for="si-font" data-i18n="siFont">Font</label><select id="si-font"><option value="">—</option>
       <option>Calibri</option><option>Georgia</option><option>Arial</option><option>Verdana</option>
       <option>Trebuchet MS</option><option>Times New Roman</option></select></div>
-    <div><label for="si-tcolor">Title colour</label><input id="si-tcolor" placeholder="#1F3864" /></div>
-    <div><label for="si-bcolor">Body colour</label><input id="si-bcolor" placeholder="#333333" /></div>
-    <div><label for="si-align">Alignment</label><select id="si-align"><option value="">—</option>
-      <option>left</option><option>center</option><option>right</option></select></div>
-    <div><label for="st-phrase">Emphasise a phrase</label><input id="st-phrase" placeholder="e.g. retention" /></div>
-    <div><label for="st-color">Phrase colour</label><input id="st-color" placeholder="#C4703C" /></div>
-    <div><label for="st-style">Emphasis</label><select id="st-style"><option value="">—</option>
-      <option value="bold">bold</option><option value="italic">italic</option><option value="underline">underline</option></select></div>
+    <div><label for="si-tcolor" data-i18n="siTColor">Title colour</label><input id="si-tcolor" placeholder="#1F3864" /></div>
+    <div><label for="si-bcolor" data-i18n="siBColor">Body colour</label><input id="si-bcolor" placeholder="#333333" /></div>
+    <div><label for="si-align" data-i18n="siAlign">Alignment</label><select id="si-align"><option value="">—</option>
+      <option value="left" data-i18n="alignLeft">left</option><option value="center" data-i18n="alignCenter">center</option><option value="right" data-i18n="alignRight">right</option></select></div>
+    <div><label for="st-phrase" data-i18n="stPhrase">Emphasise a phrase</label><input id="st-phrase" placeholder="e.g. retention" /></div>
+    <div><label for="st-color" data-i18n="stColor">Phrase colour</label><input id="st-color" placeholder="#C4703C" /></div>
+    <div><label for="st-style" data-i18n="stEmphasis">Emphasis</label><select id="st-style"><option value="">—</option>
+      <option value="bold" data-i18n="optBold">bold</option><option value="italic" data-i18n="optItalic">italic</option><option value="underline" data-i18n="optUnderline">underline</option></select></div>
     <div class="actions">
-      <button type="button" class="btn primary" id="st-apply">Apply to phrase</button>
-      <button type="button" class="btn" id="st-clear">Clear phrase</button>
-      <span class="hint">one run only — keep the phrase short</span>
+      <button type="button" class="btn primary" id="st-apply" data-i18n="stApply">Apply to phrase</button>
+      <button type="button" class="btn" id="st-clear" data-i18n="stClear">Clear phrase</button>
+      <span class="hint" data-i18n="stHint">one run only — keep the phrase short</span>
     </div>
     <div class="actions">
-      <button type="button" class="btn primary" id="si-apply">Apply to slide</button>
-      <button type="button" class="btn" id="si-cancel">Cancel</button>
+      <button type="button" class="btn primary" id="si-apply" data-i18n="siApply">Apply to slide</button>
+      <button type="button" class="btn" id="si-cancel" data-i18n="cancel">Cancel</button>
       <span class="hint" id="si-target"></span>
     </div>
   </section>
 
   <section class="editor" id="editor" aria-labelledby="editor-head">
-    <h2 class="sr-only" id="editor-head">Ask the agent to edit this slide</h2>
-    <label class="sr-only" for="edit-input">Change to request for this slide</label>
-    <input id="edit-input" placeholder="What should change on this slide?" />
-    <button type="button" class="btn primary" id="edit-send">Ask agent</button>
-    <button type="button" class="btn" id="edit-cancel">Cancel</button>
+    <h2 class="sr-only" id="editor-head" data-i18n="editorHead">Ask the agent to edit this slide</h2>
+    <label class="sr-only" for="edit-input" data-i18n="editLabel">Change to request for this slide</label>
+    <input id="edit-input" placeholder="What should change on this slide?" data-i18n-placeholder="editPlaceholder" />
+    <button type="button" class="btn primary" id="edit-send" data-i18n="editSend">Ask agent</button>
+    <button type="button" class="btn" id="edit-cancel" data-i18n="cancel">Cancel</button>
   </section>
 
   <p class="status" id="status" role="status" aria-live="polite"></p>
@@ -206,17 +236,17 @@
   <dialog id="viewer" aria-labelledby="viewer-title">
     <div class="viewer-head">
       <h2 id="viewer-title">Slide</h2>
-      <button type="button" class="btn" id="viewer-close">Close</button>
+      <button type="button" class="btn" id="viewer-close" data-i18n="close">Close</button>
     </div>
     <div class="viewer-body">
       <button type="button" class="nav" id="viewer-prev" aria-label="Previous slide"
-              aria-keyshortcuts="ArrowLeft">&#8249;</button>
+              data-i18n-aria="prev" aria-keyshortcuts="ArrowLeft">&#8249;</button>
       <div class="viewer-frame"><img id="viewer-img" alt="" /></div>
       <button type="button" class="nav" id="viewer-next" aria-label="Next slide"
-              aria-keyshortcuts="ArrowRight">&#8250;</button>
+              data-i18n-aria="next" aria-keyshortcuts="ArrowRight">&#8250;</button>
     </div>
     <div class="viewer-foot">
-      <p class="hint">Arrow keys move between slides · Home / End jump to the ends · Esc closes.</p>
+      <p class="hint" data-i18n="viewerHint">Arrow keys move between slides · Home / End jump to the ends · Esc closes.</p>
       <p class="sr-only" id="viewer-live" aria-live="polite"></p>
     </div>
   </dialog>

@@ -136,6 +136,29 @@ function check(name, ok, detail = '') {
     check('focus returns to the thumbnail that opened it',
       await frame.evaluate(() => document.activeElement?.classList.contains('thumb') === true));
 
+    // Bilingual UI: the toggle must actually switch the document language and the
+    // aria-labels, not just repaint some text.
+    const langFr = frame.locator('#lang-fr');
+    const langEn = frame.locator('#lang-en');
+    check('language toggle present (en-CA / fr-CA)',
+      (await langFr.count()) === 1 && (await langEn.count()) === 1);
+    await langFr.click();
+    await page.waitForTimeout(400);
+    const french = await frame.evaluate(() => ({
+      lang: document.documentElement.lang,
+      pressed: document.getElementById('lang-fr').getAttribute('aria-pressed'),
+      label: document.querySelector('button.thumb').getAttribute('aria-label'),
+      ask: document.querySelectorAll('figure .card-actions button')[1].textContent,
+    }));
+    check('French switch sets <html lang> and aria state',
+      french.lang === 'fr-CA' && french.pressed === 'true', JSON.stringify(french));
+    check('French switch localises slide controls',
+      /diapositive/i.test(french.label) && /agent/i.test(french.ask), french.ask);
+    await langEn.click();
+    await page.waitForTimeout(400);
+    check('English switch restores en-CA',
+      (await frame.evaluate(() => document.documentElement.lang)) === 'en-CA');
+
     // Download button: the host must actually open the .pptx. An IP-literal public base is
     // silently blocked by the MCP App bridge, so this pins the hostname requirement end to end.
     const context = page.context();

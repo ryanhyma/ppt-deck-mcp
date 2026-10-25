@@ -54,6 +54,17 @@ through slides, `Home`/`End` jump to the ends, `Esc` closes and returns focus to
 from. Per-slide actions (`Style…`, `Ask agent…`) sit *below* each thumbnail rather than floating over
 the image, so they are always visible, keyboard-reachable and usable on touch.
 
+**Languages**: the pane ships **English and Canadian French** (`English | Français` in the corner).
+Every string is in one dictionary, the default follows `hostContext.locale` and then
+`navigator.language`, a manual choice wins afterwards, and switching updates `<html lang>` so screen
+readers change voice. `tests/test_regressions.py` fails the build if a string is missing from either
+language.
+
+> LibreChat's own "Open app" / "Close app" labels and the raw tool name on the attachment card
+> (`preview_deck`) stay English in a French UI: `client/src/locales/fr/translation.json` upstream has
+> no `com_ui_mcp_app_*` keys and the card does not read a tool `title`. Fixing that belongs upstream,
+> not in a local patch.
+
 **Accessibility**: the pane targets WCAG 2.2 AA (AODA / Accessible Canada Act): every control is a
 native button with a ≥32px target, text contrast is ≥4.5:1, the viewer is a modal `<dialog>` with a
 manual Tab wrap (the browser's trap stops at the iframe boundary), slide changes are announced
@@ -62,6 +73,12 @@ by unit tests, and the interactive half by the Playwright check.
 
 If the chat column looks narrow on a widescreen display, that is LibreChat's message width, not the
 pane — see `~/dev/librechat/local-ui/README.md` for the one-file stylesheet fix.
+
+**Dev preview without a model turn**: open
+`http://decks.local:8931/apps/deck_studio/dev-preview.html?deck=<previews-dir>` — it loads the real
+`index.html` + `app.js` against a fixture tool result, so layout, the language switch, contrast and
+keyboard behaviour can be checked in a plain tab. It is a dev harness only; nothing in normal use
+reaches it.
 
 ## Quick start
 

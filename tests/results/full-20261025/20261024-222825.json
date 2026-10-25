@@ -1,0 +1,2451 @@
+{
+ "stamp": "20261024-222825",
+ "results": [
+  {
+   "id": "basic-01",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 2-slide deck about coffee roasting for a general audience.",
+   "expect": {
+    "slides": 2,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "b446e9d5-14df-4edc-8a34-4e46286c862e",
+   "url": "http://localhost:3080/c/b446e9d5-14df-4edc-8a34-4e46286c862e",
+   "file": "/home/hyma/dev/librechat/uploads/decks/coffee-roasting-222943-c472.pptx",
+   "deck_id": "coffee-roasting-222943-c472",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 2,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 6,
+    "max_bullet_chars": 79,
+    "titles": [
+     "Coffee Roasting",
+     "How Coffee Roasting Works"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "I'll build a 2-slide deck about coffee roasting for you. Let me start by checking available templates.\n\nI'll build a 2-slide deck about coffee roasting \u2014 one title slide and one content slide with key takeaways.\n\nThe deck has 3 slides but you asked for 2 total. I had an extra empty slide \u2014 let me fix that and rebuild with just the title slide and one content slide.\n\nThe deck is ready at **`/home/h",
+   "seconds": 87.5
+  },
+  {
+   "id": "basic-02",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 3-slide deck about the water cycle for a general audience.",
+   "expect": {
+    "slides": 3,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "bdb040a9-84f4-451c-b6fd-416877960ab3",
+   "url": "http://localhost:3080/c/bdb040a9-84f4-451c-b6fd-416877960ab3",
+   "file": "/home/hyma/dev/librechat/uploads/decks/water-cycle-223047-b4ed.pptx",
+   "deck_id": "water-cycle-223047-b4ed",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 3,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 11,
+    "max_bullet_chars": 60,
+    "titles": [
+     "The Water Cycle",
+     "Evaporation & Condensation",
+     "Precipitation & Collection"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "Deck ready! `/home/hyma/dev/librechat/uploads/decks/water-cycle-223047-b4ed.pptx` \u2014 a 3-slide presentation covering evaporation & condensation on slide 2 and precipitation & collection on slide 3, with plain-language bullets for a general audience.",
+   "seconds": 67.9
+  },
+  {
+   "id": "basic-03",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 5-slide deck about remote work policy for a general audience.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "52ea5195-84d4-4a97-81b3-de6eb5192071",
+   "url": "http://localhost:3080/c/52ea5195-84d4-4a97-81b3-de6eb5192071",
+   "file": "/home/hyma/dev/librechat/uploads/decks/remote-work-policy-223158-5f87.pptx",
+   "deck_id": "remote-work-policy-223158-5f87",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 17,
+    "max_bullet_chars": 66,
+    "titles": [
+     "Remote Work Policy",
+     "Why Remote Work",
+     "Eligibility & Schedule",
+     "Technology & Security",
+     "Guidelines & Expectations"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "Deck created: **/home/hyma/dev/librechat/uploads/decks/remote-work-policy-223158-5f87.pptx** \u2014 5 slides covering the business case, eligibility & schedule, technology & security, and day-to-day guidelines for remote work.",
+   "seconds": 67.2
+  },
+  {
+   "id": "basic-04",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 5-slide deck about solar adoption in 2026 for a general audience.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "7999806b-67a8-4377-916b-f2683ac4b630",
+   "url": "http://localhost:3080/c/7999806b-67a8-4377-916b-f2683ac4b630",
+   "file": "/home/hyma/dev/librechat/uploads/decks/solar-adoption-2026-223326-635f.pptx",
+   "deck_id": "solar-adoption-2026-223326-635f",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 11,
+    "max_bullet_chars": 59,
+    "titles": [
+     "Solar Adoption in 2026",
+     "Why Solar Energy?",
+     "Global Solar Growth",
+     "Cost Comparison for a Typical Home",
+     "Getting Started"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "**`/home/hyma/dev/librechat/uploads/decks/solar-adoption-2026-223326-635f.pptx`**\n\nYour 5-slide deck is ready: Title \u2192 Why Solar Energy \u2192 Global Growth (line chart) \u2192 Home Cost Comparison (table) \u2192 Getting Started.",
+   "seconds": 93.2
+  },
+  {
+   "id": "basic-05",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 6-slide deck about onboarding a new engineer for a general audience.",
+   "expect": {
+    "slides": 6,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "e494c35c-fe54-4dd0-bfea-159be82acb9c",
+   "url": "http://localhost:3080/c/e494c35c-fe54-4dd0-bfea-159be82acb9c",
+   "file": "/home/hyma/dev/librechat/uploads/decks/onboarding-new-engineer-223521-3d5a.pptx",
+   "deck_id": "onboarding-new-engineer-223521-3d5a",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 6,
+    "charts": 0,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 16,
+    "max_bullet_chars": 67,
+    "titles": [
+     "Onboarding a New Engineer",
+     "Why Onboarding Matters",
+     "Week 1: Getting Set Up",
+     "Weeks 2\u20134: Building Competency",
+     "First 90 Days Milestones",
+     "Tips for Engineering Managers"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "The table wasn't recognized \u2014 the spec had `\"title\"` and `\"table\"` on the same slide but the table key was placed incorrectly. Let me fix the slide spec so the table is on its own slide.\n\nHere's your 6-slide deck: `/home/hyma/dev/librechat/uploads/decks/onboarding-new-engineer-223521-3d5a.pptx`\n\n**Slides at a glance:**\n1. **Title** \u2013 Onboarding a New Engineer\n2. **Why Onboarding Matters** \u2013 retent",
+   "seconds": 115.1
+  },
+  {
+   "id": "basic-06",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 8-slide deck about why sleep matters for a general audience.",
+   "expect": {
+    "slides": 8,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "cd63b17d-74ee-4ea3-8260-0b30ba9ac1fd",
+   "url": "http://localhost:3080/c/cd63b17d-74ee-4ea3-8260-0b30ba9ac1fd",
+   "file": "/home/hyma/dev/librechat/uploads/decks/why-sleep-matters-223754-cfe0.pptx",
+   "deck_id": "why-sleep-matters-223754-cfe0",
+   "tools": [
+    "skill",
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 8,
+    "charts": 1,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 21,
+    "max_bullet_chars": 63,
+    "titles": [
+     "Why Sleep Matters",
+     "The Sleep Crisis",
+     "What Happens During Sleep",
+     "Brain Benefits",
+     "Physical Health Benefits",
+     "Sleep Duration & Risk",
+     "Mental Health Benefits",
+     "Key Takeaways"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "I'll create an 8-slide deck about why sleep matters, using the corporate template with a mix of bullets, a chart, and a table.\n\nTwo issues: (1) slide count is 9 instead of 8 (title slide counts), and (2) the table slide also had `bullets`, which breaks the one-visual-per-slide rule. I'll fix both: reduce to 7 content slides (7 + title = 8) and put the table on its own slide without bullets.\n\nYour ",
+   "seconds": 150.4
+  },
+  {
+   "id": "basic-07",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 4-slide deck about cybersecurity basics for a general audience.",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "15379a0b-56ec-416e-be53-5a51a6790b9b",
+   "url": "http://localhost:3080/c/15379a0b-56ec-416e-be53-5a51a6790b9b",
+   "file": "/home/hyma/dev/librechat/uploads/decks/cybersecurity-basics-223915-950d.pptx",
+   "deck_id": "cybersecurity-basics-223915-950d",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 4,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 15,
+    "max_bullet_chars": 63,
+    "titles": [
+     "Cybersecurity Basics",
+     "What Is Cybersecurity?",
+     "Common Threats",
+     "How to Stay Safe"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "The deck is ready at `/home/hyma/dev/librechat/uploads/decks/cybersecurity-basics-223915-950d.pptx` \u2014 a 4-slide presentation covering what cybersecurity is, common threats like phishing and malware, and practical tips for staying safe online.",
+   "seconds": 83.9
+  },
+  {
+   "id": "basic-08",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 5-slide deck about quarterly sales review for a general audience.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "22f4cce6-a1e7-497c-8eb3-bf3183682bf9",
+   "url": "http://localhost:3080/c/22f4cce6-a1e7-497c-8eb3-bf3183682bf9",
+   "file": "/home/hyma/dev/librechat/uploads/decks/quarterly-sales-review-224029-eb8c.pptx",
+   "deck_id": "quarterly-sales-review-224029-eb8c",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 11,
+    "max_bullet_chars": 56,
+    "titles": [
+     "Quarterly Sales Review",
+     "Key Highlights",
+     "Revenue by Quarter",
+     "Sales by Region",
+     "Next Quarter Outlook"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "Here's your deck:\n\n**`quarterly-sales-review-224029-eb8c.pptx`** \u2014 5-slide Quarterly Sales Review with highlights, a revenue chart, a regional sales table, and forward-looking next quarter goals.",
+   "seconds": 69.0
+  },
+  {
+   "id": "basic-09",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 3-slide deck about urban gardening for a general audience.",
+   "expect": {
+    "slides": 3,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "a71da4a1-6195-4be4-b7b6-8cd202bca846",
+   "url": "http://localhost:3080/c/a71da4a1-6195-4be4-b7b6-8cd202bca846",
+   "file": "/home/hyma/dev/librechat/uploads/decks/urban-gardening-224149-f8ab.pptx",
+   "deck_id": "urban-gardening-224149-f8ab",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 3,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 11,
+    "max_bullet_chars": 62,
+    "titles": [
+     "Urban Gardening: Growing Green in the City",
+     "Benefits of Urban Gardening",
+     "Getting Started"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "**Slide 1** \u2013 Title: \"Urban Gardening: Growing Green in the City\" with subtitle  \n**Slide 2** \u2013 Benefits: environmental impact, fresh produce, community building, sustainability, wellness  \n**Slide 3** \u2013 Getting Started: practical tips for beginners (containers, crop choice, soil, light, resources)\n\n**File**: `/home/hyma/dev/librechat/uploads/decks/urban-gardening-224149-f8ab.pptx`\n\nThe deck is re",
+   "seconds": 84.5
+  },
+  {
+   "id": "basic-10",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 7-slide deck about electric vehicles for a general audience.",
+   "expect": {
+    "slides": 7,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "6e24ad12-aee2-4054-bd90-e8f972a3027e",
+   "url": "http://localhost:3080/c/6e24ad12-aee2-4054-bd90-e8f972a3027e",
+   "file": "/home/hyma/dev/librechat/uploads/decks/electric-vehicles-224326-873a.pptx",
+   "deck_id": "electric-vehicles-224326-873a",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 7,
+    "charts": 1,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 21,
+    "max_bullet_chars": 60,
+    "titles": [
+     "Electric Vehicles: Driving the Future",
+     "What Are Electric Vehicles?",
+     "How EVs Work",
+     "EV vs. Gasoline: Total Cost of Ownership",
+     "Environmental Impact",
+     "EV Market Growth",
+     "Challenges to Address"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "I'll build a 7-slide deck about electric vehicles for you. Let me start by checking available templates.\n\nI'll create a 7-slide deck covering electric vehicles for a general audience, with a mix of bullet slides, a comparison table, and a growth chart.\n\nThe deck was built with 7 slides. Let me verify it matches expectations:\n\nVerification passed \u2014 7 slides, 1 table, 1 chart, no problems. Let me pr",
+   "seconds": 96.2
+  },
+  {
+   "id": "basic-11",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 5-slide deck about hiring plan for next year for a general audience.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "ba6ce210-18c5-4ca4-9307-2c9a39b5630d",
+   "url": "http://localhost:3080/c/ba6ce210-18c5-4ca4-9307-2c9a39b5630d",
+   "file": "/home/hyma/dev/librechat/uploads/decks/hiring-plan-2026-224530-005b.pptx",
+   "deck_id": "hiring-plan-2026-224530-005b",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 11,
+    "max_bullet_chars": 64,
+    "titles": [
+     "Hiring Plan 2026",
+     "Current State & Challenges",
+     "Hiring Goals by Department",
+     "Hiring Timeline",
+     "Budget & Next Steps"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "The deck has 6 slides instead of 5 \u2014 the title slide plus 5 content slides. I need to reduce the `slides` array to 4 content slides so the total is 5 (title + 4). Let me merge two slides.\n\nHere's your 5-slide Hiring Plan deck: `/home/hyma/dev/librechat/uploads/decks/hiring-plan-2026-224530-005b.pptx`\n\n**Slide outline:**\n1. **Title** \u2014 Hiring Plan 2026\n2. **Current State & Challenges** \u2014 bullet lis",
+   "seconds": 125.6
+  },
+  {
+   "id": "basic-12",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 4-slide deck about the history of the bicycle for a general audience.",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "c4a5db02-a8de-45b3-bd7b-90238d7c9741",
+   "url": "http://localhost:3080/c/c4a5db02-a8de-45b3-bd7b-90238d7c9741",
+   "file": "/home/hyma/dev/librechat/uploads/decks/the-history-of-the-bicycle-224709-940b.pptx",
+   "deck_id": "the-history-of-the-bicycle-224709-940b",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 4,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 12,
+    "max_bullet_chars": 67,
+    "titles": [
+     "The History of the Bicycle",
+     "Early Origins (1817\u20131885)",
+     "Golden Age of Cycling (1885\u20131920)",
+     "Modern Era (1950s\u2013Present)"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "The user asked for 4 slides total (including the title slide), so I need exactly **3 content slides**. Let me rebuild with that constraint.\n\nHere's your **4-slide deck** on the history of the bicycle:\n\n\ud83d\udcc4 `/home/hyma/dev/librechat/uploads/decks/the-history-of-the-bicycle-224709-940b.pptx`\n\n**Slide breakdown:**\n1. **Title slide** \u2014 \"The History of the Bicycle\" / \"Two Wheels, Two Centuries of Innovat",
+   "seconds": 99.1
+  },
+  {
+   "id": "basic-13",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 5-slide deck introducing our new analytics dashboard.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "6b386dee-8f6a-47c1-bb70-c9b4a2dc38fe",
+   "url": "http://localhost:3080/c/6b386dee-8f6a-47c1-bb70-c9b4a2dc38fe",
+   "file": "/home/hyma/dev/librechat/uploads/decks/analytics-dashboard-224853-945b.pptx",
+   "deck_id": "analytics-dashboard-224853-945b",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 14,
+    "max_bullet_chars": 51,
+    "titles": [
+     "New Analytics Dashboard",
+     "Why We Built It",
+     "Key Features",
+     "Performance Gains",
+     "Next Steps"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "The deck came out with 6 slides instead of the requested 5. Let me verify and fix that.\n\nThe issue is that `build_deck` auto-generates a title slide from the top-level `title` and `subtitle`, so my `slides` array should only contain the 4 content slides \u2014 not include the title slide again. Let me fix and rebuild.\n\nYour 5-slide deck is ready: `/home/hyma/dev/librechat/uploads/decks/analytics-dashbo",
+   "seconds": 100.5
+  },
+  {
+   "id": "basic-14",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 4-slide deck summarising last quarter's customer feedback.",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "e49e077b-1039-4e21-8440-ad26dd00232c",
+   "url": "http://localhost:3080/c/e49e077b-1039-4e21-8440-ad26dd00232c",
+   "file": "/home/hyma/dev/librechat/uploads/decks/customer-feedback-q4-225026-1c4a.pptx",
+   "deck_id": "customer-feedback-q4-225026-1c4a",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 4,
+    "charts": 1,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 5,
+    "max_bullet_chars": 53,
+    "titles": [
+     "Customer Feedback Summary",
+     "Feedback Overview",
+     "Satisfaction Trends",
+     "Action Items"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "Done! \ud83d\udcca **4-slide deck ready** \u2014 `/home/hyma/dev/librechat/uploads/decks/customer-feedback-q4-225026-1c4a.pptx`\n\n**Slides:** Title \u2192 Feedback Overview (bullets) \u2192 Satisfaction Trends (line chart) \u2192 Action Items (table)\n\nThe preview is now open in Deck Studio. Let me know if you'd like any styling tweaks or content edits.",
+   "seconds": 98.6
+  },
+  {
+   "id": "basic-15",
+   "category": "basics",
+   "note": "",
+   "prompt": "Make a 6-slide deck explaining our data retention policy to staff.",
+   "expect": {
+    "slides": 6,
+    "chart": false,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "7dfb47a2-1ac9-4782-a1f1-1bb18b7c07db",
+   "url": "http://localhost:3080/c/7dfb47a2-1ac9-4782-a1f1-1bb18b7c07db",
+   "file": "/home/hyma/dev/librechat/uploads/decks/data-retention-policy-225146-3fad.pptx",
+   "deck_id": "data-retention-policy-225146-3fad",
+   "tools": [
+    "skill",
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 6,
+    "charts": 0,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 21,
+    "max_bullet_chars": 68,
+    "titles": [
+     "Data Retention Policy",
+     "Why We Retain Data",
+     "Retention Periods by Data Type",
+     "Data Disposal Process",
+     "Your Responsibilities",
+     "Questions & Support"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "`/home/hyma/dev/librechat/uploads/decks/data-retention-policy-225146-3fad.pptx` \u2014 6-slide Corporate Teal deck covering why we retain data, retention periods by type (table), disposal process, staff responsibilities, and where to get help.",
+   "seconds": 74.4
+  },
+  {
+   "id": "chart-01",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 5-slide deck about our business that includes a column chart of revenue by quarter (Q1 40, Q2 52, Q3 61, Q4 78).",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "20ee0615-cdc6-4220-90ac-5c93687c9ef1",
+   "url": "http://localhost:3080/c/20ee0615-cdc6-4220-90ac-5c93687c9ef1",
+   "file": "/home/hyma/dev/librechat/uploads/decks/business-overview-225327-8bef.pptx",
+   "deck_id": "business-overview-225327-8bef",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 9,
+    "max_bullet_chars": 42,
+    "titles": [
+     "Our Business Overview",
+     "Company Mission",
+     "Our Products",
+     "Revenue by Quarter",
+     "Key Takeaways"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "I'll build a 5-slide business deck with a revenue column chart. Let me start by checking available templates.\n\nNow I'll build the 5-slide deck using the default corporate template, with the revenue column chart on one slide.\n\nThe deck has 6 slides but you asked for 5 total. I'll trim to 4 content slides (1 title + 4 content = 5).\n\nVerification passed. Now let me preview the deck for you.\n\nDone! Yo",
+   "seconds": 100.9
+  },
+  {
+   "id": "chart-02",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 5-slide deck about our business that includes a bar chart comparing team headcount (Eng 24, Sales 12, Support 9, Design 6).",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "1539efa3-05cc-40b5-b347-3b52c1ad40f0",
+   "url": "http://localhost:3080/c/1539efa3-05cc-40b5-b347-3b52c1ad40f0",
+   "file": "/home/hyma/dev/librechat/uploads/decks/business-overview-225522-8b9c.pptx",
+   "deck_id": "business-overview-225522-8b9c",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "list_templates_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 13,
+    "max_bullet_chars": 54,
+    "titles": [
+     "Our Business",
+     "Company Mission",
+     "Products & Services",
+     "Market Position",
+     "Team Headcount"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "The deck has 6 slides but you asked for 5 total (including the title slide). I provided 6 slide specs (title + 5 content). Let me fix: I'll remove one content slide to get exactly 5 total.\n\nAh \u2014 the `slides` array should only contain **content slides**; the title slide is generated separately from the `title`/`subtitle` parameters. I was passing the title slide inside the array too, creating 6 sli",
+   "seconds": 133.1
+  },
+  {
+   "id": "chart-03",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 5-slide deck about our business that includes a line chart of monthly active users (Jan 1200, Feb 1350, Mar 1500, Apr 1720, May 1900).",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "ec573f85-6a2b-44fc-871a-96318bb7e1c8",
+   "url": "http://localhost:3080/c/ec573f85-6a2b-44fc-871a-96318bb7e1c8",
+   "file": "/home/hyma/dev/librechat/uploads/decks/our-business-225706-8af4.pptx",
+   "deck_id": "our-business-225706-8af4",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 13,
+    "max_bullet_chars": 46,
+    "titles": [
+     "Our Business",
+     "About Us",
+     "Our Products",
+     "User Growth",
+     "Looking Ahead"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "",
+   "seconds": 91.1
+  },
+  {
+   "id": "chart-04",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 5-slide deck about our business that includes a pie chart of budget allocation (Product 45, Marketing 25, Ops 20, Other 10) as percentages.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "8813f2c7-d15c-44ef-861c-df083e424e23",
+   "url": "http://localhost:3080/c/8813f2c7-d15c-44ef-861c-df083e424e23",
+   "file": "/home/hyma/dev/librechat/uploads/decks/business-overview-225821-5684.pptx",
+   "deck_id": "business-overview-225821-5684",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 14,
+    "max_bullet_chars": 49,
+    "titles": [
+     "Business Overview",
+     "About Our Company",
+     "Our Products",
+     "Budget Allocation",
+     "Strategic Goals for 2025"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "I'll build a 5-slide business deck with a pie chart for budget allocation. Let me start by checking available templates.\n\nI'll build a 5-slide business overview deck using the corporate template, with a pie chart for budget allocation on one of the slides.\n\nYour deck is ready at `/home/hyma/dev/librechat/uploads/decks/business-overview-225821-5684.pptx` \u2014 5 slides: Title, About Our Company, Our Pr",
+   "seconds": 69.6
+  },
+  {
+   "id": "chart-05",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 4-slide deck about our business that includes a doughnut chart of device share (Mobile 58, Desktop 34, Tablet 8) as percentages.",
+   "expect": {
+    "slides": 4,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "ec36f5ef-92f8-447e-87d9-9e4bebce4f95",
+   "url": "http://localhost:3080/c/ec36f5ef-92f8-447e-87d9-9e4bebce4f95",
+   "file": "/home/hyma/dev/librechat/uploads/decks/business-overview-230009-82ef.pptx",
+   "deck_id": "business-overview-230009-82ef",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 4,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 7,
+    "max_bullet_chars": 58,
+    "titles": [
+     "Business Overview",
+     "About Our Business",
+     "Device Share",
+     "Next Steps"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "Your 4-slide deck is ready: `/home/hyma/dev/librechat/uploads/decks/business-overview-230009-82ef.pptx`\n\n**Slides:**\n1. **Title** \u2014 \"Business Overview\" (Q4 2025)\n2. **About Our Business** \u2014 3 bullets on platform strategy, growth, and global presence\n3. **Device Share** \u2014 Doughnut chart showing Mobile 58%, Desktop 34%, Tablet 8%\n4. **Next Steps** \u2014 3 bullets on upcoming initiatives per platform",
+   "seconds": 109.1
+  },
+  {
+   "id": "chart-06",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 6-slide deck about our business that includes a stacked column chart of support tickets by channel over 2 months.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "3853012d-d26d-4619-b659-9727b2345d0b",
+   "url": "http://localhost:3080/c/3853012d-d26d-4619-b659-9727b2345d0b",
+   "file": "/home/hyma/dev/librechat/uploads/decks/business-overview-230234-77c1.pptx",
+   "deck_id": "business-overview-230234-77c1",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 6,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 16,
+    "max_bullet_chars": 48,
+    "titles": [
+     "Business Overview",
+     "Welcome to Our Company",
+     "Our Mission & Vision",
+     "Key Business Highlights",
+     "Support Tickets by Channel",
+     "Next Steps & Goals"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "I have 7 slides (1 title + 6 content) but the user asked for 6 total. Let me trim to 5 content slides.\n\nThe deck is ready at `/home/hyma/dev/librechat/uploads/decks/business-overview-230234-77c1.pptx` \u2014 a 6-slide business overview with a stacked column chart on slide 5 showing support ticket volume across Phone, Email, Live Chat, and Web Form for January and February.",
+   "seconds": 142.7
+  },
+  {
+   "id": "chart-07",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 5-slide deck about our business that includes a column chart with two series comparing 2025 and 2026 sales across 3 regions.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "d6728bb7-c1d9-4401-bc55-4c8d056e603e",
+   "url": "http://localhost:3080/c/d6728bb7-c1d9-4401-bc55-4c8d056e603e",
+   "file": "/home/hyma/dev/librechat/uploads/decks/business-overview-230354-f3c0.pptx",
+   "deck_id": "business-overview-230354-f3c0",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 11,
+    "max_bullet_chars": 89,
+    "titles": [
+     "Our Business Overview",
+     "Company Overview",
+     "Sales Performance",
+     "Key Achievements",
+     "Looking Ahead"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "Let me start by checking available templates, then build your deck.\n\nGreat. I'll build a 5-slide deck: Title, Company Overview, Sales Chart (2025 vs 2026 across 3 regions), Key Achievements, and Future Outlook.\n\n**File:** `/home/hyma/dev/librechat/uploads/decks/business-overview-230354-f3c0.pptx`\n\nYour 5-slide \"Our Business Overview\" deck is ready \u2014 it includes a title slide, company overview, a c",
+   "seconds": 83.2
+  },
+  {
+   "id": "chart-08",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 6-slide deck about our business that includes two slides with charts: one column chart of shipments, one line chart of returns.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "8a334454-dc8c-41e9-af48-63e8cf97a37f",
+   "url": "http://localhost:3080/c/8a334454-dc8c-41e9-af48-63e8cf97a37f",
+   "file": "/home/hyma/dev/librechat/uploads/decks/business-overview-230548-6508.pptx",
+   "deck_id": "business-overview-230548-6508",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 6,
+    "charts": 2,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 11,
+    "max_bullet_chars": 61,
+    "titles": [
+     "Business Overview",
+     "Company Overview",
+     "Monthly Shipments",
+     "Product Returns",
+     "Market Position & Growth Strategy",
+     "Next Steps"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "I'll build that 6-slide business deck for you. Let me start by checking available templates.\n\nI'll build a 6-slide business overview deck with a column chart for shipments and a line chart for returns. Using the default Corporate Teal template.\n\nThe build produced 7 slides (title + 6 content), but you asked for 6 total including the title slide. I'll reduce the content to 5 slides by merging two r",
+   "seconds": 115.8
+  },
+  {
+   "id": "chart-09",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 6-slide deck about our business that includes a chart of churn by month and a table of top 5 accounts.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "b037e47a-f0ed-4d49-9229-5ffd6cb0534d",
+   "url": "http://localhost:3080/c/b037e47a-f0ed-4d49-9229-5ffd6cb0534d",
+   "file": "/home/hyma/dev/librechat/uploads/decks/business-review-230718-8d32.pptx",
+   "deck_id": "business-review-230718-8d32",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 6,
+    "charts": 1,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 13,
+    "max_bullet_chars": 71,
+    "titles": [
+     "Business Review",
+     "Business Overview",
+     "Revenue Performance",
+     "Churn by Month",
+     "Top 5 Accounts",
+     "Key Takeaways & Next Steps"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "Done! Your 6-slide deck is ready:\n\n**\ud83d\udcc1 `/home/hyma/dev/librechat/uploads/decks/business-review-230718-8d32.pptx`**\n\nThe deck includes:\n- **Slide 1** \u2014 Title slide: \"Business Review\" with Q2 2025 subtitle\n- **Slide 2** \u2014 Business Overview (growth, NPS, deal size bullets)\n- **Slide 3** \u2014 Revenue Performance (ARR, margin, pipeline, retention)\n- **Slide 4** \u2014 Churn by Month (column chart with 6 months",
+   "seconds": 93.3
+  },
+  {
+   "id": "chart-10",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 5-slide deck on supply chain resilience; include a chart of plausible example numbers and label it clearly as illustrative.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "944e200c-ac77-4ac2-bbca-03389da5752a",
+   "url": "http://localhost:3080/c/944e200c-ac77-4ac2-bbca-03389da5752a",
+   "file": "/home/hyma/dev/librechat/uploads/decks/supply-chain-resilience-230923-5b59.pptx",
+   "deck_id": "supply-chain-resilience-230923-5b59",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 9,
+    "max_bullet_chars": 69,
+    "titles": [
+     "Supply Chain Resilience",
+     "Supply Chain Resilience",
+     "Why Resilience Matters",
+     "Proven Resilience Strategies",
+     "Impact of Resilience Investments"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "The deck has 6 slides but you asked for 5 total. Let me verify and fix this.\n\n6 slides built, but you asked for 5 total (title + 4 content). I'll merge the \"Why Resilience Matters\" and \"Key Vulnerabilities\" slides into one, keeping the chart on its own slide.\n\nDone! **5-slide Supply Chain Resilience deck** \u2014 `/home/hyma/dev/librechat/uploads/decks/supply-chain-resilience-230923-5b59.pptx`\n\n| Slide",
+   "seconds": 124.6
+  },
+  {
+   "id": "chart-11",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 6-slide deck on customer support metrics; include a chart of plausible example numbers and label it clearly as illustrative.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": false,
+   "failures": [
+    "1 slides >5 bullets"
+   ],
+   "warnings": [],
+   "conversationId": "b3e3af08-b548-4c60-bae5-ecb42026398b",
+   "url": "http://localhost:3080/c/b3e3af08-b548-4c60-bae5-ecb42026398b",
+   "file": "/home/hyma/dev/librechat/uploads/decks/customer-support-metrics-231119-d27e.pptx",
+   "deck_id": "customer-support-metrics-231119-d27e",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 6,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 20,
+    "max_bullet_chars": 88,
+    "titles": [
+     "Customer Support Metrics",
+     "Overview",
+     "Key Support Metrics",
+     "Ticket Volume by Channel",
+     "Response Times & Satisfaction Trends",
+     "Recommendations & Next Steps"
+    ],
+    "bullet_overflow_slides": [
+     6
+    ]
+   },
+   "final_text": "The deck is ready at `/home/hyma/dev/librechat/uploads/decks/customer-support-metrics-231119-d27e.pptx` \u2014 a 6-slide presentation with a stacked column chart (slide 4) showing illustrative ticket volumes by channel, plus slides on key metrics, response times & satisfaction trends, and actionable recommendations.",
+   "seconds": 115.0
+  },
+  {
+   "id": "chart-12",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 7-slide deck on data governance; include a chart of plausible example numbers and label it clearly as illustrative.",
+   "expect": {
+    "slides": 7,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "409dec19-6591-4e09-ba1f-8d2b1d5eadcc",
+   "url": "http://localhost:3080/c/409dec19-6591-4e09-ba1f-8d2b1d5eadcc",
+   "file": "/home/hyma/dev/librechat/uploads/decks/data-governance-231259-d916.pptx",
+   "deck_id": "data-governance-231259-d916",
+   "tools": [
+    "skill",
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 7,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 31,
+    "max_bullet_chars": 65,
+    "titles": [
+     "Data Governance: A Strategic Framework",
+     "Why Data Governance Matters",
+     "Core Pillars of Governance",
+     "Governance Maturity Score (Illustrative)",
+     "Common Challenges",
+     "Implementing a Governance Program",
+     "Next Steps"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "**Done \u2014 7-slide deck ready:**\n\n`/home/hyma/dev/librechat/uploads/decks/data-governance-231259-d916.pptx` \u2014 7 slides covering why governance matters, core pillars, an illustrative maturity-score chart (slide 4), common challenges, implementation steps, and next actions.\n\nThe interactive preview pane above shows thumbnails for all 7 slides. The column chart on slide 4 is labeled \"(Illustrative)\" in",
+   "seconds": 109.6
+  },
+  {
+   "id": "chart-13",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 5-slide deck on office relocation plan; include a chart of plausible example numbers and label it clearly as illustrative.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "b5941ae7-3a85-4674-9c7b-12701fe24809",
+   "url": "http://localhost:3080/c/b5941ae7-3a85-4674-9c7b-12701fe24809",
+   "file": "/home/hyma/dev/librechat/uploads/decks/office-relocation-plan-231430-806d.pptx",
+   "deck_id": "office-relocation-plan-231430-806d",
+   "tools": [
+    "skill",
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 17,
+    "max_bullet_chars": 58,
+    "titles": [
+     "Office Relocation Plan",
+     "Why We're Moving",
+     "Timeline & Milestones",
+     "Relocation Budget Breakdown (Illustrative)",
+     "Next Steps & Action Items"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "I'll build a 5-slide deck (1 title + 4 content slides) on the office relocation plan with a budget chart labeled as illustrative.\n\nDeck is ready at `/home/hyma/dev/librechat/uploads/decks/office-relocation-plan-231430-806d.pptx` \u2014 5 slides covering rationale, timeline, an illustrative budget column chart, and next-step action items.",
+   "seconds": 73.3
+  },
+  {
+   "id": "chart-14",
+   "category": "charts",
+   "note": "",
+   "prompt": "Make a 6-slide deck on product launch readiness; include a chart of plausible example numbers and label it clearly as illustrative.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": false,
+   "failures": [
+    "1 slides >5 bullets"
+   ],
+   "warnings": [],
+   "conversationId": "099875c5-2c18-43a8-b04e-ba1187b8a669",
+   "url": "http://localhost:3080/c/099875c5-2c18-43a8-b04e-ba1187b8a669",
+   "file": "/home/hyma/dev/librechat/uploads/decks/product-launch-readiness-231619-e3f0.pptx",
+   "deck_id": "product-launch-readiness-231619-e3f0",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt",
+    "get_deck_outline_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 6,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 22,
+    "max_bullet_chars": 65,
+    "titles": [
+     "Product Launch Readiness",
+     "Executive Summary",
+     "Launch Timeline Milestones",
+     "Readiness Scorecard",
+     "Key Risks & Mitigations",
+     "Next Steps & Go/No-Go Criteria"
+    ],
+    "bullet_overflow_slides": [
+     6
+    ]
+   },
+   "final_text": "I'll build a 6-slide deck on product launch readiness with an illustrative chart. Let me start by checking available templates.\n\nI'll build a 6-slide deck on product launch readiness with a chart showing illustrative readiness scores. Using the **Grid** template for a modern product/tech feel.\n\nThe deck is built and verified \u2014 6 slides with the illustrative chart on slide 4. Let me add speaker not",
+   "seconds": 114.4
+  },
+  {
+   "id": "chart-15",
+   "category": "charts",
+   "note": "",
+   "prompt": "A 5-slide deck about coffee roasting with one chart that supports the main point.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "e09c8418-ecb2-406e-85f0-0b4b7d35319d",
+   "url": "http://localhost:3080/c/e09c8418-ecb2-406e-85f0-0b4b7d35319d",
+   "file": "/home/hyma/dev/librechat/uploads/decks/coffee-roasting-231823-4daa.pptx",
+   "deck_id": "coffee-roasting-231823-4daa",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 15,
+    "max_bullet_chars": 68,
+    "titles": [
+     "The Art of Coffee Roasting",
+     "The Roasting Process",
+     "Flavor Development by Roast Level",
+     "Temperature Profiles Across Roast Levels",
+     "Mastering the Roast"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "The deck has 6 slides but the user asked for 5 (including the title slide). I need to merge two content slides. I'll combine \"Key Roasting Variables\" and \"Choosing the Right Roast\" into one.\n\nDone! Your 5-slide coffee roasting deck is ready at `/home/hyma/dev/librechat/uploads/decks/coffee-roasting-231823-4daa.pptx`. It covers the roasting process, flavor development by roast level, a temperature ",
+   "seconds": 119.5
+  },
+  {
+   "id": "chart-16",
+   "category": "charts",
+   "note": "",
+   "prompt": "A 5-slide deck about the water cycle with one chart that supports the main point.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": false,
+   "failures": [
+    "slides 6\u22605"
+   ],
+   "warnings": [],
+   "conversationId": "0719f0ac-e937-42d6-aa62-47c0002f97e8",
+   "url": "http://localhost:3080/c/0719f0ac-e937-42d6-aa62-47c0002f97e8",
+   "file": "/home/hyma/dev/librechat/uploads/decks/water-cycle-231955-a96a.pptx",
+   "deck_id": "water-cycle-231955-a96a",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 6,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 13,
+    "max_bullet_chars": 48,
+    "titles": [
+     "The Water Cycle",
+     "Evaporation",
+     "Condensation",
+     "Precipitation",
+     "Collection & Runoff",
+     "Where Earth's Water Lives"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "**`/home/hyma/dev/librechat/uploads/decks/water-cycle-231955-a96a.pptx`** \u2014 6-slide deck (title + 4 bullet slides on evaporation/condensation/precipitation/collection, plus a pie chart showing Earth's global water distribution).",
+   "seconds": 96.2
+  },
+  {
+   "id": "chart-17",
+   "category": "charts",
+   "note": "",
+   "prompt": "A 5-slide deck about remote work policy with one chart that supports the main point.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "960f14bb-7e53-4149-ae52-12688251daba",
+   "url": "http://localhost:3080/c/960f14bb-7e53-4149-ae52-12688251daba",
+   "file": "/home/hyma/dev/librechat/uploads/decks/remote-work-policy-232109-d8e9.pptx",
+   "deck_id": "remote-work-policy-232109-d8e9",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 13,
+    "max_bullet_chars": 60,
+    "titles": [
+     "Remote Work Policy",
+     "Why Remote Work Works",
+     "Policy Guidelines",
+     "Benefits for Teams",
+     "Productivity Trends"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "**Remote Work Policy** \u2014 `/home/hyma/dev/librechat/uploads/decks/remote-work-policy-232109-d8e9.pptx` \u2014 5-slide deck with a productivity trends chart showing hybrid work outperforming office-only from 2021 onward.",
+   "seconds": 73.8
+  },
+  {
+   "id": "chart-18",
+   "category": "charts",
+   "note": "",
+   "prompt": "A 5-slide deck about solar adoption in 2026 with one chart that supports the main point.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "4a8e6b67-f225-4e29-893c-1f2795b1682d",
+   "url": "http://localhost:3080/c/4a8e6b67-f225-4e29-893c-1f2795b1682d",
+   "file": "/home/hyma/dev/librechat/uploads/decks/solar-adoption-2026-232303-982d.pptx",
+   "deck_id": "solar-adoption-2026-232303-982d",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 12,
+    "max_bullet_chars": 58,
+    "titles": [
+     "Solar Adoption in 2026",
+     "Adoption Drivers & Regional Leaders",
+     "Global Solar Capacity Growth",
+     "Technology Breakthroughs",
+     "Outlook for 2027 and Beyond"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "You're right \u2014 the title slide counts toward the 5. I'll merge the first two content slides into one and rebuild with exactly 4 content slides + 1 title slide = 5 total.\n\nDone! Here's your deck:\n\n**`/home/hyma/dev/librechat/uploads/decks/solar-adoption-2026-232303-982d.pptx`**\n\n5-slide deck: title \u2192 adoption drivers & regional leaders \u2192 column chart showing global capacity growth (235\u2192475 GW, 2022",
+   "seconds": 114.6
+  },
+  {
+   "id": "chart-19",
+   "category": "charts",
+   "note": "",
+   "prompt": "A 5-slide deck about onboarding a new engineer with one chart that supports the main point.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "508f74ee-68f3-41ff-a3c0-0960adade238",
+   "url": "http://localhost:3080/c/508f74ee-68f3-41ff-a3c0-0960adade238",
+   "file": "/home/hyma/dev/librechat/uploads/decks/engineer-onboarding-232445-2355.pptx",
+   "deck_id": "engineer-onboarding-232445-2355",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 16,
+    "max_bullet_chars": 64,
+    "titles": [
+     "Onboarding a New Engineer",
+     "First Week: Foundation",
+     "First 30 Days: First Contributions",
+     "Productivity Timeline",
+     "Key Takeaways"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "Let me start by checking available templates, then build your 5-slide onboarding deck.\n\nNow I'll build the 5-slide deck. The chart will show productivity ramping over time \u2014 the key insight that onboarding is a progressive journey, not a one-day event.\n\nThe deck has 6 slides (title + 5 content) but you asked for 5 total. I need to consolidate to 4 content slides. Let me merge two adjacent slides.\n",
+   "seconds": 98.8
+  },
+  {
+   "id": "chart-20",
+   "category": "charts",
+   "note": "",
+   "prompt": "A 5-slide deck about why sleep matters with one chart that supports the main point.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "37dcf9c7-1b41-43e0-afe9-97f990d535cb",
+   "url": "http://localhost:3080/c/37dcf9c7-1b41-43e0-afe9-97f990d535cb",
+   "file": "/home/hyma/dev/librechat/uploads/decks/why-sleep-matters-232559-b5ad.pptx",
+   "deck_id": "why-sleep-matters-232559-b5ad",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 1,
+    "tables": 0,
+    "pictures": 0,
+    "bullets": 10,
+    "max_bullet_chars": 60,
+    "titles": [
+     "Why Sleep Matters",
+     "Brain & Cognition",
+     "Physical Health",
+     "Sleep Duration vs Performance",
+     "Actionable Tips"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "Done! Here's your deck:\n\n**`/home/hyma/dev/librechat/uploads/decks/why-sleep-matters-232559-b5ad.pptx`**\n\n5-slide presentation \u2014 title, brain & cognition, physical health, a line chart showing alertness & immune function drop with less sleep, and actionable tips for better rest.",
+   "seconds": 75.8
+  },
+  {
+   "id": "table-01",
+   "category": "tables",
+   "note": "",
+   "prompt": "Make a 5-slide deck with a table comparing comparison of 4 vendors (columns: vendors, price, contract length).",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "f48d054f-0c31-4902-b94d-50af427994bb",
+   "url": "http://localhost:3080/c/f48d054f-0c31-4902-b94d-50af427994bb",
+   "file": "/home/hyma/dev/librechat/uploads/decks/vendor-comparison-analysis-232721-4566.pptx",
+   "deck_id": "vendor-comparison-analysis-232721-4566",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 10,
+    "max_bullet_chars": 59,
+    "titles": [
+     "Vendor Comparison Analysis",
+     "Vendor Evaluation Overview",
+     "Key Evaluation Criteria",
+     "Vendor Comparison",
+     "Recommendations & Next Steps"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "The deck is ready at `/home/hyma/dev/librechat/uploads/decks/vendor-comparison-analysis-232721-4566.pptx` \u2014 5 slides with a title slide, overview, evaluation criteria, a vendor comparison table (4 vendors \u00d7 3 columns), and a recommendations slide.",
+   "seconds": 80.6
+  },
+  {
+   "id": "table-02",
+   "category": "tables",
+   "note": "",
+   "prompt": "Make a 5-slide deck with a table comparing Q3 vs Q4 results (columns: metric, Q3, Q4, change).",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "581e60f6-0692-4a4a-a5e0-36014ef3b5a2",
+   "url": "http://localhost:3080/c/581e60f6-0692-4a4a-a5e0-36014ef3b5a2",
+   "file": "/home/hyma/dev/librechat/uploads/decks/q3-vs-q4-results-comparison-232918-8104.pptx",
+   "deck_id": "q3-vs-q4-results-comparison-232918-8104",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 11,
+    "max_bullet_chars": 57,
+    "titles": [
+     "Q3 vs Q4 Results Comparison",
+     "Quarterly Overview",
+     "Q3 vs Q4 Comparison",
+     "Key Takeaways",
+     "Next Steps"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "The title slide counts as one of the 5. I need 4 content slides, not 5. Let me fix this by merging the two overview slides.\n\nWait \u2014 you asked for a **5-slide deck** (total including the title slide). My first rebuild was correct at 5 slides. Let me preview that verified version:\n\nHere's your 5-slide deck:\n\n**`/home/hyma/dev/librechat/uploads/decks/q3-vs-q4-results-comparison-232918-8104.pptx`**\n\n*",
+   "seconds": 144.1
+  },
+  {
+   "id": "table-03",
+   "category": "tables",
+   "note": "",
+   "prompt": "Make a 6-slide deck with a table comparing project risks (columns: risk, likelihood, impact, owner).",
+   "expect": {
+    "slides": 6,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": false,
+   "failures": [
+    "1 slides >5 bullets"
+   ],
+   "warnings": [],
+   "conversationId": "4e39239a-545b-40b4-970a-a68975103caa",
+   "url": "http://localhost:3080/c/4e39239a-545b-40b4-970a-a68975103caa",
+   "file": "/home/hyma/dev/librechat/uploads/decks/project-risk-assessment-233055-6e4d.pptx",
+   "deck_id": "project-risk-assessment-233055-6e4d",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 6,
+    "charts": 0,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 19,
+    "max_bullet_chars": 94,
+    "titles": [
+     "Project Risk Assessment",
+     "Risk Overview",
+     "Risk Register",
+     "Mitigation Strategies",
+     "Monitoring & Reporting",
+     "Next Steps"
+    ],
+    "bullet_overflow_slides": [
+     6
+    ]
+   },
+   "final_text": "I'll build a 6-slide deck with a project risks comparison table. Let me start by checking available templates.\n\nNow I'll build the 6-slide deck with a project risk comparison table and supporting content slides.\n\nYour 6-slide deck is ready: `/home/hyma/dev/librechat/uploads/decks/project-risk-assessment-233055-6e4d.pptx`\n\n**Slide breakdown:**\n1. **Title** \u2014 Project Risk Assessment / Q4 2024 Risk R",
+   "seconds": 69.9
+  },
+  {
+   "id": "table-04",
+   "category": "tables",
+   "note": "",
+   "prompt": "Make a 4-slide deck with a table comparing pricing tiers (columns: tier, seats, price, support).",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "37c6a0ba-8fe7-4209-9668-5d53de5d42fd",
+   "url": "http://localhost:3080/c/37c6a0ba-8fe7-4209-9668-5d53de5d42fd",
+   "file": "/home/hyma/dev/librechat/uploads/decks/pricing-tiers-233219-83fc.pptx",
+   "deck_id": "pricing-tiers-233219-83fc",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 4,
+    "charts": 0,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 7,
+    "max_bullet_chars": 44,
+    "titles": [
+     "Pricing Tiers Overview",
+     "Plans & Features",
+     "Pricing Comparison",
+     "Next Steps"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "The deck has 6 slides but you asked for 4. The auto-generated title slide counts as slide 1, so I need only 3 content slides. Let me fix that \u2014 combining the first two content slides and keeping the table on its own.\n\nYour deck is ready: `/home/hyma/dev/librechat/uploads/decks/pricing-tiers-233219-83fc.pptx`\n\n4 slides \u2014 title slide, Plans & Features (bullets), Pricing Comparison (table with Tier/S",
+   "seconds": 81.9
+  },
+  {
+   "id": "table-05",
+   "category": "tables",
+   "note": "",
+   "prompt": "Make a 5-slide deck with a table comparing hiring pipeline (columns: candidate, role, stage, next step).",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": false,
+   "failures": [
+    "1 slides >5 bullets"
+   ],
+   "warnings": [],
+   "conversationId": "cfe27afc-8eeb-4b19-b348-32594384c87d",
+   "url": "http://localhost:3080/c/cfe27afc-8eeb-4b19-b348-32594384c87d",
+   "file": "/home/hyma/dev/librechat/uploads/decks/hiring-pipeline-review-233422-cf0a.pptx",
+   "deck_id": "hiring-pipeline-review-233422-cf0a",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 15,
+    "max_bullet_chars": 71,
+    "titles": [
+     "Q3 Hiring Pipeline Review",
+     "Hiring Pipeline Overview",
+     "Candidate Pipeline Details",
+     "Pipeline by Department",
+     "Action Items & Next Steps"
+    ],
+    "bullet_overflow_slides": [
+     6
+    ]
+   },
+   "final_text": "**`/home/hyma/dev/librechat/uploads/decks/hiring-pipeline-review-233422-cf0a.pptx`**\n\n5-slide deck ready: title, pipeline overview bullets, **8\u00d74 candidate table** (Candidate, Role, Stage, Next Step), department breakdown, and action items \u2014 all styled with the Corporate Teal template.",
+   "seconds": 125.6
+  },
+  {
+   "id": "table-06",
+   "category": "tables",
+   "note": "",
+   "prompt": "Make a 5-slide deck with a table comparing travel options (columns: mode, cost, duration, comfort).",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "fa57dcdf-e416-4735-b94e-02363586bde5",
+   "url": "http://localhost:3080/c/fa57dcdf-e416-4735-b94e-02363586bde5",
+   "file": "/home/hyma/dev/librechat/uploads/decks/travel-options-comparison-233536-992b.pptx",
+   "deck_id": "travel-options-comparison-233536-992b",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 11,
+    "max_bullet_chars": 55,
+    "titles": [
+     "Travel Options Comparison",
+     "Overview",
+     "Travel Mode Comparison",
+     "Key Takeaways",
+     "Recommendations"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "I'll build a 5-slide deck with a travel options comparison table. Let me start by checking available templates.\n\nThe deck was built successfully with 5 slides. Let me verify it matches what was requested.\n\nAll checks pass. Let me preview the deck for you.\n\nYour deck is ready! **5 slides** with a clean Corporate Teal theme:\n\n| Slide | Title | Content |\n|-------|-------|---------|\n| 1 | Travel Optio",
+   "seconds": 74.6
+  },
+  {
+   "id": "table-07",
+   "category": "tables",
+   "note": "",
+   "prompt": "Make a 5-slide deck about coffee roasting that includes one summary table.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "ead46abd-3c94-494b-8e5f-7ec43f08ca70",
+   "url": "http://localhost:3080/c/ead46abd-3c94-494b-8e5f-7ec43f08ca70",
+   "file": "/home/hyma/dev/librechat/uploads/decks/coffee-roasting-233746-e791.pptx",
+   "deck_id": "coffee-roasting-233746-e791",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 16,
+    "max_bullet_chars": 60,
+    "titles": [
+     "The Art of Coffee Roasting",
+     "The Roasting Process",
+     "Roast Levels",
+     "Roast Level Comparison",
+     "Tips for Home Roasters"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "I'll build a 5-slide deck about coffee roasting with a summary table. Let me start by checking available templates.\n\nPerfect \u2014 the **Sandstone** template with its warm terracotta accent is ideal for a coffee theme. I'll build a 5-slide deck: title, the roasting process, roast levels, a summary table, and home-roasting tips.\n\nThe deck was built successfully. Let me verify it matches what was reques",
+   "seconds": 133.0
+  },
+  {
+   "id": "table-08",
+   "category": "tables",
+   "note": "",
+   "prompt": "Make a 5-slide deck about the water cycle that includes one summary table.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "767d81e1-a734-4d30-911b-9f140b7a7566",
+   "url": "http://localhost:3080/c/767d81e1-a734-4d30-911b-9f140b7a7566",
+   "file": "/home/hyma/dev/librechat/uploads/decks/water-cycle-233906-5ddf.pptx",
+   "deck_id": "water-cycle-233906-5ddf",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 13,
+    "max_bullet_chars": 50,
+    "titles": [
+     "The Water Cycle",
+     "Evaporation",
+     "Condensation",
+     "Precipitation",
+     "Water Cycle Summary"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "Done! Your deck is ready at:\n\n**`/home/hyma/dev/librechat/uploads/decks/water-cycle-233906-5ddf.pptx`**\n\n5-slide presentation on the water cycle: Title \u2192 Evaporation \u2192 Condensation \u2192 Precipitation \u2192 Summary Table (comparing all four stages).",
+   "seconds": 76.3
+  },
+  {
+   "id": "table-09",
+   "category": "tables",
+   "note": "",
+   "prompt": "Make a 5-slide deck about remote work policy that includes one summary table.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "fa42625c-94aa-4895-b33d-ad17b9c7b3e0",
+   "url": "http://localhost:3080/c/fa42625c-94aa-4895-b33d-ad17b9c7b3e0",
+   "file": "/home/hyma/dev/librechat/uploads/decks/remote-work-policy-234101-0acb.pptx",
+   "deck_id": "remote-work-policy-234101-0acb",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 16,
+    "max_bullet_chars": 49,
+    "titles": [
+     "Remote Work Policy",
+     "Eligibility",
+     "Work Expectations",
+     "Policy Summary",
+     "Support & Resources"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "The 5-slide Remote Work Policy deck has been created with a summary table on slide 4 covering schedule flexibility, core hours, equipment, communication, and review cycles.\n\n**File:** `/home/hyma/dev/librechat/uploads/decks/remote-work-policy-234101-0acb.pptx`\n\n**Slides:**\n1. Title slide \u2014 Remote Work Policy\n2. Eligibility \u2014 tenure requirements, role restrictions, approval process\n3. Work Expectat",
+   "seconds": 118.5
+  },
+  {
+   "id": "table-10",
+   "category": "tables",
+   "note": "",
+   "prompt": "Make a 5-slide deck about solar adoption in 2026 that includes one summary table.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "023cdf88-4fa1-4195-bef7-3e48b1252c29",
+   "url": "http://localhost:3080/c/023cdf88-4fa1-4195-bef7-3e48b1252c29",
+   "file": "/home/hyma/dev/librechat/uploads/decks/solar-adoption-2026-234220-b8da.pptx",
+   "deck_id": "solar-adoption-2026-234220-b8da",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 8,
+    "max_bullet_chars": 57,
+    "titles": [
+     "Solar Adoption in 2026",
+     "Solar Adoption in 2026",
+     "Market Overview",
+     "Key Adoption Drivers",
+     "2026 Solar Adoption by Region"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "**`/home/hyma/dev/librechat/uploads/decks/solar-adoption-2026-234220-b8da.pptx`** \u2014 5-slide deck: title, market overview, adoption drivers, a regional adoption table, and closing outlook.",
+   "seconds": 78.1
+  },
+  {
+   "id": "table-11",
+   "category": "tables",
+   "note": "",
+   "prompt": "Make a 5-slide deck about onboarding a new engineer that includes one summary table.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "d5b14abb-1a4b-4a23-8161-84f4afd0364b",
+   "url": "http://localhost:3080/c/d5b14abb-1a4b-4a23-8161-84f4afd0364b",
+   "file": "/home/hyma/dev/librechat/uploads/decks/onboarding-engineer-234346-3d77.pptx",
+   "deck_id": "onboarding-engineer-234346-3d77",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 16,
+    "max_bullet_chars": 59,
+    "titles": [
+     "Onboarding a New Engineer",
+     "First Week Essentials",
+     "Tools & Access Setup",
+     "Team Integration",
+     "Onboarding Checklist Summary"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "I'll build that onboarding deck for you. Let me start by checking available templates.\n\nGreat \u2014 I'll build a 5-slide deck (title + 4 content slides) using the default Corporate Teal template. Slide 5 will carry the summary table on its own slide.\n\nThe deck came out with 6 slides instead of the 5 requested. Let me verify and fix this.\n\nThe title slide is auto-generated from the `title` parameter, s",
+   "seconds": 78.6
+  },
+  {
+   "id": "table-12",
+   "category": "tables",
+   "note": "",
+   "prompt": "Make a 5-slide deck about why sleep matters that includes one summary table.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "b09dae5d-5bb0-4411-b7f1-eadef638abf3",
+   "url": "http://localhost:3080/c/b09dae5d-5bb0-4411-b7f1-eadef638abf3",
+   "file": "/home/hyma/dev/librechat/uploads/decks/why-sleep-matters-234545-15bf.pptx",
+   "deck_id": "why-sleep-matters-234545-15bf",
+   "tools": [
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 1,
+    "pictures": 0,
+    "bullets": 13,
+    "max_bullet_chars": 55,
+    "titles": [
+     "Why Sleep Matters",
+     "Cognitive Benefits",
+     "Physical & Emotional Health",
+     "Productivity & Performance",
+     "Sleep at a Glance"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "`/home/hyma/dev/librechat/uploads/decks/why-sleep-matters-234545-15bf.pptx` \u2014 a 5-slide deck covering cognitive benefits, physical & emotional health, productivity, and a summary table of sleep benefits across all domains.",
+   "seconds": 124.5
+  },
+  {
+   "id": "visual-01",
+   "category": "visuals",
+   "note": "",
+   "prompt": "Make a 5-slide deck about fish anatomy. On one slide add a simple diagram you draw yourself as SVG.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "211c21b1-8e31-4a3c-9a0d-68342e8f9add",
+   "url": "http://localhost:3080/c/211c21b1-8e31-4a3c-9a0d-68342e8f9add",
+   "file": "/home/hyma/dev/librechat/uploads/decks/fish-anatomy-234801-0b53.pptx",
+   "deck_id": "fish-anatomy-234801-0b53",
+   "tools": [
+    "render_svg_mcp_ppt",
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 1,
+    "bullets": 20,
+    "max_bullet_chars": 57,
+    "titles": [
+     "Fish Anatomy",
+     "External Anatomy",
+     "Internal Organs",
+     "Fish Anatomy Overview",
+     "Skeleton & Support"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "I'll build a 5-slide deck about fish anatomy with a custom SVG diagram. Let me start by checking available templates and creating the diagram.\n\nNow I'll build the 5-slide deck. The SVG diagram will be on slide 4, and the other content slides use bullets.\n\nDone! Your deck is ready at:\n\n`/home/hyma/dev/librechat/uploads/decks/fish-anatomy-234801-0b53.pptx`\n\n**5-slide Fish Anatomy deck** \u2014 covers ext",
+   "seconds": 135.0
+  },
+  {
+   "id": "visual-02",
+   "category": "visuals",
+   "note": "",
+   "prompt": "Make a 5-slide deck about the water cycle. On one slide add a simple diagram you draw yourself as SVG.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [],
+   "conversationId": "ab1d8932-30e1-4366-9d6d-bc8326f39148",
+   "url": "http://localhost:3080/c/ab1d8932-30e1-4366-9d6d-bc8326f39148",
+   "file": "/home/hyma/dev/librechat/uploads/decks/water-cycle-235248-1ff7.pptx",
+   "deck_id": "water-cycle-235248-1ff7",
+   "tools": [
+    "render_svg_mcp_ppt",
+    "list_templates_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 1,
+    "bullets": 14,
+    "max_bullet_chars": 75,
+    "titles": [
+     "The Water Cycle",
+     "Overview",
+     "Condensation & Precipitation",
+     "Visualizing the Cycle",
+     "Why the Water Cycle Matters"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "Let me start by checking available templates and creating the water cycle SVG diagram.\n\nNow I'll build the 5-slide deck with the water cycle diagram on one slide.\n\nThe deck has 6 slides but the user asked for 5 total (including title). I'll trim to 4 content slides by merging the first two bullet slides, then rebuild.\n\nThe `title` parameter creates the title slide automatically, so I should only i",
+   "seconds": 289.2
+  },
+  {
+   "id": "visual-03",
+   "category": "visuals",
+   "note": "",
+   "prompt": "Make a 5-slide deck about a laptop stack. On one slide add a simple diagram you draw yourself as SVG.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": true,
+   "failures": [],
+   "warnings": [
+    "preview_deck not called"
+   ],
+   "conversationId": "b31017df-7e6a-40a7-8c12-e9a81297e5ca",
+   "url": "http://localhost:3080/c/b31017df-7e6a-40a7-8c12-e9a81297e5ca",
+   "file": "/home/hyma/dev/librechat/uploads/decks/laptop-stack-deck-235620-9a77.pptx",
+   "deck_id": null,
+   "tools": [
+    "list_templates_mcp_ppt",
+    "render_svg_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt"
+   ],
+   "tool_errors": [],
+   "got": {
+    "slides": 5,
+    "charts": 0,
+    "tables": 0,
+    "pictures": 1,
+    "bullets": 13,
+    "max_bullet_chars": 53,
+    "titles": [
+     "The Laptop Stack",
+     "What is the Laptop Stack?",
+     "Layered Architecture Overview",
+     "Runtime Environments & Services",
+     "Why the Stack Matters"
+    ],
+    "bullet_overflow_slides": []
+   },
+   "final_text": "",
+   "seconds": 220.6
+  },
+  {
+   "id": "visual-04",
+   "category": "visuals",
+   "prompt": "Make a 5-slide deck about solar panels. On one slide add a simple diagram you draw yourself as SVG.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": false,
+   "failures": [
+    "runner: [Errno 104] Connection reset by peer"
+   ],
+   "conversationId": null,
+   "url": "",
+   "file": null,
+   "deck_id": null,
+   "tools": [],
+   "tool_errors": [],
+   "got": null,
+   "final_text": "",
+   "seconds": 0,
+   "warnings": [],
+   "note": ""
+  },
+  {
+   "id": "visual-05",
+   "category": "visuals",
+   "prompt": "Make a 5-slide deck about a factory line. On one slide add a simple diagram you draw yourself as SVG.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": false,
+   "failures": [
+    "runner: [Errno 104] Connection reset by peer"
+   ],
+   "conversationId": null,
+   "url": "",
+   "file": null,
+   "deck_id": null,
+   "tools": [],
+   "tool_errors": [],
+   "got": null,
+   "final_text": "",
+   "seconds": 0,
+   "warnings": [],
+   "note": ""
+  },
+  {
+   "id": "visual-06",
+   "category": "visuals",
+   "prompt": "Make a 5-slide deck about a delivery route. On one slide add a simple diagram you draw yourself as SVG.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": false,
+   "failures": [
+    "runner: [Errno 104] Connection reset by peer"
+   ],
+   "conversationId": null,
+   "url": "",
+   "file": null,
+   "deck_id": null,
+   "tools": [],
+   "tool_errors": [],
+   "got": null,
+   "final_text": "",
+   "seconds": 0,
+   "warnings": [],
+   "note": ""
+  },
+  {
+   "id": "visual-07",
+   "category": "visuals",
+   "prompt": "Make a 4-slide deck about coffee roasting with a simple icon graphic on the title slide.",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "pass": false,
+   "failures": [
+    "runner: [Errno 104] Connection reset by peer"
+   ],
+   "conversationId": null,
+   "url": "",
+   "file": null,
+   "deck_id": null,
+   "tools": [],
+   "tool_errors": [],
+   "got": null,
+   "final_text": "",
+   "seconds": 0,
+   "warnings": [],
+   "note": ""
+  }
+ ]
+}

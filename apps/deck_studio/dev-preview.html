@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Deck Studio — dev preview</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1220; }
+  body { display: grid; place-items: center; font: 13px ui-sans-serif, system-ui, sans-serif; color: #e8eaee; }
+  .frame { width: min(96vw, 1200px); height: min(92vh, 834px); border: 1px solid #3b4453;
+           border-radius: 12px; overflow: hidden; background: #f8fafc; }
+  .note { position: fixed; bottom: 8px; left: 12px; opacity: .7; }
+  iframe { width: 100%; height: 100%; border: 0; display: block; }
+</style>
+</head>
+<body>
+  <div class="frame"><iframe id="view" title="Deck Studio preview"></iframe></div>
+  <p class="note">Dev harness — fixture data, no MCP host. Not part of the App resource.</p>
+<script type="module">
+  // Renders the real App shell with a fake tool result so layout, keyboard behaviour,
+  // contrast and the EN/FR switch can be inspected in a plain browser tab, without a
+  // model turn and without a live LibreChat session.
+  //
+  //   http://decks.local:8931/apps/deck_studio/dev-preview.html?deck=<previews-dir-name>
+  //
+  // The fixture only needs public URLs of already-rendered slides, which the same origin
+  // already serves. Nothing here touches the filesystem or the MCP tools.
+  const params = new URLSearchParams(location.search);
+  const deck = params.get("deck") || "";
+  const slides = Number(params.get("slides") || 5);
+  const labels = (params.get("labels") || "").split("|").filter(Boolean);
+  const base = location.origin;
+
+  const fixture = {
+    deck_id: deck || "fixture",
+    title: params.get("title") || "The Water Cycle",
+    file: `/example/${deck || "fixture"}.pptx`,
+    slides: Array.from({ length: slides }, (_, i) => ({
+      index: i + 1,
+      label: labels[i] || ["The Water Cycle", "Overview", "Condensation & Precipitation",
+                           "Visualising the Cycle", "Why the Water Cycle Matters"][i] || "",
+      url: deck ? `${base}/decks/${deck}/slide-${i + 1}.png` : `${base}/apps/deck_studio/preview.svg`,
+    })),
+    templates: [
+      { label: "Corporate Teal", file: "corporate-2slide.pptx", description: "Teal and navy",
+        thumb: deck ? `${base}/decks/${deck}/slide-1.png` : `${base}/apps/deck_studio/preview.svg` },
+      { label: "Midnight", file: "midnight.pptx", description: "Dark",
+        thumb: deck ? `${base}/decks/${deck}/slide-2.png` : `${base}/apps/deck_studio/preview.svg` },
+      { label: "Sandstone", file: "sandstone.pptx", description: "Warm",
+        thumb: deck ? `${base}/decks/${deck}/slide-3.png` : `${base}/apps/deck_studio/preview.svg` },
+    ],
+  };
+
+  const frame = document.getElementById("view");
+  const html = await (await fetch("./index.html")).text();
+  const payload = JSON.stringify(fixture).replace(/</g, "\\u003c");
+  const tag = ["<scr", "ipt>", "globalThis.__DECK_MOCK__=", payload, "</scr", "ipt>"].join("");
+  const doc = html
+    .replace("__APP_JS__", new URL("./app.js", location.href).href)
+    .replace("<head>", `<head>${tag}`);
+  frame.srcdoc = doc;
+</script>
+</body>
+</html>
