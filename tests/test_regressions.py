@@ -284,6 +284,22 @@ class RendererBackendRegressions(unittest.TestCase):
             if original is not None:
                 os.environ["PPT_RENDERER"] = original
 
+    def test_portable_soffice_path_is_used(self):
+        """SOFFICE_BIN points at an unzipped LibreOffice, so no install/PATH change is needed."""
+        from deck_preview import RendererUnavailable, _render_soffice
+
+        original = os.environ.get("SOFFICE_BIN")
+        os.environ["SOFFICE_BIN"] = "/nonexistent/soffice"
+        try:
+            with self.assertRaises(RendererUnavailable) as ctx:
+                _render_soffice(Path(_TEMPLATES / "corporate-2slide.pptx"), _TMP / "out")
+            self.assertIn("/nonexistent/soffice", str(ctx.exception))
+        finally:
+            if original is None:
+                os.environ.pop("SOFFICE_BIN", None)
+            else:
+                os.environ["SOFFICE_BIN"] = original
+
     def test_disabled_renderer_degrades_instead_of_failing(self):
         from deck_preview import build_preview
 

@@ -44,6 +44,9 @@ only needed to show slide thumbnails in the chat pane:
 | `powerpoint` | COM via `pywin32` | exact PowerPoint rendering, no extra install where Office exists |
 | `none` | — | decks, edits and downloads still work; `preview_error` explains the missing pictures |
 
+`SOFFICE_BIN=/opt/libreoffice/program/soffice` points at an unzipped/portable LibreOffice, so no
+installer, registry entry or PATH change is required (handy on locked-down Windows servers).
+
 Deployed on this box as systemd user unit `ppt-mcp.service`; template fixture is
 `templates/corporate-2slide.pptx`.
 

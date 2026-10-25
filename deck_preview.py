@@ -66,15 +66,23 @@ def _pick_renderer() -> str:
         return choice
     if os.name == "nt":
         return "powerpoint"
-    return "soffice" if shutil.which("soffice") else "none"
+    binary = _soffice_bin()
+    return "soffice" if (Path(binary).is_file() or shutil.which(binary)) else "none"
+
+
+def _soffice_bin() -> str:
+    """SOFFICE_BIN lets a portable/unzipped LibreOffice be used without touching PATH."""
+    return os.environ.get("SOFFICE_BIN") or "soffice"
 
 
 def _render_soffice(pptx: Path, outdir: Path) -> int:
-    if not shutil.which("soffice"):
-        raise RendererUnavailable("soffice not found on PATH (install libreoffice-impress)")
+    binary = _soffice_bin()
+    if not (Path(binary).is_file() or shutil.which(binary)):
+        raise RendererUnavailable(
+            f"soffice not found ({binary}); install libreoffice-impress or set SOFFICE_BIN")
     with tempfile.TemporaryDirectory() as tmp:
         subprocess.run(
-            ["soffice", "--headless", "--convert-to", "pdf", "--outdir", tmp, str(pptx)],
+            [binary, "--headless", "--convert-to", "pdf", "--outdir", tmp, str(pptx)],
             check=True, capture_output=True, timeout=180,
         )
         pdf = next(Path(tmp).glob("*.pdf"), None)
