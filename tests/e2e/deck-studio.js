@@ -6,6 +6,7 @@
  *   2. slide images must actually load (resourceDomains CSP + CORS on the asset origin)
  *   3. the template gallery must render 5 styles
  *   4. the style panel and the per-phrase controls must exist (old App snapshots must not break it)
+ *   5. the Download .pptx button must open the deck (an IP-literal public base is silently blocked)
  *
  * Requires the dev stack up (LibreChat :3080, MCP :8931) and a conversation containing an App.
  *   CONVO=<conversation-id> node tests/e2e/deck-studio.js
@@ -83,6 +84,27 @@ function check(name, ok, detail = '') {
     check('style panel opens', await frame.locator('#si-apply').isVisible());
     check('per-phrase controls present (style_text UI)',
       (await frame.locator('#st-phrase').count()) === 1 && (await frame.locator('#st-apply').count()) === 1);
+
+    // Download button: the host must actually open the .pptx. An IP-literal public base is
+    // silently blocked by the MCP App bridge, so this pins the hostname requirement end to end.
+    const context = page.context();
+    const downloadBtn = frame.locator('button.download');
+    const hasDownload = (await downloadBtn.count()) === 1;
+    check('Download .pptx button present', hasDownload);
+    let filename = null;
+    const onDownload = (d) => { filename = d.suggestedFilename(); };
+    page.on('download', onDownload);
+    context.on('page', (p) => p.on('download', onDownload));
+    try {
+      if (hasDownload) {
+        await downloadBtn.click();
+        await page.waitForTimeout(5000);
+      }
+    } finally {
+      page.off('download', onDownload);
+    }
+    check('Download button triggers a .pptx download',
+      filename === 'deck.pptx', filename ? `got ${filename}` : 'no download event');
 
     await frame.locator('#edit-cancel').click().catch(() => {});
     await page.screenshot({ path: '/tmp/e2e-deck-studio.png' });

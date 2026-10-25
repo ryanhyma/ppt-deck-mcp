@@ -111,7 +111,7 @@ RUN_E2E=1 CONVO=<id> tests/run_all.sh                 # + 7 browser checks (need
 | Layer | What it covers |
 |---|---|
 | `tests/test_regressions.py` | one test per defect ever found (layout, styling, validation, renderers, import) |
-| `tests/e2e/deck-studio.js` | the pane actually renders: iframe, CSP/CORS, thumbnails, gallery, controls |
+| `tests/e2e/deck-studio.js` | the pane actually renders: iframe, CSP/CORS, thumbnails, gallery, controls, download |
 | `tests/run_suite.py` + `tests/cases.json` | 100-case corpus against the local model, judged on the artefact |
 
 CI (`.github/workflows/tests.yml`) runs the unit layer on 3.12 and 3.13. Results:
