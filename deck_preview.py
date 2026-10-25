@@ -5,6 +5,7 @@ the tool result and loads them from this server's `/decks/...` HTTP route.
 """
 from __future__ import annotations
 
+import ipaddress
 import json
 import os
 import re
@@ -15,6 +16,7 @@ import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
+from urllib.parse import urlsplit
 
 from pptx import Presentation
 
@@ -38,8 +40,27 @@ PREVIEW_ROOT = "previews"
 _TEMPLATE_DIRS_FN = None
 
 
+def _is_ip_literal(host: str) -> bool:
+    """True when ``host`` is an IP address literal (IPv4 or IPv6)."""
+    try:
+        ipaddress.ip_address(host.strip("[]"))
+        return True
+    except ValueError:
+        return False
+
+
 def public_base() -> str:
-    return os.environ.get("PPT_PUBLIC_BASE", "http://host.docker.internal:8931").rstrip("/")
+    base = os.environ.get("PPT_PUBLIC_BASE", "http://host.docker.internal:8931").rstrip("/")
+    # LibreChat's MCP App bridge refuses to open host-opened links whose host is an IP
+    # address literal (DNS-rebinding hardening), so a numeric PPT_PUBLIC_BASE silently
+    # breaks the Deck Studio "Download .pptx" button. Fail fast with the fix instead.
+    if _is_ip_literal(urlsplit(base).hostname or ""):
+        raise RuntimeError(
+            f"PPT_PUBLIC_BASE={base!r} uses an IP address literal, which LibreChat blocks for "
+            "host-opened links (the Download button). Use a hostname instead, e.g. "
+            "http://decks.local:8931 mapped to the host bridge IP in /etc/hosts."
+        )
+    return base
 
 
 def preview_root() -> Path:

@@ -555,6 +555,68 @@ class HarnessRegressions(unittest.TestCase):
         self.assertIn("no deck produced", fails)
 
 
+class PublicBaseRegressions(unittest.TestCase):
+    """PPT_PUBLIC_BASE must be a hostname, never an IP address literal.
+
+    LibreChat's MCP App bridge refuses to open host-opened links whose host is an IP
+    literal, so a numeric base silently disables the Deck Studio "Download .pptx" button.
+    """
+
+    def test_rejects_ipv4_literal(self):
+        from deck_preview import public_base
+
+        original = os.environ.get("PPT_PUBLIC_BASE")
+        try:
+            os.environ["PPT_PUBLIC_BASE"] = "http://172.17.0.1:8931"
+            with self.assertRaisesRegex(RuntimeError, "IP address"):
+                public_base()
+        finally:
+            if original is None:
+                os.environ.pop("PPT_PUBLIC_BASE", None)
+            else:
+                os.environ["PPT_PUBLIC_BASE"] = original
+
+    def test_rejects_ipv6_literal(self):
+        from deck_preview import public_base
+
+        original = os.environ.get("PPT_PUBLIC_BASE")
+        try:
+            os.environ["PPT_PUBLIC_BASE"] = "http://[::1]:8931"
+            with self.assertRaises(RuntimeError):
+                public_base()
+        finally:
+            if original is None:
+                os.environ.pop("PPT_PUBLIC_BASE", None)
+            else:
+                os.environ["PPT_PUBLIC_BASE"] = original
+
+    def test_accepts_hostname(self):
+        from deck_preview import public_base
+
+        original = os.environ.get("PPT_PUBLIC_BASE")
+        try:
+            os.environ["PPT_PUBLIC_BASE"] = "http://decks.local:8931"
+            self.assertEqual(public_base(), "http://decks.local:8931")
+        finally:
+            if original is None:
+                os.environ.pop("PPT_PUBLIC_BASE", None)
+            else:
+                os.environ["PPT_PUBLIC_BASE"] = original
+
+    def test_default_is_hostname(self):
+        from deck_preview import public_base
+
+        original = os.environ.get("PPT_PUBLIC_BASE")
+        try:
+            os.environ.pop("PPT_PUBLIC_BASE", None)
+            self.assertEqual(public_base(), "http://host.docker.internal:8931")
+        finally:
+            if original is None:
+                os.environ.pop("PPT_PUBLIC_BASE", None)
+            else:
+                os.environ["PPT_PUBLIC_BASE"] = original
+
+
 def tearDownModule():
     shutil.rmtree(_TMP, ignore_errors=True)
 

@@ -91,6 +91,11 @@ Environment variables, or a `ppt-mcp.config.json` beside `server.py` (env wins):
 | `public_base` | `PPT_PUBLIC_BASE` | origin the browser/container uses to reach this server |
 | `aspose_license_path` | `ASPOSE_LICENSE_PATH` | licence for the `aspose` renderer |
 
+**`public_base` must be a hostname, not an IP address.** LibreChat's MCP App bridge refuses
+host-opened links to IP address literals, which silently disables the Deck Studio **Download .pptx**
+button. Map a name to the host bridge IP in `/etc/hosts` (e.g. `172.17.0.1  decks.local`) and set
+`PPT_PUBLIC_BASE=http://decks.local:8931`. The server rejects an IP-literal base at startup.
+
 **Rendering is a view dependency, never a data one.** Building and editing a `.pptx` needs no office
 suite; without a renderer the deck still builds, downloads and reports `preview_error`.
 Capacity: [`docs/renderers.md`](docs/renderers.md).
