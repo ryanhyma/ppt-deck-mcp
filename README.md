@@ -61,7 +61,7 @@ politely, and `prefers-reduced-motion` / `prefers-contrast` are honoured. These 
 by unit tests, and the interactive half by the Playwright check.
 
 If the chat column looks narrow on a widescreen display, that is LibreChat's message width, not the
-pane — see `docs/librechat-wide-chat.md` in the dev deployment for the one-file stylesheet fix.
+pane — see `~/dev/librechat/local-ui/README.md` for the one-file stylesheet fix.
 
 ## Quick start
 
