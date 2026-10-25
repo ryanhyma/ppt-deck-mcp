@@ -5,3 +5,4 @@ __pycache__/
 upstream/.git/
 upstream/public/
 tests/results/*.json
+tests/results/
