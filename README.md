@@ -1,69 +1,128 @@
-# ppt-mcp — deck builder for LibreChat (and any MCP client)
+# ppt-deck-mcp
 
-Vendored fork of [GongRzhe/Office-PowerPoint-MCP-Server](https://github.com/GongRzhe/Office-PowerPoint-MCP-Server)
-(MIT, archived upstream) plus two small-model-facing tools.
+An MCP server that builds **corporate PowerPoint decks** from a plain-language request, plus an
+interactive pane inside LibreChat for previewing, restyling and downloading them.
 
-## Provenance / pinning
+Designed for a **small local model** (Qwen3.6-27B in 3-bit) as the driver: the model emits structure,
+the server owns layout. It also works with any MCP client.
 
-- `upstream/` = unmodified copy of the upstream repo at its last commit (v2.0.7, 37 tools, MIT).
-  Upstream is archived but feature-complete; we own this copy and do not track it.
-- Runtime is local only: `python-pptx` + `Pillow` + `fonttools`, no network calls.
-- `mcp<2` is pinned (1.30.0). Upstream imports `mcp.server.fastmcp`, which the 2.x SDK removed.
+**Status (2026-10-25):** 100-case corpus **97/100** (median 88 s/deck) · 35 unit tests · 7 browser checks · CI green on Python 3.12 & 3.13.
 
-## What we add
+```mermaid
+flowchart LR
+  user[Chat message] --> llm[27B / any model]
+  llm -->|list_templates, build_deck, preview_deck| mcp[ppt-mcp server]
+  mcp -->|python-pptx| deck[(.pptx)]
+  mcp -->|renderer: soffice / powerpoint / aspose / none| png[(slide PNGs)]
+  mcp -->|MCP App ui://deck-studio| pane[LibreChat pane]
+  pane -->|style_slide, style_text| mcp
+  pane -->|Download .pptx| user
+```
 
-| File | Role |
+## Tools (10 own + 37 vendored)
+
+| Tool | Purpose |
 |---|---|
-| `deck_tools.py` | `list_templates` (catalog + layout indices) and `build_deck` (JSON outline → .pptx, one call) |
-| `deck_style.py` | deterministic slide chrome (navy title, teal accent bar, footer) |
-| `server.py` | entry point: upstream app + our tools, `--transport http\|stdio` |
-| `tools/make_template.py` | regenerates the 2-slide corporate fixture |
+| `list_templates` | template catalog with theme metadata + preview images |
+| `build_deck` | one call: outline (bullets / native chart / table / image) → `.pptx` |
+| `preview_deck` | render a deck and open the **Deck Studio** pane |
+| `get_deck_outline` | read a `.pptx` back as an editable outline, including per-slide `style` |
+| `style_slide` | per-slide formatting in place: size, colour, font, alignment, bold/italic |
+| `style_text` | per-run emphasis: bold/italic/colour a specific phrase |
+| `import_deck` | bring a chat-uploaded `.pptx` into the workspace |
+| `get_last_deck` / `list_decks` | find decks for editing |
+| `render_svg` | SVG markup → transparent PNG for slide graphics |
 
-## Run
+Vendored from [GongRzhe/Office-PowerPoint-MCP-Server](https://github.com/GongRzhe/Office-PowerPoint-MCP-Server)
+(MIT, archived) in `upstream/`, unmodified: low-level slide tools (`add_slide`, `manage_text`,
+`add_chart`, `apply_professional_design`, …) available for repair work. `build_deck` is the
+small-model path; the low-level tools require coordinates a 3-bit model gets wrong.
+
+## Deck Studio pane (LibreChat, no fork)
+
+A tool that declares `_meta.ui.resourceUri` gets an interactive view in the chat: slide thumbnails,
+click-to-zoom, a 5-template gallery, per-slide style controls, per-phrase emphasis, "Ask agent to
+edit", and a **Download .pptx** button. Styling calls the server **directly** over the MCP Apps
+bridge — no model, no tokens — with one approval click. Details: [`docs/decisions.md`](docs/decisions.md).
+
+## Quick start
 
 ```sh
-# dev (host process, reachable from the LibreChat container)
-.venv/bin/python server.py --transport http --host 172.17.0.1 --port 8931
+git clone https://github.com/ryanhyma/ppt-deck-mcp && cd ppt-deck-mcp
+python -m venv .venv && .venv/bin/pip install -r requirements.txt
 
-# production (native Windows Server, LibreChat spawns it)
+# Linux: previews via LibreOffice Impress (optional — decks build without any office suite)
+sudo apt-get install --no-install-recommends libreoffice-impress
+
+# run (stdio for a native LibreChat, http for the containerised dev stack)
 .venv/bin/python server.py --transport stdio
+.venv/bin/python server.py --transport http --host 127.0.0.1 --port 8931
 ```
 
-Env: `PPT_TEMPLATE_PATH` (template dirs), `PPT_OUTPUT_DIR` (output dir),
-`PPT_RENDERER` (`auto` | `soffice` | `powerpoint` | `none`).
+Windows (portable LibreOffice, one unzip): [`docs/windows-setup.md`](docs/windows-setup.md).
 
-### Preview renderer (optional)
+Register with LibreChat:
 
-Tested options and their verdicts: [`docs/renderers.md`](docs/renderers.md). Product decisions: [`docs/decisions.md`](docs/decisions.md).
-Windows walkthrough (portable LibreOffice, one unzip): [`docs/windows-setup.md`](docs/windows-setup.md).
+```yaml
+mcpServers:
+  ppt:
+    type: streamable-http          # or `stdio` with command/args
+    url: http://host.docker.internal:8931/mcp
+    timeout: 180000
+mcpSettings:
+  apps: true                       # required for the Deck Studio pane
+```
 
-Building and editing decks needs **no** office suite — python-pptx writes OOXML directly. A renderer is
-only needed to show slide thumbnails in the chat pane:
+## Configuration
 
-| `PPT_RENDERER` | Uses | Notes |
+Environment variables, or a `ppt-mcp.config.json` beside `server.py` (env wins):
+
+| Key | Env | Meaning |
 |---|---|---|
-| `auto` (default) | PowerPoint on Windows, else `soffice`, else `none` | picks what the host can do |
-| `soffice` | `libreoffice-impress` + `poppler-utils` | `--no-install-recommends` is enough (~200 MB), no GUI needed |
-| `powerpoint` | COM via `pywin32` | exact PowerPoint rendering, no extra install where Office exists |
-| `aspose` | `pip install aspose-slides` | no Office, no LibreOffice; **commercial** (evaluation adds a watermark) |
-| `none` | — | decks, edits and downloads still work; `preview_error` explains the missing pictures |
+| `renderer` | `PPT_RENDERER` | `auto` · `soffice` · `powerpoint` · `aspose` · `none` |
+| `soffice_bin` | `SOFFICE_BIN` | path to `soffice(.exe)`; Windows portable is auto-detected |
+| `template_path` | `PPT_TEMPLATE_PATH` | template directories |
+| `output_dir` | `PPT_OUTPUT_DIR` | where decks and previews are written |
+| `upload_dir` | `PPT_UPLOAD_DIR` | LibreChat uploads dir, for `import_deck` |
+| `public_base` | `PPT_PUBLIC_BASE` | origin the browser/container uses to reach this server |
+| `aspose_license_path` | `ASPOSE_LICENSE_PATH` | licence for the `aspose` renderer |
 
-Notes for `aspose`: works on Windows with nothing extra (GDI+ is native); on Linux it needs
-`libgdiplus`. Set `ASPOSE_LICENSE_PATH` to a purchased licence to drop the watermark. It is *not* in
-`requirements.txt` — install it only if you choose that backend.
+**Rendering is a view dependency, never a data one.** Building and editing a `.pptx` needs no office
+suite; without a renderer the deck still builds, downloads and reports `preview_error`.
+Capacity: [`docs/renderers.md`](docs/renderers.md).
 
-`SOFFICE_BIN=/opt/libreoffice/program/soffice` points at an unzipped/portable LibreOffice, so no
-installer, registry entry or PATH change is required (handy on locked-down Windows servers).
-
-Deployed on this box as systemd user unit `ppt-mcp.service`; template fixture is
-`templates/corporate-2slide.pptx`.
-
-## Test
+## Tests
 
 ```sh
-PPT_TEMPLATE_PATH=$PWD/templates PPT_OUTPUT_DIR=/tmp/out .venv/bin/python - <<'EOF'
-...
-EOF
+.venv/bin/python -m unittest discover -s tests -v     # 35 unit tests, ~5 s, no services
+RUN_E2E=1 CONVO=<id> tests/run_all.sh                 # + 7 browser checks (needs the stack)
+.venv/bin/python tests/run_suite.py --limit 10        # behaviour corpus, one chat per case
 ```
 
-Or call `list_templates` / `build_deck` from any MCP client.
+| Layer | What it covers |
+|---|---|
+| `tests/test_regressions.py` | one test per defect ever found (layout, styling, validation, renderers, import) |
+| `tests/e2e/deck-studio.js` | the pane actually renders: iframe, CSP/CORS, thumbnails, gallery, controls |
+| `tests/run_suite.py` + `tests/cases.json` | 100-case corpus against the local model, judged on the artefact |
+
+CI (`.github/workflows/tests.yml`) runs the unit layer on 3.12 and 3.13. Results:
+[`docs/SUITE-REPORT.md`](docs/SUITE-REPORT.md).
+
+## Repository layout
+
+```
+server.py            entry point: vendored app + our tools + Deck Studio assets over HTTP
+deck_tools.py        build_deck, style_slide, style_text, outline read-back
+deck_style.py        theme-aware chrome (accent bar, title rule, footer, page numbers)
+deck_preview.py      renderers (soffice/powerpoint/aspose/none), previews, download, import
+apps/deck_studio/    the MCP App: HTML/JS view + vendored ext-apps 1.5.7 bundle
+templates/           5 themed .pptx files + sidecar theme manifests
+upstream/            vendored MIT server (unmodified)
+tests/               unit, e2e, 100-case corpus + runner
+docs/                windows setup, renderers, decisions, suite report
+```
+
+## Licence / provenance
+
+Our code: see `LICENSE` if present, otherwise treat as the repo owner's. `upstream/` is MIT
+(GongRzhe/Office-PowerPoint-MCP-Server v2.0.7); upstream demo media was removed to keep the repo small.

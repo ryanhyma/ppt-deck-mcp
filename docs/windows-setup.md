@@ -20,9 +20,12 @@ py -3.12 -m venv .venv
 1. Get a portable build (LibreOfficePortable) or the normal installer pointed at `C:\tools\LibreOfficePortable`.
 2. Unzip so that `soffice.exe` sits at:
    `C:\tools\LibreOfficePortable\App\libreoffice\program\soffice.exe`
-3. That path is **auto-detected** — nothing else to configure. Other locations work via config below.
+3. That path is **auto-detected** (also `C:\LibreOfficePortable\…`, `%ProgramFiles%\LibreOffice\…`,
+   `%LOCALAPPDATA%\Programs\LibreOffice\…`) — nothing else to configure. Any other location works via
+   `soffice_bin` in the config file below.
 
-Impress alone is enough; Writer/Calc/Base are not needed for rendering decks.
+Impress alone is enough; Writer/Calc/Base are not needed. LibreOffice's own user profile is bypassed
+per render (`-env:UserInstallation=…`), so a left-open LibreOffice window won't deadlock the server.
 
 ## 3. Config
 
