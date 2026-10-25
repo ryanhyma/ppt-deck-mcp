@@ -60,10 +60,11 @@ Every string is in one dictionary, the default follows `hostContext.locale` and 
 readers change voice. `tests/test_regressions.py` fails the build if a string is missing from either
 language.
 
-> LibreChat's own "Open app" / "Close app" labels and the raw tool name on the attachment card
-> (`preview_deck`) stay English in a French UI: `client/src/locales/fr/translation.json` upstream has
-> no `com_ui_mcp_app_*` keys and the card does not read a tool `title`. Fixing that belongs upstream,
-> not in a local patch.
+> **Known gap — LibreChat's own chrome is English.** "Open app" / "Close app" and the raw tool name on
+> the attachment card (`preview_deck`) stay English in a French UI. `client/src/locales/fr/
+> translation.json` upstream has **no `com_ui_mcp_app_*` keys at all**, and the card renders the raw
+> tool name with no support for a tool `title`. Fixing it belongs upstream, not in a local patch —
+> see [Localising the host (LibreChat)](#localising-the-host-librechat).
 
 **Accessibility**: the pane targets WCAG 2.2 AA (AODA / Accessible Canada Act): every control is a
 native button with a ≥32px target, text contrast is ≥4.5:1, the viewer is a modal `<dialog>` with a
@@ -79,6 +80,57 @@ pane — see `~/dev/librechat/local-ui/README.md` for the one-file stylesheet fi
 `index.html` + `app.js` against a fixture tool result, so layout, the language switch, contrast and
 keyboard behaviour can be checked in a plain tab. It is a dev harness only; nothing in normal use
 reaches it.
+
+> **Heads-up — it is reachable to anything that can reach the MCP origin.** The asset route serves every
+> file in `apps/deck_studio/` without authentication, so `dev-preview.html` is readable by any process or
+> container that can hit the server (dev: `172.17.0.1:8931` / `decks.local:8931`). It has no filesystem
+> or tool access and carries fixture data only, but a production deployment should remove it or gate it
+> behind a dev flag. See [Hardening](#hardening).
+
+## Localising the host (LibreChat)
+
+Two of the strings a French user sees around this pane are not ours, and neither can be fixed without
+touching LibreChat. Both are small upstream changes — no fork required. Hand this to whoever owns the
+LibreChat deployment:
+
+> **Task: finish French localisation of MCP Apps in LibreChat**
+>
+> 1. `client/src/locales/fr/translation.json` is missing every `com_ui_mcp_app_*` key that the English
+>    file defines (`com_ui_mcp_app_open`, `…_close`, `…_open_named`, `…_close_named`, `…_frame_title`,
+>    `…_failed_to_load`, `…_stop`, `…_at_capacity`, the `confirm_*` and `action_warning` keys, …), so a
+>    French UI falls back to "Open app" / "Close app". Add fr-CA translations for the whole block
+>    (`Ouvrir l'application`, `Fermer l'application`, `Ouvrir l'application : {{0}} ({{1}})`, …).
+> 2. `client/src/components/MCPUIResource/MCPAppViews.tsx` renders the raw MCP tool name on the
+>    attachment card (`preview_deck`). Use `annotations.title` from the MCP tool definition when the
+>    server provides one, falling back to the tool name — the same courtesy `toolLabels.ts` already
+>    extends to a few built-in tools.
+> 3. `client/src/hooks/MCP/useAppBridge.ts` builds the App host context with
+>    `const { locale } = Intl.DateTimeFormat().resolvedOptions()`, i.e. the **browser/OS** locale. The
+>    language the user actually chose in **Settings → Language** is applied to
+>    `document.documentElement.lang` in `client/src/locales/i18n.ts`, but is never forwarded to the App.
+>    Send `i18n.language` (or `document.documentElement.lang`) as the host context `locale` instead, so
+>    an app can follow the user's product choice rather than their operating system.
+>
+> Acceptance: set the UI language to French, open any MCP App — the open/close controls, the card label
+> and the App's own default language are all French, including on a browser whose OS language is
+> English.
+
+Until item 3 lands, this pane follows the browser locale, then `navigator.language`, and the
+`English | Français` toggle is the reliable override. Item 1 + 2 need no changes here; item 3 is the
+one that makes the pane's default match LibreChat's Language setting.
+
+## Hardening
+
+**This server is not hardened.** It runs unauthenticated, `preview_deck(file=…)` accepts any absolute
+path, and rendering hands untrusted `.pptx` files to LibreOffice. That is acceptable for a single-user
+dev box on a trusted host and **not** acceptable for anything shared or network-reachable.
+
+The backlog — with what was verified in the code and the suggested treatment — is in
+[`docs/security.md`](docs/security.md). Two items are worth scheduling explicitly:
+
+- scope `preview_deck` / `import_deck` paths to the configured roots (same `_safe_file()` discipline the
+  HTTP routes already use);
+- put authentication (or a loopback-only bind / `stdio` transport) in front of the HTTP endpoint.
 
 ## Quick start
 
@@ -159,7 +211,7 @@ apps/deck_studio/    the MCP App: HTML/JS view + vendored ext-apps 1.5.7 bundle
 templates/           5 themed .pptx files + sidecar theme manifests
 upstream/            vendored MIT server (unmodified)
 tests/               unit, e2e, 100-case corpus + runner
-docs/                windows setup, renderers, decisions, suite report
+docs/                windows setup, renderers, decisions, suite report, security backlog
 ```
 
 ## Licence / provenance
