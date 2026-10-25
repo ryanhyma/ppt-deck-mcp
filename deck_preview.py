@@ -58,7 +58,7 @@ class RendererUnavailable(RuntimeError):
 def _pick_renderer() -> str:
     """soffice | powerpoint | none. PPT_RENDERER=auto picks what this host can actually do."""
     choice = (os.environ.get("PPT_RENDERER") or "auto").strip().lower()
-    if choice in ("soffice", "libreoffice", "powerpoint", "com", "none"):
+    if choice in ("soffice", "libreoffice", "powerpoint", "com", "none", "aspose"):
         if choice in ("libreoffice",):
             choice = "soffice"
         if choice in ("com",):
@@ -119,6 +119,28 @@ def _render_powerpoint(pptx: Path, outdir: Path) -> int:
     return len(sorted(outdir.glob("*.PNG")) + sorted(outdir.glob("*.png")))
 
 
+def _render_aspose(pptx: Path, outdir: Path) -> int:
+    """Aspose.Slides: no Office, no LibreOffice. Commercial licence; eval adds a watermark."""
+    try:
+        import aspose.slides as slides
+    except ImportError as exc:  # pragma: no cover - optional dependency
+        raise RendererUnavailable(
+            "aspose-slides is not installed (pip install aspose-slides); "
+            "it is a commercial library with an evaluation watermark") from exc
+
+    licence_path = os.environ.get("ASPOSE_LICENSE_PATH")
+    if licence_path:  # pragma: no cover - licence path is deployment-specific
+        slides.License().set_license(licence_path)
+
+    with slides.Presentation(str(pptx)) as pres:  # pragma: no cover - optional dependency
+        width = pres.slide_size.size.width
+        scale = max(1.0, 1600.0 / float(width or 960))
+        for index, slide in enumerate(pres.slides, start=1):
+            image = slide.get_image(scale, scale)
+            image.save(str(outdir / f"slide-{index}.png"), slides.ImageFormat.PNG)
+    return len(sorted(outdir.glob("slide-*.png")))
+
+
 def _render(pptx: Path, outdir: Path) -> int:
     """pptx -> PNGs for the pane. Returns the number of images written."""
     renderer = _pick_renderer()
@@ -126,6 +148,8 @@ def _render(pptx: Path, outdir: Path) -> int:
         raise RendererUnavailable("preview renderer disabled (PPT_RENDERER=none)")
     if renderer == "powerpoint":
         return _render_powerpoint(pptx, outdir)
+    if renderer == "aspose":
+        return _render_aspose(pptx, outdir)
     return _render_soffice(pptx, outdir)
 
 

@@ -42,7 +42,12 @@ only needed to show slide thumbnails in the chat pane:
 | `auto` (default) | PowerPoint on Windows, else `soffice`, else `none` | picks what the host can do |
 | `soffice` | `libreoffice-impress` + `poppler-utils` | `--no-install-recommends` is enough (~200 MB), no GUI needed |
 | `powerpoint` | COM via `pywin32` | exact PowerPoint rendering, no extra install where Office exists |
+| `aspose` | `pip install aspose-slides` | no Office, no LibreOffice; **commercial** (evaluation adds a watermark) |
 | `none` | — | decks, edits and downloads still work; `preview_error` explains the missing pictures |
+
+Notes for `aspose`: works on Windows with nothing extra (GDI+ is native); on Linux it needs
+`libgdiplus`. Set `ASPOSE_LICENSE_PATH` to a purchased licence to drop the watermark. It is *not* in
+`requirements.txt` — install it only if you choose that backend.
 
 `SOFFICE_BIN=/opt/libreoffice/program/soffice` points at an unzipped/portable LibreOffice, so no
 installer, registry entry or PATH change is required (handy on locked-down Windows servers).

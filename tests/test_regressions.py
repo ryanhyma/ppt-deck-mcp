@@ -262,7 +262,7 @@ class RendererBackendRegressions(unittest.TestCase):
         try:
             for value, expected in (("none", "none"), ("soffice", "soffice"),
                                     ("libreoffice", "soffice"), ("powerpoint", "powerpoint"),
-                                    ("com", "powerpoint")):
+                                    ("com", "powerpoint"), ("aspose", "aspose")):
                 os.environ["PPT_RENDERER"] = value
                 self.assertEqual(_pick_renderer(), expected, value)
         finally:
@@ -283,6 +283,19 @@ class RendererBackendRegressions(unittest.TestCase):
         finally:
             if original is not None:
                 os.environ["PPT_RENDERER"] = original
+
+    def test_aspose_backend_reports_missing_dependency(self):
+        """aspose-slides is optional; without it the tool degrades, it does not crash."""
+        from deck_preview import RendererUnavailable, _render_aspose
+
+        try:
+            import aspose.slides  # noqa: F401
+            self.skipTest("aspose-slides installed in this environment")
+        except ImportError:
+            pass
+        with self.assertRaises(RendererUnavailable) as ctx:
+            _render_aspose(Path(_TEMPLATES / "corporate-2slide.pptx"), _TMP / "out")
+        self.assertIn("aspose", str(ctx.exception).lower())
 
     def test_portable_soffice_path_is_used(self):
         """SOFFICE_BIN points at an unzipped LibreOffice, so no install/PATH change is needed."""
