@@ -95,7 +95,13 @@ def build_preview(pptx_path: str | Path, title: str = "") -> Dict[str, Any]:
     shipped = outdir / "deck.pptx"
     shutil.copyfile(src, shipped)
 
-    count = _render(src, outdir)
+    # Rendering is a view, not data: a host without LibreOffice must still get a valid deck and a
+    # clear error instead of a failed tool call.
+    count, preview_error = 0, None
+    try:
+        count = _render(src, outdir)
+    except Exception as exc:  # noqa: BLE001 - surface, don't crash
+        preview_error = f"{type(exc).__name__}: {str(exc)[:180]}"
     labels = _slide_labels(src)
     base = public_base()
 
@@ -114,6 +120,7 @@ def build_preview(pptx_path: str | Path, title: str = "") -> Dict[str, Any]:
         "file": str(src),
         "slide_count": count,
         "download": f"{base}/decks/{deck_id}/deck.pptx",
+        "preview_error": preview_error,
         "slides": slides,
     }
     (outdir / "deck.json").write_text(json.dumps(data, indent=1), encoding="utf-8")

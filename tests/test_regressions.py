@@ -252,6 +252,42 @@ class ImportRegressions(unittest.TestCase):
             TOOLS["import_deck"](file="old.pot")
 
 
+class PreviewRegressions(unittest.TestCase):
+    """A missing renderer must not fail a styling operation (it did on the GitHub runner)."""
+
+    def _break_renderer(self):
+        import deck_preview
+
+        original = deck_preview._render
+        deck_preview._render = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("soffice not found"))
+        return deck_preview, original
+
+    def test_build_preview_reports_the_error_instead_of_raising(self):
+        out = build(slides=[{"title": "T", "bullets": bullets(1)}])
+        module, original = self._break_renderer()
+        try:
+            from deck_preview import build_preview
+
+            data = build_preview(out["file"])
+        finally:
+            module._render = original
+        self.assertEqual(data["slides"], [])
+        self.assertIn("soffice not found", data["preview_error"])
+        self.assertTrue(data["download"].endswith("deck.pptx"))
+
+    def test_style_slide_still_applies_without_a_renderer(self):
+        out = build(slides=[{"title": "T", "bullets": bullets(1)}])
+        module, original = self._break_renderer()
+        try:
+            result = TOOLS["style_slide"](file=out["file"], slide_index=2, title_size=30)
+        finally:
+            module._render = original
+        self.assertEqual(result["slides"], [])
+        prs = Presentation(out["file"])
+        title = next(ph for ph in prs.slides[1].placeholders if ph.placeholder_format.idx == 0)
+        self.assertEqual(title.text_frame.paragraphs[0].runs[0].font.size, Pt(30))
+
+
 class HarnessRegressions(unittest.TestCase):
     """The suite's judge must not turn process noise into failures, or hide real ones."""
 
