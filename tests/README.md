@@ -29,6 +29,18 @@ inspect the produced `.pptx` with python-pptx. No LibreChat, no model, no networ
 | `import_deck` crashed on absolute paths / accepted legacy `.pot` | `ImportRegressions.*` |
 | Suite counted tool errors as failures, missed real ones | `HarnessRegressions.*` |
 
+### Correctness + concurrency
+
+`tests/test_regressions.py::VerifyRegressions` pins the safety net (missing table / wrong count are
+reported, matching decks pass). `ConcurrencyRegressions` and `OneVisualPerSlideRegressions` pin the
+one-visual rule, unique output names and per-deck render locking.
+
+Live probe against the running server (not part of CI):
+
+```sh
+.venv/bin/python tests/concurrency_check.py --workers 4 --out-dir <decks dir>
+```
+
 ## 2. Browser E2E (needs the stack up)
 
 ```sh

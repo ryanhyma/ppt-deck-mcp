@@ -420,6 +420,104 @@ class PreviewRegressions(unittest.TestCase):
         self.assertEqual(title.text_frame.paragraphs[0].runs[0].font.size, Pt(30))
 
 
+class VerifyRegressions(unittest.TestCase):
+    """verify_deck is the safety net for the failure class the model keeps repeating."""
+
+    def test_flags_missing_table_and_wrong_slide_count(self):
+        deck = build(slides=[{"title": "One", "bullets": bullets(2)}])["file"]
+        result = TOOLS["verify_deck"](file=deck, expected_slides=3, table=True, chart=False, image=False)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("slide count" in p for p in result["problems"]))
+        self.assertTrue(any("no table" in p for p in result["problems"]))
+        self.assertEqual(result["slide_count"], 2)
+
+    def test_passes_when_the_deck_matches_the_ask(self):
+        deck = build(slides=[
+            {"title": "One", "table": {"headers": ["a", "b"], "rows": [["1", "2"]]}},
+            {"title": "Two", "chart": {"type": "column", "categories": ["A"],
+                                       "series": [{"name": "S", "values": [1]}]}},
+        ])["file"]
+        result = TOOLS["verify_deck"](file=deck, expected_slides=3, table=True, chart=True)
+        self.assertTrue(result["ok"], result["problems"])
+        self.assertEqual((result["tables"], result["charts"]), (1, 1))
+
+    def test_missing_file_is_a_clear_error(self):
+        with self.assertRaises(FileNotFoundError):
+            TOOLS["verify_deck"](file=str(_TMP / "nope.pptx"))
+
+
+class OneVisualPerSlideRegressions(unittest.TestCase):
+    """Was: chart+table on one slide silently dropped the table (root cause of "table missing")."""
+
+    def test_two_visuals_on_one_slide_is_rejected(self):
+        with self.assertRaises(ValueError) as ctx:
+            build(slides=[{
+                "title": "Both",
+                "chart": {"type": "column", "categories": ["A"], "series": [{"name": "S", "values": [1]}]},
+                "table": {"headers": ["a"], "rows": [["1"]]},
+            }])
+        self.assertIn("one visual per slide", str(ctx.exception))
+
+    def test_table_and_chart_on_separate_slides_both_survive(self):
+        out = build(slides=[
+            {"title": "Table slide", "table": {"headers": ["a", "b"], "rows": [["1", "2"]]}},
+            {"title": "Chart slide", "chart": {"type": "pie", "categories": ["A", "B"],
+                                               "series": [{"name": "S", "values": [1, 2]}]}},
+        ])
+        check = TOOLS["verify_deck"](file=out["file"], expected_slides=3, table=True, chart=True)
+        self.assertTrue(check["ok"], check["problems"])
+
+
+class ConcurrencyRegressions(unittest.TestCase):
+    """Rendering and building must survive several users at once."""
+
+    def test_parallel_builds_do_not_collide(self):
+        from concurrent.futures import ThreadPoolExecutor
+
+        def make(i):
+            return build(title=f"Deck {i}", slides=[{"title": f"S{i}", "bullets": bullets(2)}],
+                         output_name="parallel")["file"]
+
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            files = list(pool.map(make, range(6)))
+        self.assertEqual(len(set(files)), 6, "output names must be unique")
+        for f in files:
+            self.assertEqual(len(Presentation(f).slides), 2)
+
+    def test_same_deck_rendered_concurrently_is_consistent(self):
+        from concurrent.futures import ThreadPoolExecutor
+
+        from deck_preview import build_preview
+
+        deck = build(slides=[{"title": "A", "bullets": bullets(1)},
+                             {"title": "B", "bullets": bullets(1)}])["file"]
+        with ThreadPoolExecutor(max_workers=5) as pool:
+            results = list(pool.map(lambda _: build_preview(deck), range(5)))
+        for data in results:
+            self.assertEqual(data["slide_count"], 3)
+            self.assertTrue(data["download"].endswith("deck.pptx"))
+        # the surviving preview must be complete and readable
+        first = results[-1]
+        self.assertEqual(first["slide_count"], 3)
+
+    def test_concurrent_style_and_preview_keep_the_deck_valid(self):
+        from concurrent.futures import ThreadPoolExecutor
+
+        from deck_preview import build_preview
+
+        deck = build(slides=[{"title": "A", "bullets": bullets(2)}])["file"]
+
+        def work(i):
+            if i % 2:
+                return TOOLS["style_slide"](file=deck, slide_index=2, body_size=18 + i)
+            return build_preview(deck)
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            list(pool.map(work, range(8)))
+        # the file must still open and be complete after interleaved saves and renders
+        self.assertEqual(len(Presentation(deck).slides), 2)
+
+
 class HarnessRegressions(unittest.TestCase):
     """The suite's judge must not turn process noise into failures, or hide real ones."""
 

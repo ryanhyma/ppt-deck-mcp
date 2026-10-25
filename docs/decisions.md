@@ -29,3 +29,14 @@ Short, dated, and reversible-with-reason. The long-form trail lives in the opera
   worse than no preview; if a renderer is unavailable, `preview_error` says so.
 - **The browser E2E stays out of CI** (it needs the LibreChat stack); CI runs the 35 unit tests on
   3.12 and 3.13.
+
+## 2026-10-25 — Correctness guards
+
+- **One visual per slide, enforced.** A spec with `chart` + `table` used to keep the chart and drop the
+  table silently — the single most misleading output we produced. `build_deck` now raises instead.
+- **`verify_deck` is the safety net, not the judge.** It takes what the user asked for (slide count,
+  table/chart/image) and returns concrete problems. The agent must call it after `build_deck` and may
+  rebuild once. In the re-run, 5 of 11 cases used that retry loop and all ended correct.
+- **Concurrency is a product requirement.** Output names carry a random suffix, decks are written
+  atomically (temp + rename), and rendering takes a per-deck lock so two users styling/rendering the
+  same deck cannot interleave. LibreOffice gets a throwaway `UserInstallation` per call.

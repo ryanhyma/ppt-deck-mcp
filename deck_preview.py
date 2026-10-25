@@ -11,6 +11,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
@@ -18,6 +19,19 @@ from typing import Any, Dict, List
 from pptx import Presentation
 
 APP_URI = "ui://deck-studio/index.html"
+
+# Rendering writes into one directory per deck_id; concurrent calls for the same deck must serialise.
+_RENDER_LOCKS: Dict[str, "threading.Lock"] = {}
+_RENDER_LOCKS_GUARD = threading.Lock()
+
+
+def _render_lock(deck_id: str):
+    with _RENDER_LOCKS_GUARD:
+        lock = _RENDER_LOCKS.get(deck_id)
+        if lock is None:
+            lock = threading.Lock()
+            _RENDER_LOCKS[deck_id] = lock
+        return lock
 PREVIEW_ROOT = "previews"
 
 # Set by register_preview_tools(): lets the view show the template gallery.
@@ -217,6 +231,11 @@ def build_preview(pptx_path: str | Path, title: str = "") -> Dict[str, Any]:
     root = preview_root()
     deck_id = _deck_id(src)
     outdir = root / deck_id
+    with _render_lock(deck_id):  # same deck rendered concurrently: serialise, last writer wins
+        return _build_preview_locked(src, deck_id, outdir, title)
+
+
+def _build_preview_locked(src: Path, deck_id: str, outdir: Path, title: str) -> Dict[str, Any]:
     if outdir.exists():
         shutil.rmtree(outdir)
     outdir.mkdir(parents=True)
@@ -353,12 +372,13 @@ def template_preview_urls(pptx_path: str | Path) -> List[str]:
     """Render a template's example slides once and return URL(s) for the gallery."""
     src = Path(pptx_path)
     outdir = preview_root() / f"tpl-{_deck_id(src)}"
-    if not (outdir / "slide-1.png").is_file():
-        outdir.mkdir(parents=True, exist_ok=True)
-        try:
-            _render(src, outdir)
-        except Exception:
-            return []
+    with _render_lock(outdir.name):  # several gallery loads can race for the same template
+        if not (outdir / "slide-1.png").is_file():
+            outdir.mkdir(parents=True, exist_ok=True)
+            try:
+                _render(src, outdir)
+            except Exception:
+                return []
     base = public_base()
     files = sorted(outdir.glob("slide-*.png"), key=lambda p: int(p.stem.split("-")[1]))
     return [f"{base}/decks/{outdir.name}/{f.name}" for f in files]

@@ -1300,6 +1300,110 @@
     "template": "midnight.pptx"
    },
    "note": ""
+  },
+  {
+   "id": "regress-01",
+   "category": "regression",
+   "prompt": "Make a 5-slide vendor comparison deck with a table of 4 columns and 4 rows.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "regress-02",
+   "category": "regression",
+   "prompt": "Make a 6-slide market entry plan that includes both a bar chart and a table.",
+   "expect": {
+    "slides": 6,
+    "chart": true,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "regress-03",
+   "category": "regression",
+   "prompt": "Make a 5-slide research summary with a chart and a diagram, no table.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "regress-04",
+   "category": "regression",
+   "prompt": "Make a 4-slide board update with exactly one table and nothing else visual.",
+   "expect": {
+    "slides": 4,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "regress-05",
+   "category": "regression",
+   "prompt": "Make a 7-slide programme review with a chart, a table and an SVG diagram.",
+   "expect": {
+    "slides": 7,
+    "chart": true,
+    "table": true,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "regress-06",
+   "category": "regression",
+   "prompt": "Make a 5-slide hiring plan where the third slide is a table of roles and start dates.",
+   "expect": {
+    "slides": 5,
+    "chart": false,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "regress-07",
+   "category": "regression",
+   "prompt": "Make a 6-slide safety briefing with a simple SVG diagram on one slide.",
+   "expect": {
+    "slides": 6,
+    "chart": false,
+    "table": false,
+    "image": true,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
+  },
+  {
+   "id": "regress-08",
+   "category": "regression",
+   "prompt": "Make a 5-slide pricing proposal with a doughnut chart and a 5-row table.",
+   "expect": {
+    "slides": 5,
+    "chart": true,
+    "table": true,
+    "image": false,
+    "template": "corporate-2slide.pptx"
+   },
+   "note": ""
   }
  ]
 }

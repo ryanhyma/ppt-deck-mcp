@@ -146,5 +146,20 @@ for i, (topic, style) in enumerate(zip(["product review", "hiring plan", "cost a
         f"Use template {style} for a 6-slide deck about {topic} with a chart and a table.", 6,
         chart=True, table=True, template=style)
 
+# ---------------------------------------------------------------- regression (from real failures)
+REGRESSION = [
+    ("5-slide vendor comparison deck with a table of 4 columns and 4 rows", 5, {"table": True}),
+    ("6-slide market entry plan that includes both a bar chart and a table", 6, {"chart": True, "table": True}),
+    ("5-slide research summary with a chart and a diagram, no table", 5, {"chart": True, "image": True}),
+    ("4-slide board update with exactly one table and nothing else visual", 4, {"table": True}),
+    ("7-slide programme review with a chart, a table and an SVG diagram", 7,
+     {"chart": True, "table": True, "image": True}),
+    ("5-slide hiring plan where the third slide is a table of roles and start dates", 5, {"table": True}),
+    ("6-slide safety briefing with a simple SVG diagram on one slide", 6, {"image": True}),
+    ("5-slide pricing proposal with a doughnut chart and a 5-row table", 5, {"chart": True, "table": True}),
+]
+for i, (prompt, n, expects) in enumerate(REGRESSION, start=1):
+    add(f"regress-{i:02d}", "regression", f"Make a {prompt}.", n, **expects)
+
 if __name__ == "__main__":
     print(json.dumps({"version": 1, "cases": CASES}, indent=1))

@@ -55,3 +55,28 @@ Instructions, not code, produced most of the gains — measured, not asserted:
 2. **Slide-count drift (1/100)** — cheap guard: the agent could assert `slide_count` against the ask.
 3. Per-run emphasis in the pane (bold a phrase) exists as `style_text`; a text-selection UI is not built.
 4. Renderer: portable LibreOffice is the chosen Windows path; Aspose remains the paid alternative.
+
+## Addendum — the three failures fixed (2026-10-25, later)
+
+Root cause found while writing a test for `verify_deck`: **a slide spec carrying both `chart` and
+`table` silently kept only the chart.** That is how a deck could "include a table" and ship without
+one. `build_deck` now rejects multiple visuals on one slide with an explicit message ("one visual per
+slide — split them"), and a new `verify_deck(file, expected_slides, table, chart, image)` gives the
+agent a hard signal with a `problems` list to act on.
+
+Re-ran the three failures plus eight new regression cases:
+
+| set | result | median |
+|---|---|---|
+| `mixed-02`, `mixed-05`, `mixed-06` | **3/3 pass** | 107 s |
+| `regress-01 … regress-08` (new) | **8/8 pass** | 101 s |
+
+All 11 runs called `verify_deck`; five of them used the retry loop (`build → verify → build → verify`),
+i.e. the safety net caught a real defect and the model corrected it.
+
+### Concurrency
+
+`tests/concurrency_check.py` drives the live HTTP server with parallel MCP clients: 4 distinct decks +
+2 clients on the same deck → **6/6 renders ok**, every deck reporting all 6 slides rendered. Repeatable
+by any operator; the same properties are covered in CI by three threaded unit tests (parallel builds,
+same-deck renders, interleaved style+render).

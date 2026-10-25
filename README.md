@@ -6,7 +6,7 @@ interactive pane inside LibreChat for previewing, restyling and downloading them
 Designed for a **small local model** (Qwen3.6-27B in 3-bit) as the driver: the model emits structure,
 the server owns layout. It also works with any MCP client.
 
-**Status (2026-10-25):** 100-case corpus **97/100** (median 88 s/deck) · 35 unit tests · 7 browser checks · CI green on Python 3.12 & 3.13.
+**Status (2026-10-25):** 100-case corpus **97/100**, plus 8 regression cases **8/8** (all 3 former failures now pass) · 43 unit tests · 7 browser checks · concurrency probe **6/6 parallel renders** · CI green on Python 3.12 & 3.13.
 
 ```mermaid
 flowchart LR
@@ -24,7 +24,8 @@ flowchart LR
 | Tool | Purpose |
 |---|---|
 | `list_templates` | template catalog with theme metadata + preview images |
-| `build_deck` | one call: outline (bullets / native chart / table / image) → `.pptx` |
+| `build_deck` | one call: outline (bullets / native chart / table / image) → `.pptx`. **One visual per slide** |
+| `verify_deck` | safety net: check slide count + requested visuals against the ask, returns concrete `problems` |
 | `preview_deck` | render a deck and open the **Deck Studio** pane |
 | `get_deck_outline` | read a `.pptx` back as an editable outline, including per-slide `style` |
 | `style_slide` | per-slide formatting in place: size, colour, font, alignment, bold/italic |
@@ -32,6 +33,9 @@ flowchart LR
 | `import_deck` | bring a chat-uploaded `.pptx` into the workspace |
 | `get_last_deck` / `list_decks` | find decks for editing |
 | `render_svg` | SVG markup → transparent PNG for slide graphics |
+
+**Concurrency:** builds write unique names atomically, renders serialise per deck id, and each
+LibreOffice run uses a throwaway profile — several users can render at once (`tests/concurrency_check.py`).
 
 Vendored from [GongRzhe/Office-PowerPoint-MCP-Server](https://github.com/GongRzhe/Office-PowerPoint-MCP-Server)
 (MIT, archived) in `upstream/`, unmodified: low-level slide tools (`add_slide`, `manage_text`,

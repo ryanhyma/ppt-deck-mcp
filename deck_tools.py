@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import json
 import os
+import threading
+import uuid
 import re
 from datetime import datetime
 from pathlib import Path
@@ -133,6 +135,14 @@ def _load_theme(template_path: Path) -> Theme:
         except Exception:
             pass
     return Theme()
+
+
+def _save_atomic(prs: Presentation, dest: Path) -> None:
+    """Write to a sibling temp file then rename, so a concurrent reader never sees half a deck."""
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dest.with_name(f".{dest.name}.{uuid.uuid4().hex[:8]}.tmp")
+    prs.save(str(tmp))
+    os.replace(tmp, dest)
 
 
 def _delete_all_slides(prs: Presentation) -> None:
@@ -499,6 +509,13 @@ def _validate_slides(slides: List[Dict[str, Any]]) -> None:
     for i, item in enumerate(slides or [], start=2):
         if not isinstance(item, dict):
             raise ValueError(f"slide {i}: expected an object, got {type(item).__name__}")
+        # One visual per slide. Two used to be "chart wins, table silently vanishes" — which is how a
+        # deck could claim a table and ship without one.
+        visual_keys = [k for k in ("chart", "table", "image") if item.get(k)]
+        if len(visual_keys) > 1:
+            raise ValueError(
+                f"slide {i} has {', '.join(visual_keys)}; one visual per slide — split them into "
+                f"separate slides")
         chart = item.get("chart")
         if chart is not None:
             if not isinstance(chart, dict):
@@ -711,8 +728,8 @@ def register_deck_tools(app, template_dirs_fn) -> None:
 
         stem = _slug(output_name or title, "deck")
         stamp = datetime.now().strftime("%H%M%S")
-        dest = _output_dir() / f"{stem}-{stamp}.pptx"
-        prs.save(dest)
+        dest = _output_dir() / f"{stem}-{stamp}-{uuid.uuid4().hex[:4]}.pptx"
+        _save_atomic(prs, dest)
 
         return {
             "file": str(dest),
@@ -793,6 +810,68 @@ def _outline(path: Path) -> Dict[str, Any]:
         "hint": "Edit the entries you were asked to change, then call build_deck with the same "
                 "title and the full slides list (title slide excluded).",
     }
+
+
+def register_verify_tools(app) -> None:
+    @app.tool()
+    def verify_deck(
+        file: str,
+        expected_slides: int | None = None,
+        table: bool = False,
+        chart: bool = False,
+        image: bool = False,
+    ) -> Dict[str, Any]:
+        """Check a built deck against what the user asked for. Call this right after build_deck.
+
+        This is the safety net for the one failure class a small model keeps repeating: promising a
+        table (or the right slide count) and then omitting it. Returns ok=False with a concrete
+        `problems` list, so the fix is obvious: correct the slide spec and rebuild **once**.
+
+        Args:
+            file: absolute path of the .pptx returned by build_deck
+            expected_slides: total slides the user asked for, including the title slide
+            table / chart / image: True if the user asked for that visual in the deck
+        """
+        path = Path(file)
+        if not path.is_file():
+            raise FileNotFoundError(f"deck not found: {file}")
+        prs = Presentation(str(path))
+        slides = list(prs.slides)
+
+        charts = tables = pictures = 0
+        for slide in slides:
+            for shape in slide.shapes:
+                if shape.has_chart:
+                    charts += 1
+                elif shape.has_table:
+                    tables += 1
+                elif shape.shape_type == 13:
+                    pictures += 1
+
+        problems: List[str] = []
+        if expected_slides is not None and len(slides) != int(expected_slides):
+            problems.append(
+                f"slide count is {len(slides)}, expected {expected_slides} "
+                f"(the count includes the title slide)")
+        if table and tables == 0:
+            problems.append("no table in the deck: add a 'table': {'headers': [...], 'rows': [[...]]} "
+                            "to one slide spec — bullets that look like a table do not count")
+        if chart and charts == 0:
+            problems.append("no chart in the deck: add a 'chart' object to one slide spec")
+        if image and pictures == 0:
+            problems.append("no image in the deck: render_svg then pass 'image': <png path>")
+
+        return {
+            "ok": not problems,
+            "file": str(path),
+            "slide_count": len(slides),
+            "charts": charts,
+            "tables": tables,
+            "pictures": pictures,
+            "problems": problems,
+            "next": "rebuild once with the corrected slide spec, then call verify_deck again"
+                    if problems else "ok — call preview_deck",
+        }
 
 
 def register_readback_tools(app, output_dir_getter) -> None:
@@ -912,7 +991,7 @@ def register_style_tools(app) -> None:
         if not changed:
             raise ValueError("nothing to change: pass at least one of title_size, body_size, "
                              "title_color, body_color, font, align, bold, italic")
-        prs.save(path)
+        _save_atomic(prs, path)
 
         from deck_preview import build_preview
 
@@ -1009,7 +1088,7 @@ def register_text_tools(app) -> None:
                 f"'{phrase}' not found as a single run on slide {slide_index}. "
                 "Use a shorter phrase, or style the whole placeholder with style_slide."
             )
-        prs.save(path)
+        _save_atomic(prs, path)
 
         from deck_preview import build_preview
 
