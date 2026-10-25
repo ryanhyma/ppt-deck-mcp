@@ -29,7 +29,20 @@ Vendored fork of [GongRzhe/Office-PowerPoint-MCP-Server](https://github.com/Gong
 .venv/bin/python server.py --transport stdio
 ```
 
-Env: `PPT_TEMPLATE_PATH` (template dirs), `PPT_OUTPUT_DIR` (output dir).
+Env: `PPT_TEMPLATE_PATH` (template dirs), `PPT_OUTPUT_DIR` (output dir),
+`PPT_RENDERER` (`auto` | `soffice` | `powerpoint` | `none`).
+
+### Preview renderer (optional)
+
+Building and editing decks needs **no** office suite — python-pptx writes OOXML directly. A renderer is
+only needed to show slide thumbnails in the chat pane:
+
+| `PPT_RENDERER` | Uses | Notes |
+|---|---|---|
+| `auto` (default) | PowerPoint on Windows, else `soffice`, else `none` | picks what the host can do |
+| `soffice` | `libreoffice-impress` + `poppler-utils` | `--no-install-recommends` is enough (~200 MB), no GUI needed |
+| `powerpoint` | COM via `pywin32` | exact PowerPoint rendering, no extra install where Office exists |
+| `none` | — | decks, edits and downloads still work; `preview_error` explains the missing pictures |
 
 Deployed on this box as systemd user unit `ppt-mcp.service`; template fixture is
 `templates/corporate-2slide.pptx`.

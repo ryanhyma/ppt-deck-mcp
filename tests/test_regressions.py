@@ -252,6 +252,57 @@ class ImportRegressions(unittest.TestCase):
             TOOLS["import_deck"](file="old.pot")
 
 
+class RendererBackendRegressions(unittest.TestCase):
+    """The preview renderer is optional and swappable; decks must survive every choice."""
+
+    def test_explicit_backends_are_honoured(self):
+        from deck_preview import _pick_renderer
+
+        original = os.environ.get("PPT_RENDERER")
+        try:
+            for value, expected in (("none", "none"), ("soffice", "soffice"),
+                                    ("libreoffice", "soffice"), ("powerpoint", "powerpoint"),
+                                    ("com", "powerpoint")):
+                os.environ["PPT_RENDERER"] = value
+                self.assertEqual(_pick_renderer(), expected, value)
+        finally:
+            if original is None:
+                os.environ.pop("PPT_RENDERER", None)
+            else:
+                os.environ["PPT_RENDERER"] = original
+
+    def test_auto_picks_something_usable(self):
+        from deck_preview import _pick_renderer
+
+        original = os.environ.pop("PPT_RENDERER", None)
+        try:
+            choice = _pick_renderer()
+            self.assertIn(choice, {"soffice", "powerpoint", "none"})
+            if os.name != "nt" and not shutil.which("soffice"):
+                self.assertEqual(choice, "none")
+        finally:
+            if original is not None:
+                os.environ["PPT_RENDERER"] = original
+
+    def test_disabled_renderer_degrades_instead_of_failing(self):
+        from deck_preview import build_preview
+
+        deck = build(slides=[{"title": "T", "bullets": bullets(1)}])["file"]
+        original = os.environ.get("PPT_RENDERER")
+        os.environ["PPT_RENDERER"] = "none"
+        try:
+            data = build_preview(deck)
+        finally:
+            if original is None:
+                os.environ.pop("PPT_RENDERER", None)
+            else:
+                os.environ["PPT_RENDERER"] = original
+        self.assertEqual(data["slides"], [])
+        self.assertIn("renderer", data["preview_error"].lower())
+        self.assertEqual(data["slide_count"], 2)
+        self.assertTrue(data["download"].endswith("deck.pptx"))
+
+
 class PreviewRegressions(unittest.TestCase):
     """A missing renderer must not fail a styling operation (it did on the GitHub runner)."""
 
@@ -263,12 +314,12 @@ class PreviewRegressions(unittest.TestCase):
         return deck_preview, original
 
     def test_build_preview_reports_the_error_instead_of_raising(self):
-        out = build(slides=[{"title": "T", "bullets": bullets(1)}])
+        deck = build(slides=[{"title": "T", "bullets": bullets(1)}])["file"]
         module, original = self._break_renderer()
         try:
             from deck_preview import build_preview
 
-            data = build_preview(out["file"])
+            data = build_preview(deck)
         finally:
             module._render = original
         self.assertEqual(data["slides"], [])

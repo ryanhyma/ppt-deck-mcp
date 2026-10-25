@@ -51,25 +51,74 @@ def _slide_labels(pptx: Path) -> List[str]:
     return labels
 
 
-def _render(pptx: Path, outdir: Path) -> int:
-    """pptx -> pdf -> png. Returns slide count. Raises on failure."""
+class RendererUnavailable(RuntimeError):
+    """No renderer configured/found — the deck is still valid, the pictures are not."""
+
+
+def _pick_renderer() -> str:
+    """soffice | powerpoint | none. PPT_RENDERER=auto picks what this host can actually do."""
+    choice = (os.environ.get("PPT_RENDERER") or "auto").strip().lower()
+    if choice in ("soffice", "libreoffice", "powerpoint", "com", "none"):
+        if choice in ("libreoffice",):
+            choice = "soffice"
+        if choice in ("com",):
+            choice = "powerpoint"
+        return choice
+    if os.name == "nt":
+        return "powerpoint"
+    return "soffice" if shutil.which("soffice") else "none"
+
+
+def _render_soffice(pptx: Path, outdir: Path) -> int:
+    if not shutil.which("soffice"):
+        raise RendererUnavailable("soffice not found on PATH (install libreoffice-impress)")
     with tempfile.TemporaryDirectory() as tmp:
         subprocess.run(
             ["soffice", "--headless", "--convert-to", "pdf", "--outdir", tmp, str(pptx)],
-            check=True,
-            capture_output=True,
-            timeout=180,
+            check=True, capture_output=True, timeout=180,
         )
         pdf = next(Path(tmp).glob("*.pdf"), None)
         if pdf is None:
             raise RuntimeError("soffice produced no PDF")
         subprocess.run(
             ["pdftoppm", "-png", "-r", "90", str(pdf), str(outdir / "slide")],
-            check=True,
-            capture_output=True,
-            timeout=180,
+            check=True, capture_output=True, timeout=180,
         )
     return len(sorted(outdir.glob("slide-*.png")))
+
+
+def _render_powerpoint(pptx: Path, outdir: Path) -> int:
+    """Windows: export through the installed PowerPoint (no extra install, exact rendering)."""
+    try:
+        import win32com.client  # noqa: F401  (pywin32)
+    except ImportError as exc:  # pragma: no cover - Windows only
+        raise RendererUnavailable("pywin32 is required for the powerpoint renderer") from exc
+
+    import win32com.client as win32  # pragma: no cover - Windows only
+
+    app = win32.Dispatch("PowerPoint.Application")
+    deck = None
+    try:  # pragma: no cover - Windows only
+        deck = app.Presentations.Open(str(pptx.resolve()), WithWindow=False)
+        deck.Export(str(outdir.resolve()), "PNG", 1600, 900)
+    finally:  # pragma: no cover
+        try:
+            if deck is not None:
+                deck.Close()
+            app.Quit()
+        except Exception:
+            pass
+    return len(sorted(outdir.glob("*.PNG")) + sorted(outdir.glob("*.png")))
+
+
+def _render(pptx: Path, outdir: Path) -> int:
+    """pptx -> PNGs for the pane. Returns the number of images written."""
+    renderer = _pick_renderer()
+    if renderer == "none":
+        raise RendererUnavailable("preview renderer disabled (PPT_RENDERER=none)")
+    if renderer == "powerpoint":
+        return _render_powerpoint(pptx, outdir)
+    return _render_soffice(pptx, outdir)
 
 
 def _deck_id(path: Path) -> str:
