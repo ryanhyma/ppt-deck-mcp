@@ -34,6 +34,8 @@ Env: `PPT_TEMPLATE_PATH` (template dirs), `PPT_OUTPUT_DIR` (output dir),
 
 ### Preview renderer (optional)
 
+Tested options and their verdicts: [`docs/renderers.md`](docs/renderers.md).
+
 Building and editing decks needs **no** office suite — python-pptx writes OOXML directly. A renderer is
 only needed to show slide thumbnails in the chat pane:
 
