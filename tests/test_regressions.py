@@ -618,6 +618,35 @@ class PublicBaseRegressions(unittest.TestCase):
                 os.environ["PPT_PUBLIC_BASE"] = original
 
 
+class ToolTitleRegressions(unittest.TestCase):
+    """Tool ids stay ASCII, so the human label must ride in title/annotations.title.
+
+    LibreChat agent configs reference ids like `preview_deck_mcp_ppt`; renaming a tool to make
+    it readable would silently break them. Hosts that display a label read `annotations.title`
+    (older spec) or the top-level `title` (mcp >= 1.30), so both are set.
+    """
+
+    def _titles(self):
+        import asyncio
+
+        tools = asyncio.run(server.app.list_tools())
+        return {t.name: (t.title, t.annotations.title if t.annotations else None) for t in tools}
+
+    def test_preview_tools_carry_a_bilingual_title(self):
+        titles = self._titles()
+        for name in ("preview_deck", "get_last_deck", "list_decks"):
+            self.assertIn(name, titles, f"{name} disappeared from the tool catalog")
+            top_level, annotation = titles[name]
+            self.assertTrue(top_level, f"{name} has no top-level title")
+            self.assertEqual(top_level, annotation, f"{name}: title and annotations.title disagree")
+            self.assertIn("/", top_level, f"{name}: title should be bilingual (English / French)")
+            self.assertRegex(top_level, r"[A-Za-z]", "title must stay ASCII-typable")
+
+    def test_tool_ids_stay_ascii_identifiers(self):
+        for name in self._titles():
+            self.assertRegex(name, r"^[A-Za-z0-9_-]{1,64}$")
+
+
 class DeckStudioAppAccessibility(unittest.TestCase):
     """The MCP App view must stay keyboard-operable and WCAG 2.2 AA shaped.
 

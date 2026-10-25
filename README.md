@@ -119,6 +119,81 @@ Until item 3 lands, this pane follows the browser locale, then `navigator.langua
 `English | Français` toggle is the reliable override. Item 1 + 2 need no changes here; item 3 is the
 one that makes the pane's default match LibreChat's Language setting.
 
+### Paste-ready prompt for a vendored LibreChat copy
+
+If you maintain your own LibreChat checkout (rather than upstream), hand the block below to whoever —
+or whatever — is doing the edit. It is written to be self-contained and testable, and it changes
+nothing outside LibreChat.
+
+```text
+Task: finish MCP Apps localisation (French / fr-CA) in this LibreChat checkout.
+
+Context: MCP App panes (tools that declare _meta.ui.resourceUri) render inside an iframe that
+LibreChat wraps with its own "Open app" / "Close app" controls and labels with the raw MCP tool name.
+A French UI therefore shows English chrome, and each App's own default language ignores the user's
+Language setting because only the OS/browser locale is forwarded.
+
+Do these four things:
+
+1. client/src/locales/fr/translation.json — add fr-CA values for all 17 keys that exist in
+   client/src/locales/en/translation.json and contain "mcp_app" (grep for com_ui_mcp_app_). They are
+   currently missing, so i18next falls back to English. Suggested wording:
+     com_ui_mcp_app_open            -> "Ouvrir l'application"
+     com_ui_mcp_app_close           -> "Fermer l'application"
+     com_ui_mcp_app_open_named      -> "Ouvrir l'application : {{0}} ({{1}})"
+     com_ui_mcp_app_close_named     -> "Fermer l'application : {{0}} ({{1}})"
+     com_ui_mcp_app_frame_title     -> "Application MCP : {{0}}"
+     com_ui_mcp_app_failed_to_load  -> "La vue interactive n'a pas pu se charger."
+     com_ui_mcp_app_stop            -> "Fermer l'application et arrêter les requêtes"
+     com_ui_mcp_app_at_capacity     -> "Fermez une autre application avant d'ouvrir celle-ci."
+     com_ui_mcp_app_confirm_tool    -> "Exécuter l'outil depuis l'application ?"
+     com_ui_mcp_app_confirm_message -> "Envoyer un message depuis l'application ?"
+     com_ui_mcp_app_run_tool        -> "Exécuter l'outil"
+   Translate the remaining com_ui_mcp_app_* keys you find in the same style (fr-CA: "application",
+   "requête", "autoriser"; no France-specific wording). Keep {{0}}/{{1}} placeholders verbatim.
+
+2. client/src/components/MCPUIResource/MCPAppViews.tsx — the card shows <span>{app.toolName}</span>.
+   Display a human label instead: use the MCP tool's annotations.title (or top-level title) when the
+   server provides one, fall back to toolName. Do NOT change the underlying tool id: agent configs
+   reference ids like "preview_deck_mcp_ppt".
+
+3. client/src/hooks/MCP/useAppBridge.ts — the App host context is built with
+   `const { locale } = Intl.DateTimeFormat().resolvedOptions()` (the OS/browser locale). Send the
+   language the user chose in Settings -> Language instead, i.e. i18n.language (already applied to
+   document.documentElement.lang in client/src/locales/i18n.ts). Keep the value a BCP-47 tag.
+
+4. Same file — the bridge only calls bridge.setHostContext() on resize/theme changes. Subscribe to
+   i18n.on('languageChanged') and re-send setHostContext({ ...hostContext, locale }) so an already
+   open App switches language without being reopened. Unsubscribe on cleanup.
+
+Constraints: no other behaviour changes; keep en untouched; follow the existing i18n and React
+patterns in those files; add/adjust unit tests (the locale test in client/src/locales/Translation.spec.ts
+is the model).
+
+Acceptance:
+- Set UI language to French, open any MCP App: open/close controls and the card label are French.
+- An App that reads hostContext.locale receives "fr..." (not the OS locale) and its own UI is French.
+- Changing Settings -> Language while an App is open updates that App without reopening it.
+- Switching back to English restores English chrome and en-CA/en locale.
+```
+
+Nothing in this repository depends on those changes; they only remove the English chrome around the
+pane and make the pane's default language follow the product setting.
+
+### Localising this server
+
+All pane strings live in one place: the `STRINGS` object in `apps/deck_studio/app.js` (`en` and `fr`
+tables). To add a third language:
+
+1. Add a table next to `fr` and a `<button id="lang-xx">` in `apps/deck_studio/index.html`.
+2. Extend `pickInitialLang()` (it already matches `hostContext.locale` then `navigator.language`).
+3. Run the tests — `tests/test_regressions.py` fails if any key used by the HTML **or** by `t(...)` is
+   missing from *either* table, so a half-finished translation cannot ship.
+
+The MCP tool labels are separate and bilingual on purpose: tool ids must stay ASCII
+(`preview_deck`), so the human label rides in `annotations.title` / `title`
+(`Deck preview / Aperçu du diaporama`) and hosts that ignore it simply fall back to the id.
+
 ## Hardening
 
 **This server is not hardened.** It runs unauthenticated, `preview_deck(file=…)` accepts any absolute

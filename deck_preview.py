@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 from urllib.parse import urlsplit
 
+from mcp.types import ToolAnnotations
 from pptx import Presentation
 
 APP_URI = "ui://deck-studio/index.html"
@@ -353,7 +354,8 @@ def register_preview_tools(app, template_dirs_fn=None) -> None:
     _TEMPLATE_DIRS_FN = template_dirs_fn
     meta = {"ui": {"resourceUri": APP_URI}}
 
-    @app.tool(meta=meta)
+    @app.tool(meta=meta, title="Deck preview / Aperçu du diaporama",
+              annotations=ToolAnnotations(title="Deck preview / Aperçu du diaporama"))
     def preview_deck(file: str) -> Dict[str, Any]:
         """Open the Deck Studio view for a .pptx on this machine.
 
@@ -366,13 +368,15 @@ def register_preview_tools(app, template_dirs_fn=None) -> None:
         """
         return build_preview(file)
 
-    @app.tool(meta=meta)
+    @app.tool(meta=meta, title="Last deck / Dernier diaporama",
+              annotations=ToolAnnotations(title="Last deck / Dernier diaporama"))
     def get_last_deck() -> Dict[str, Any]:
         """Return the most recently previewed deck (the view uses this on open)."""
         data = last_preview()
         return data or {"slides": [], "templates": _template_gallery(), "deck_id": None, "title": "No deck yet"}
 
-    @app.tool()
+    @app.tool(title="Deck list / Liste des diaporamas",
+              annotations=ToolAnnotations(title="Deck list / Liste des diaporamas"))
     def list_decks() -> Dict[str, Any]:
         """List decks that already have a rendered preview, newest first."""
         root = preview_root()
