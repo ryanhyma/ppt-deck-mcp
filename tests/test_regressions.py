@@ -617,6 +617,61 @@ class PublicBaseRegressions(unittest.TestCase):
                 os.environ["PPT_PUBLIC_BASE"] = original
 
 
+class DeckStudioAppAccessibility(unittest.TestCase):
+    """The MCP App view must stay keyboard-operable and WCAG 2.2 AA shaped.
+
+    The app is plain HTML/JS served from disk, so these are the only checks that run
+    without a browser; the interactive half lives in tests/e2e/deck-studio.js.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.html = (ROOT / "apps" / "deck_studio" / "index.html").read_text(encoding="utf-8")
+        cls.js = (ROOT / "apps" / "deck_studio" / "app.js").read_text(encoding="utf-8")
+
+    def test_language_is_canadian_english(self):
+        self.assertIn('<html lang="en-CA">', self.html)
+
+    def test_slide_viewer_is_a_modal_dialog(self):
+        self.assertIn('<dialog id="viewer"', self.html)
+        self.assertIn('aria-labelledby="viewer-title"', self.html)
+        for control in ('viewer-prev', 'viewer-next', 'viewer-close'):
+            self.assertIn(f'id="{control}"', self.html)
+        # Arrow keys are advertised to assistive tech, not just implemented.
+        self.assertIn('aria-keyshortcuts="ArrowLeft"', self.html)
+        self.assertIn('aria-keyshortcuts="ArrowRight"', self.html)
+
+    def test_viewer_handles_arrow_keys_and_escape(self):
+        for key in ('ArrowRight', 'ArrowLeft', 'Home', 'End', 'Escape'):
+            self.assertIn(key, self.js, f"{key} handling removed from the viewer")
+
+    def test_status_is_announced_politely(self):
+        self.assertIn('role="status"', self.html)
+        self.assertIn('aria-live="polite"', self.html)
+
+    def test_slide_controls_are_not_hover_only(self):
+        # The old build revealed Style / Ask agent buttons with `figure:hover`, which made
+        # them invisible to touch, keyboard-only and low-vision users.
+        self.assertNotIn('figure:hover .edit', self.html)
+        self.assertNotIn('figure:hover .stylebtn', self.html)
+        self.assertIn('.card-actions', self.html)
+        self.assertIn('"card-actions"', self.js)
+
+    def test_every_slide_image_gets_a_text_alternative(self):
+        self.assertIn('img.alt =', self.js)
+        self.assertIn('View slide', self.js)
+        # Decorative thumbnails must stay out of the accessibility tree.
+        self.assertIn('img.alt = ""', self.js)
+
+    def test_no_teal_button_below_contrast_minimum(self):
+        # #2a9d8f on white is 3.3:1 and fails AA for body text; the UI uses #17766a (5.5:1).
+        self.assertNotIn('--btn-bg: #2a9d8f', self.html)
+        self.assertIn('--btn-bg: #17766a', self.html)
+
+    def test_reduced_motion_is_honoured(self):
+        self.assertIn('prefers-reduced-motion', self.html)
+
+
 def tearDownModule():
     shutil.rmtree(_TMP, ignore_errors=True)
 

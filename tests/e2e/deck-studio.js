@@ -52,9 +52,16 @@ function check(name, ok, detail = '') {
     if (!(await open.count())) throw new Error('nothing to open');
 
     await open.click();
-    await page.waitForTimeout(8000);
+    await page.waitForTimeout(6000);
 
-    const frame = page.frames().find((f) => f.url() === 'about:srcdoc');
+    // The App frame is a srcdoc iframe; Playwright reports its url as '' or
+    // 'about:srcdoc' depending on version, so identify it by its own DOM.
+    let frame = null;
+    for (const f of page.frames()) {
+      try {
+        if (await f.evaluate(() => Boolean(document.getElementById('viewer')))) frame = f;
+      } catch { /* cross-origin or detached */ }
+    }
     check('App iframe rendered (sandbox origin + frame-ancestors + CSP)', Boolean(frame));
     if (!frame) throw new Error('no app frame');
 
@@ -62,8 +69,17 @@ function check(name, ok, detail = '') {
     const count = await images.count();
     check('slide thumbnails present', count > 0, `${count} slides`);
 
-    const loaded = await frame.evaluate(() => {
+    // Thumbnails are lazy-loaded, so scroll them into view before measuring.
+    const loaded = await frame.evaluate(async () => {
       const imgs = Array.from(document.querySelectorAll('img[data-slide]'));
+      for (const img of imgs) {
+        img.scrollIntoView({ block: 'center' });
+        await new Promise((r) => setTimeout(r, 150));
+      }
+      const deadline = Date.now() + 10000;
+      while (Date.now() < deadline && imgs.some((i) => i.naturalWidth === 0)) {
+        await new Promise((r) => setTimeout(r, 200));
+      }
       return {
         total: imgs.length,
         complete: imgs.filter((i) => i.complete && i.naturalWidth > 0).length,
@@ -79,11 +95,46 @@ function check(name, ok, detail = '') {
 
     await frame.locator('figure').first().hover();
     await page.waitForTimeout(300);
-    await frame.locator('button.stylebtn').first().click();
+    // Controls sit below each slide, never on top of it (WCAG 2.1.1 / 1.4.13).
+    const styleBtn = frame.locator('figure .card-actions button').first();
+    const below = await frame.evaluate(() => {
+      const fig = document.querySelector('figure');
+      if (!fig) return null;
+      const thumb = fig.querySelector('.thumb').getBoundingClientRect();
+      const bar = fig.querySelector('.card-actions').getBoundingClientRect();
+      return { gap: Math.round(bar.top - thumb.bottom) };
+    });
+    check('slide controls sit below the thumbnail', Boolean(below) && below.gap >= 0,
+      below ? `${below.gap}px below` : 'no figure');
+    await styleBtn.click();
     await page.waitForTimeout(500);
     check('style panel opens', await frame.locator('#si-apply').isVisible());
     check('per-phrase controls present (style_text UI)',
       (await frame.locator('#st-phrase').count()) === 1 && (await frame.locator('#st-apply').count()) === 1);
+    await frame.locator('#si-cancel').click();
+    await page.waitForTimeout(300);
+
+    // Slide viewer: modal, keyboard-navigable, focus returns to the trigger.
+    const thumbs = frame.locator('button.thumb');
+    await thumbs.nth(1).click();
+    await page.waitForTimeout(600);
+    const viewer = frame.locator('#viewer');
+    check('slide viewer opens as a modal dialog',
+      await viewer.evaluate((el) => el.open === true && el.tagName === 'DIALOG'));
+    const firstTitle = await frame.locator('#viewer-title').innerText();
+    check('viewer starts on the clicked slide', /2\./.test(firstTitle), firstTitle);
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(250);
+    const nextTitle = await frame.locator('#viewer-title').innerText();
+    check('ArrowRight advances the viewer', nextTitle !== firstTitle, nextTitle);
+    await page.keyboard.press('ArrowLeft');
+    await page.waitForTimeout(250);
+    check('ArrowLeft goes back', (await frame.locator('#viewer-title').innerText()) === firstTitle);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    check('Escape closes the viewer', await viewer.evaluate((el) => el.open === false));
+    check('focus returns to the thumbnail that opened it',
+      await frame.evaluate(() => document.activeElement?.classList.contains('thumb') === true));
 
     // Download button: the host must actually open the .pptx. An IP-literal public base is
     // silently blocked by the MCP App bridge, so this pins the hostname requirement end to end.

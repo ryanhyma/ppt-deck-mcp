@@ -49,6 +49,20 @@ click-to-zoom, a 5-template gallery, per-slide style controls, per-phrase emphas
 edit", and a **Download .pptx** button. Styling calls the server **directly** over the MCP Apps
 bridge — no model, no tokens — with one approval click. Details: [`docs/decisions.md`](docs/decisions.md).
 
+**Viewing a deck**: click a slide (or focus it and press Enter) to open the viewer. `←`/`→` step
+through slides, `Home`/`End` jump to the ends, `Esc` closes and returns focus to the slide you came
+from. Per-slide actions (`Style…`, `Ask agent…`) sit *below* each thumbnail rather than floating over
+the image, so they are always visible, keyboard-reachable and usable on touch.
+
+**Accessibility**: the pane targets WCAG 2.2 AA (AODA / Accessible Canada Act): every control is a
+native button with a ≥32px target, text contrast is ≥4.5:1, the viewer is a modal `<dialog>` with a
+manual Tab wrap (the browser's trap stops at the iframe boundary), slide changes are announced
+politely, and `prefers-reduced-motion` / `prefers-contrast` are honoured. These invariants are pinned
+by unit tests, and the interactive half by the Playwright check.
+
+If the chat column looks narrow on a widescreen display, that is LibreChat's message width, not the
+pane — see `docs/librechat-wide-chat.md` in the dev deployment for the one-file stylesheet fix.
+
 ## Quick start
 
 ```sh
