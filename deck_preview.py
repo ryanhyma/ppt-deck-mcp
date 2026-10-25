@@ -95,11 +95,15 @@ def build_preview(pptx_path: str | Path, title: str = "") -> Dict[str, Any]:
     shipped = outdir / "deck.pptx"
     shutil.copyfile(src, shipped)
 
+    # The slide count belongs to the deck, never to the renderer: with no LibreOffice the PNGs are
+    # missing but the deck is still complete and must report its real size.
+    total = len(Presentation(str(src)).slides)
+
     # Rendering is a view, not data: a host without LibreOffice must still get a valid deck and a
     # clear error instead of a failed tool call.
-    count, preview_error = 0, None
+    rendered, preview_error = 0, None
     try:
-        count = _render(src, outdir)
+        rendered = _render(src, outdir)
     except Exception as exc:  # noqa: BLE001 - surface, don't crash
         preview_error = f"{type(exc).__name__}: {str(exc)[:180]}"
     labels = _slide_labels(src)
@@ -111,14 +115,15 @@ def build_preview(pptx_path: str | Path, title: str = "") -> Dict[str, Any]:
             "label": labels[i - 1] if i - 1 < len(labels) else "",
             "url": f"{base}/decks/{deck_id}/slide-{i}.png",
         }
-        for i in range(1, count + 1)
+        for i in range(1, rendered + 1)
     ]
     data = {
         "templates": _template_gallery(),
         "deck_id": deck_id,
         "title": title or labels[0] if labels else (title or src.stem),
         "file": str(src),
-        "slide_count": count,
+        "slide_count": total,
+        "rendered_slides": rendered,
         "download": f"{base}/decks/{deck_id}/deck.pptx",
         "preview_error": preview_error,
         "slides": slides,

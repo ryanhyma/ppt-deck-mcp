@@ -273,6 +273,9 @@ class PreviewRegressions(unittest.TestCase):
             module._render = original
         self.assertEqual(data["slides"], [])
         self.assertIn("soffice not found", data["preview_error"])
+        # The deck's size must not depend on whether a renderer exists.
+        self.assertEqual(data["slide_count"], 2)
+        self.assertEqual(data["rendered_slides"], 0)
         self.assertTrue(data["download"].endswith("deck.pptx"))
 
     def test_style_slide_still_applies_without_a_renderer(self):
