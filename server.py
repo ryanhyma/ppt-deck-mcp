@@ -101,7 +101,28 @@ def build_http_app():
     )
 
 
+def _apply_config() -> None:
+    """ppt-mcp.config.json supplies defaults on Windows, where env vars are awkward to set."""
+    from deck_preview import load_config
+
+    cfg = load_config()
+    pairs = (
+        ("PPT_OUTPUT_DIR", "output_dir"),
+        ("PPT_TEMPLATE_PATH", "template_path"),
+        ("PPT_PUBLIC_BASE", "public_base"),
+        ("PPT_RENDERER", "renderer"),
+        ("PPT_UPLOAD_DIR", "upload_dir"),
+        ("SOFFICE_BIN", "soffice_bin"),
+        ("ASPOSE_LICENSE_PATH", "aspose_license_path"),
+    )
+    for env_key, cfg_key in pairs:
+        value = cfg.get(cfg_key)
+        if value and not os.environ.get(env_key):
+            os.environ[env_key] = str(value)
+
+
 def main() -> None:
+    _apply_config()
     parser = argparse.ArgumentParser(description="PPT deck MCP server (upstream + build_deck + Deck Studio app)")
     parser.add_argument("--transport", default="http", choices=["stdio", "http", "sse"])
     parser.add_argument("--host", default="127.0.0.1")

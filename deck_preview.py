@@ -70,9 +70,39 @@ def _pick_renderer() -> str:
     return "soffice" if (Path(binary).is_file() or shutil.which(binary)) else "none"
 
 
+CONFIG_NAME = "ppt-mcp.config.json"
+_WINDOWS_SOFFICE_HINTS = (
+    r"C:\tools\LibreOfficePortable\App\libreoffice\program\soffice.exe",
+    r"C:\tools\libreoffice\program\soffice.exe",
+    r"C:\LibreOfficePortable\App\libreoffice\program\soffice.exe",
+    r"%ProgramFiles%\LibreOffice\program\soffice.exe",
+    r"%ProgramFiles(x86)%\LibreOffice\program\soffice.exe",
+    r"%LOCALAPPDATA%\Programs\LibreOffice\program\soffice.exe",
+)
+
+
+def load_config() -> Dict[str, Any]:
+    """ppt-mcp.config.json next to this file (or in PPT_CONFIG) — a config file beats Windows env vars."""
+    path = Path(os.environ.get("PPT_CONFIG") or Path(__file__).resolve().parent / CONFIG_NAME)
+    if not path.is_file():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
 def _soffice_bin() -> str:
-    """SOFFICE_BIN lets a portable/unzipped LibreOffice be used without touching PATH."""
-    return os.environ.get("SOFFICE_BIN") or "soffice"
+    """SOFFICE_BIN (env or config) -> portable/installed LibreOffice -> PATH."""
+    explicit = os.environ.get("SOFFICE_BIN") or load_config().get("soffice_bin")
+    if explicit:
+        return os.path.expandvars(os.path.expanduser(str(explicit)))
+    if os.name == "nt":
+        for hint in _WINDOWS_SOFFICE_HINTS:
+            candidate = os.path.expandvars(hint)
+            if Path(candidate).is_file():
+                return candidate
+    return "soffice"
 
 
 def _render_soffice(pptx: Path, outdir: Path) -> int:
@@ -81,18 +111,37 @@ def _render_soffice(pptx: Path, outdir: Path) -> int:
         raise RendererUnavailable(
             f"soffice not found ({binary}); install libreoffice-impress or set SOFFICE_BIN")
     with tempfile.TemporaryDirectory() as tmp:
+        # A throwaway user profile avoids "another instance is running" locks on Windows.
+        profile = Path(tmp) / "lo-profile"
         subprocess.run(
-            [binary, "--headless", "--convert-to", "pdf", "--outdir", tmp, str(pptx)],
+            [binary, f"-env:UserInstallation=file://{profile}", "--headless",
+             "--convert-to", "pdf", "--outdir", tmp, str(pptx)],
             check=True, capture_output=True, timeout=180,
         )
-        pdf = next(Path(tmp).glob("*.pdf"), None)
+        pdf = next((p for p in Path(tmp).glob("*.pdf") if p.is_file()), None)
         if pdf is None:
             raise RuntimeError("soffice produced no PDF")
-        subprocess.run(
-            ["pdftoppm", "-png", "-r", "90", str(pdf), str(outdir / "slide")],
-            check=True, capture_output=True, timeout=180,
-        )
+        _pdf_to_pngs(pdf, outdir, dpi=90)
     return len(sorted(outdir.glob("slide-*.png")))
+
+
+def _pdf_to_pngs(pdf: Path, outdir: Path, dpi: int = 90) -> int:
+    """Rasterise a PDF with PyMuPDF (pure wheel — no poppler binary needed on Windows)."""
+    try:
+        import pymupdf
+    except ImportError:  # pragma: no cover
+        try:
+            import fitz as pymupdf  # older wheels
+        except ImportError as exc:
+            raise RendererUnavailable("pymupdf is required to rasterise the PDF") from exc
+
+    doc = pymupdf.open(str(pdf))
+    try:
+        for index, page in enumerate(doc, start=1):
+            page.get_pixmap(dpi=dpi).save(str(outdir / f"slide-{index}.png"))
+        return len(doc)
+    finally:
+        doc.close()
 
 
 def _render_powerpoint(pptx: Path, outdir: Path) -> int:

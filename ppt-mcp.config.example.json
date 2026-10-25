@@ -1,0 +1,8 @@
+{
+  "_comment": "Copy to ppt-mcp.config.json and edit. Env vars still win over this file.",
+  "renderer": "auto",
+  "soffice_bin": "C:\\tools\\LibreOfficePortable\\App\\libreoffice\\program\\soffice.exe",
+  "template_path": "C:\\deck-mcp\\templates",
+  "output_dir": "C:\\deck-mcp\\out",
+  "public_base": "http://decks.internal:8931"
+}

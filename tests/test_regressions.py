@@ -7,6 +7,7 @@ instead of shipping a good-looking wrong deck.
 """
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import sys
@@ -296,6 +297,54 @@ class RendererBackendRegressions(unittest.TestCase):
         with self.assertRaises(RendererUnavailable) as ctx:
             _render_aspose(Path(_TEMPLATES / "corporate-2slide.pptx"), _TMP / "out")
         self.assertIn("aspose", str(ctx.exception).lower())
+
+    def test_config_file_supplies_soffice_bin(self):
+        """Windows setup is a JSON file, not a pile of setx commands."""
+        import deck_preview
+
+        cfg = _TMP / "cfg.json"
+        cfg.write_text(json.dumps({"soffice_bin": "C:\\tools\\lo\\soffice.exe"}))
+        original = (os.environ.get("PPT_CONFIG"), os.environ.pop("SOFFICE_BIN", None))
+        os.environ["PPT_CONFIG"] = str(cfg)
+        try:
+            self.assertEqual(deck_preview._soffice_bin(), r"C:\tools\lo\soffice.exe")
+            os.environ["SOFFICE_BIN"] = "/env/wins/soffice"
+            self.assertEqual(deck_preview._soffice_bin(), "/env/wins/soffice", "env must win")
+        finally:
+            os.environ.pop("SOFFICE_BIN", None)
+            if original[0] is None:
+                os.environ.pop("PPT_CONFIG", None)
+            else:
+                os.environ["PPT_CONFIG"] = original[0]
+            if original[1] is not None:
+                os.environ["SOFFICE_BIN"] = original[1]
+
+    def test_windows_hints_point_at_portable_locations(self):
+        from deck_preview import _WINDOWS_SOFFICE_HINTS
+
+        self.assertTrue(any("LibreOfficePortable" in hint for hint in _WINDOWS_SOFFICE_HINTS))
+        self.assertTrue(all(hint.lower().endswith("soffice.exe") for hint in _WINDOWS_SOFFICE_HINTS))
+
+    def test_pdf_rasterises_without_poppler(self):
+        """The PDF->PNG step must work from a pip wheel: Windows has no pdftoppm."""
+        import pymupdf
+
+        from deck_preview import _pdf_to_pngs
+
+        pdf = _TMP / "sample.pdf"
+        doc = pymupdf.open()
+        page = doc.new_page(width=320, height=180)
+        page.insert_text((20, 60), "slide")
+        doc.save(str(pdf))
+        doc.close()
+
+        outdir = _TMP / "raster"
+        outdir.mkdir(exist_ok=True)
+        count = _pdf_to_pngs(pdf, outdir, dpi=72)
+        self.assertEqual(count, 1)
+        png = outdir / "slide-1.png"
+        self.assertTrue(png.is_file())
+        self.assertGreater(png.stat().st_size, 200)
 
     def test_portable_soffice_path_is_used(self):
         """SOFFICE_BIN points at an unzipped LibreOffice, so no install/PATH change is needed."""
