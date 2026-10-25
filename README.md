@@ -34,7 +34,7 @@ Env: `PPT_TEMPLATE_PATH` (template dirs), `PPT_OUTPUT_DIR` (output dir),
 
 ### Preview renderer (optional)
 
-Tested options and their verdicts: [`docs/renderers.md`](docs/renderers.md).
+Tested options and their verdicts: [`docs/renderers.md`](docs/renderers.md). Product decisions: [`docs/decisions.md`](docs/decisions.md).
 Windows walkthrough (portable LibreOffice, one unzip): [`docs/windows-setup.md`](docs/windows-setup.md).
 
 Building and editing decks needs **no** office suite — python-pptx writes OOXML directly. A renderer is
