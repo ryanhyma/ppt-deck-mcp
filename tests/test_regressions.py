@@ -550,6 +550,14 @@ class ConcurrencyRegressions(unittest.TestCase):
 
 
 class HarnessRegressions(unittest.TestCase):
+    def test_an_empty_run_reports_instead_of_crashing(self):
+        """`--resume` with everything already passed used to die in statistics.median([])."""
+        from run_suite import report
+
+        text = report([], "20260101-000000")
+        self.assertIn("0", text)
+        self.assertNotIn("Traceback", text)
+
     """The suite's judge must not turn process noise into failures, or hide real ones."""
 
     CASE = {"id": "x", "category": "t", "prompt": "p",

@@ -194,21 +194,78 @@ The MCP tool labels are separate and bilingual on purpose: tool ids must stay AS
 (`preview_deck`), so the human label rides in `annotations.title` / `title`
 (`Deck preview / Aperçu du diaporama`) and hosts that ignore it simply fall back to the id.
 
-## Hardening
+## Locking it down
 
-**This server is not hardened.** It runs unauthenticated, `preview_deck(file=…)` accepts any absolute
-renderer, and rendering hands untrusted `.pptx` files to LibreOffice. Path scoping, opaque deck ids
-(tool results never contain a filesystem path) and signed download URLs landed on 2026-10-26
-(`docs/security.md`); authentication is still open.
-That is acceptable for a single-user
-dev box on a trusted host and **not** acceptable for anything shared or network-reachable.
+Everything below is implemented and tested (`docs/security.md` has the evidence and the remaining
+backlog; `docs/authz-model.md` has the identity/entitlement model).
 
-The backlog — with what was verified in the code and the suggested treatment — is in
-[`docs/security.md`](docs/security.md). Two items are worth scheduling explicitly:
+### 1. Turn authentication on
 
-- scope `preview_deck` / `import_deck` paths to the configured roots (same `_safe_file()` discipline the
-  HTTP routes already use);
-- put authentication (or a loopback-only bind / `stdio` transport) in front of the HTTP endpoint.
+| `PPT_AUTH_MODE` | Use | Enforces |
+|---|---|---|
+| `none` | development only | nothing — the server **refuses to start** when `PPT_ENV=prod` |
+| `token` | single user, or a same-host hop | one shared bearer, constant-time compared |
+| `entra` | production | Entra ID access tokens: RS256 against the tenant JWKS (kid rotation), exact `iss`, `aud`, `tid`, `ver` 2.0, plus `scp` or an app role |
+
+```sh
+# production, Entra
+PPT_ENV=prod PPT_AUTH_MODE=entra \
+PPT_ENTRA_TENANT_ID=<tenant-guid> PPT_ENTRA_AUDIENCE=<api-app-client-id> \
+PPT_ENTRA_REQUIRED_SCOPES=Decks.Read PPT_ENTRA_REQUIRED_ROLES=Decks.Access \
+PPT_URL_SECRET=<32+ random bytes, hex>   # otherwise download links die on every restart
+```
+
+Entra does not support the RFC 8707 `resource` parameter, so audience binding is validated from the
+`aud` claim; `tid` is checked separately from `iss`; identity is `oid`/`sub` (never
+`preferred_username`/`upn`/`email`).
+
+LibreChat side — `deploy/librechat/mcpServers.ppt.yaml`:
+
+```yaml
+  ppt:
+    headers: { Authorization: 'Bearer ${PPT_MCP_TOKEN}' }     # token mode
+    # or the `oauth:` block with api://<PPT_ENTRA_AUDIENCE>/Decks.Read   (entra mode)
+```
+
+> LibreChat probes `/mcp` **without** a bearer at startup. In `token` mode the 401 must not advertise
+> `resource_metadata`, or LibreChat reports `OAuth Required: true`, lists 0 tools and never calls them —
+> the server already does the right thing per mode; don't add OAuth metadata to a token deployment.
+
+### 2. Keep the data paths in bounds
+
+- Decks are read only from `PPT_OUTPUT_DIR`, `PPT_UPLOAD_DIR`, `PPT_TEMPLATE_PATH` and
+  `PPT_ALLOWED_ROOTS`; paths are resolved first, so a symlink cannot escape.
+- Tool results never contain a filesystem path: callers get opaque ids (`d…` for decks, `i…` for rendered
+  images) and the id → file index lives in `previews/.index/`, outside the served tree.
+- Slide images and the `.pptx` require an HMAC signature (`?exp=&sig=&sub=`) when authentication is on;
+  nothing else in a preview directory is served.
+
+### 3. Decide who owns what
+
+Entra proves *who*, LibreChat holds *what the product allows* (agents, tools, skills, sharing), and this
+server enforces *which deck*: decks are owned by the subject that created them, another subject gets
+"unknown deck id", and the render cache is namespaced per subject. LibreChat's RBAC is **not** a boundary
+on this port — a direct caller never goes through it.
+
+### 4. Audit and network
+
+```sh
+PPT_AUDIT_LOG=<path>/audit.jsonl     # JSONL: tool.call, asset.get, auth.reject
+PPT_AUDIT_MAX_BYTES=10485760         # rotates, one previous file kept — ship it to the SIEM
+```
+
+- Bind to loopback or, on Windows, to the LibreChat host only; the installer adds a firewall rule limited
+  to that address plus an outbound block on `soffice.exe` (untrusted decks must not reach the network).
+- Prefer `--transport stdio` for a single-user Windows deployment: no network surface at all.
+- Rendering is still LibreOffice parsing untrusted files; treat the sandbox as part of the deployment
+  (`docs/security.md` item 3) — a dedicated low-privilege account, no egress, timeouts.
+
+### 5. Verify, don't assume
+
+```sh
+.venv/bin/python -m unittest discover -s tests   # 162 tests: security, auth, audit, assets, regressions
+curl -si -X POST http://host:8931/mcp | head -3  # 401 + WWW-Authenticate when auth is on
+```
 
 ## Quick start
 
@@ -220,8 +277,10 @@ python -m venv .venv && .venv/bin/pip install -r requirements.txt
 sudo apt-get install --no-install-recommends libreoffice-impress
 
 # run (stdio for a native LibreChat, http for the containerised dev stack)
-.venv/bin/python server.py --transport stdio
-.venv/bin/python server.py --transport http --host 127.0.0.1 --port 8931
+.venv/bin/python server.py --transport stdio                        # no network surface at all
+PPT_AUTH_MODE=token PPT_MCP_TOKEN=$(openssl rand -hex 24) \
+  PPT_PUBLIC_BASE=http://decks.local:8931 \
+  .venv/bin/python server.py --transport http --host 127.0.0.1 --port 8931
 ```
 
 Windows (portable LibreOffice, one unzip): [`docs/windows-setup.md`](docs/windows-setup.md).
@@ -258,6 +317,15 @@ Environment variables, or a `ppt-mcp.config.json` beside `server.py` (env wins):
 | `render_queue_max` | `PPT_RENDER_QUEUE_MAX` | pending render jobs before `preview_error` says busy (default 256) |
 | `render_timeout_s` | `PPT_RENDER_TIMEOUT_S` | per-deck render budget before the bridge is killed and restarted (default 180) |
 | `uno_python` | `PPT_UNO_PYTHON` | interpreter that can `import uno`; auto-detected (system `python3`, or LibreOffice's `python.exe`) |
+| `auth_mode` | `PPT_AUTH_MODE` | `none` (dev) · `token` · `entra` — see [Locking it down](#locking-it-down) |
+| `env` | `PPT_ENV` | `prod` refuses to start with `auth_mode=none` |
+| `mcp_token` | `PPT_MCP_TOKEN` | shared bearer for `token` mode |
+| `entra_tenant_id` / `entra_audience` | `PPT_ENTRA_TENANT_ID` / `PPT_ENTRA_AUDIENCE` | `entra` mode: tenant + this API's client id |
+| `entra_required_scopes` / `entra_required_roles` | `PPT_ENTRA_REQUIRED_SCOPES` / `…_ROLES` | Entra delegated scope **or** app role that may use the tools |
+| `allowed_roots` | `PPT_ALLOWED_ROOTS` | extra directories decks may be read from (keep empty in prod) |
+| `url_secret` | `PPT_URL_SECRET` | HMAC key for signed download/image URLs |
+| `audit_log` | `PPT_AUDIT_LOG` | audit JSONL path (default `<output>/audit.jsonl`) |
+| `audit_max_bytes` | `PPT_AUDIT_MAX_BYTES` | rotation threshold (default 10 MiB, one previous file) |
 
 **`public_base` must be a hostname, not an IP address.** LibreChat's MCP App bridge refuses
 host-opened links to IP address literals, which silently disables the Deck Studio **Download .pptx**
@@ -290,22 +358,16 @@ re-renders one slide.
 implementation. Security work is where it pays — one test file per contract (scope, tokens, gate, audit),
 each negative case pinned.
 
-## Authentication
+## Authentication (quick reference)
 
-`PPT_AUTH_MODE` decides who may call the server (`docs/security.md`, `docs/authz-model.md`):
+Full lockdown guide: [Locking it down](#locking-it-down) · model: [`docs/authz-model.md`](docs/authz-model.md) ·
+gaps/evidence: [`docs/security.md`](docs/security.md).
 
 | Mode | For | Enforces |
 |---|---|---|
 | `none` | development | nothing — **refused when `PPT_ENV=prod`** |
 | `token` | single user / same-host hop | shared bearer (`PPT_MCP_TOKEN`) |
-| `entra` | production | Entra ID access tokens: RS256 + tenant JWKS (rotation-aware), exact `iss`, `aud`, `tid`, `ver` 2.0, `scp` or app role |
-
-Deck ids are owned by the subject that created them, the render cache is namespaced per subject, and
-slide images (fetched by the browser, which has no bearer) are authorised by signed, expiring URLs bound
-to that subject. `/.well-known/oauth-protected-resource` is served for MCP clients in `entra` mode.
-
-LibreChat side: `headers: { Authorization: 'Bearer ${PPT_MCP_TOKEN}' }` for token mode, or the `oauth:`
-block for Entra — see `deploy/librechat/mcpServers.ppt.yaml`.
+| `entra` | production | Entra ID access tokens: RS256 + tenant JWKS, `iss`, `aud`, `tid`, `ver` 2.0, `scp` or app role |
 
 ## Deployment assets
 

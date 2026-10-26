@@ -252,6 +252,8 @@ def run_case(case: dict, token: str, agent_id: str) -> dict:
 
 
 def report(results: list[dict], stamp: str) -> str:
+    if not results:  # `--resume` with nothing left to run: say so instead of dying in median([])
+        return f"# Deck suite — {stamp}\n\nCases: **0** · nothing to run (all cases already passed)\n"
     by_cat: dict[str, list[dict]] = {}
     for r in results:
         by_cat.setdefault(r["category"], []).append(r)
