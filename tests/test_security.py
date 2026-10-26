@@ -169,6 +169,42 @@ class NoPathLeakRegressions(unittest.TestCase):
         self.assertTrue((deck_preview.preview_root() / ".index" / self.deck_id).is_file())
 
 
+class TemplateGalleryRegressions(unittest.TestCase):
+    """The gallery renders templates lazily; a partial render must not be served as complete.
+
+    Found by the LibreChat smoke test: a template preview ended up with only `slide-1.png` (another
+    process was writing the same directory), and the gallery happily returned a `slide-2.png` URL that
+    404'd — broken thumbnails in the pane, with the failure swallowed.
+    """
+
+    def setUp(self):
+        self.out = deck_preview.preview_root() / f"tpl-{deck_preview._deck_id(TEMPLATE)}"
+        if self.out.exists():
+            shutil.rmtree(self.out)
+
+    def test_a_partial_preview_is_re_rendered(self):
+        self.out.mkdir(parents=True, exist_ok=True)
+        (self.out / "slide-1.png").write_bytes(b"\x89PNG\r\n\x1a\n")  # pretend the render died early
+        urls = deck_preview.template_preview_urls(TEMPLATE)
+        self.assertEqual(len(urls), 2, "the gallery must notice slide 2 is missing and re-render")
+        for url in urls:
+            name = url.rsplit("/", 1)[-1]
+            self.assertTrue((self.out / name).is_file(), f"{name} advertised but absent")
+
+    def test_gallery_ids_are_reachable_through_the_asset_route(self):
+        """Template previews live under `tpl-<id>`; the route's id rule must accept that shape."""
+        deck_preview.template_preview_urls(TEMPLATE)
+        deck_id = f"tpl-{deck_preview._deck_id(TEMPLATE)}"
+        served = deck_preview.deck_asset_path(deck_id, "slide-1.png")
+        self.assertIsNotNone(served, f"route refuses the gallery id {deck_id!r}")
+
+    def test_every_advertised_url_exists(self):
+        urls = deck_preview.template_preview_urls(TEMPLATE)
+        for url in urls:
+            name = url.rsplit("/", 1)[-1]
+            self.assertTrue((self.out / name).is_file(), f"{name} advertised but absent")
+
+
 class DeckIdRegressions(unittest.TestCase):
     def _deck(self, name: str) -> Path:
         folder = _TMP / "out" / "made"

@@ -100,14 +100,22 @@ def parse_tool_calls(events: list[dict]) -> tuple[list[dict], str]:
 
 
 def _deck_file(deck_id: str | None) -> str | None:
-    """The MCP surface returns an opaque deck id; this runner resolves it on the host to inspect it."""
+    """The MCP surface returns an opaque deck id; this runner resolves it on the host to inspect it.
+
+    The id -> file index lives under the *server's* ``PPT_OUTPUT_DIR``, so this runner must run with the
+    same value (the systemd unit sets it) — otherwise every case reports "no deck produced" while the
+    tool actually succeeded. Say so instead of failing silently.
+    """
     if not deck_id:
         return None
     try:
-        from deck_preview import resolve_ref  # noqa: PLC0415 - host-side helper, not part of the MCP API
+        from deck_preview import preview_root, resolve_ref  # noqa: PLC0415 - host-side helper
 
         return str(resolve_ref(deck_id))
-    except Exception:
+    except Exception as exc:  # noqa: BLE001
+        print(f"[runner] cannot resolve {deck_id}: {type(exc).__name__}: {exc}\n"
+              f"[runner] check that PPT_OUTPUT_DIR matches the server ({preview_root()})",
+              file=sys.stderr)
         return None
 
 

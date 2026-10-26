@@ -13,6 +13,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -367,7 +368,9 @@ def deck_asset_path(deck_id: str, name: str, expires: str | None = None,
     (which leaked absolute host paths), `deck.pptx` (the user's content) and any stray file — requires
     a valid, unexpired signature. Nothing outside the deck directory is reachable by construction.
     """
-    if not re.fullmatch(r"[A-Za-z0-9]{1,64}", deck_id or ""):
+    # Template galleries use `tpl-<id>`; traversal is prevented by resolving and checking containment
+    # below, not by banning characters in the id.
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", deck_id or ""):
         return None
     directory = preview_root() / deck_id
     try:
@@ -679,11 +682,22 @@ def template_preview_urls(pptx_path: str | Path) -> List[str]:
     src = Path(pptx_path)
     outdir = preview_root() / f"tpl-{_deck_id(src)}"
     with _render_lock(outdir.name):  # several gallery loads can race for the same template
-        if not (outdir / "slide-1.png").is_file():
+        # "slide-1.png exists" is not "rendered": a render that died half-way (or another process holding
+        # the same directory) leaves a partial set, and the gallery would advertise URLs that 404.
+        try:
+            expected = len(Presentation(str(src)).slides)
+        except Exception:  # noqa: BLE001 - unreadable template: no previews, no crash
+            return []
+        present = len(list(outdir.glob("slide-*.png"))) if outdir.is_dir() else 0
+        if present != expected:
             outdir.mkdir(parents=True, exist_ok=True)
+            for stale in outdir.glob("slide-*.png"):
+                stale.unlink(missing_ok=True)  # never mix slides from two renders
             try:
                 _prepare_previews(src, outdir, Presentation(str(src)))
-            except Exception:
+            except Exception as exc:  # noqa: BLE001 - keep the gallery usable, but say why
+                print(f"[gallery] {Path(src).name}: render failed: {type(exc).__name__}: {exc}",
+                      file=sys.stderr, flush=True)
                 return []
     base = public_base()
     files = sorted(outdir.glob("slide-*.png"), key=lambda p: int(p.stem.split("-")[1]))
