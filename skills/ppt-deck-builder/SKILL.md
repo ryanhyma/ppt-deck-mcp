@@ -15,7 +15,7 @@ styling, and slide chrome. Never write layout code and never use the low-level
 1. `list_templates` → pick a template, note `title_layout` / `content_layout`.
 2. `render_svg` → only if a slide needs an icon or simple diagram.
 3. `build_deck` → **exactly once**, with the whole outline.
-4. Reply with the returned `file` path and one summary line.
+4. Reply with the returned `deck_id` (e.g. `d1a2b3c4d5e6f708`) and one summary line — never a file path.
 
 ## Slide count
 
@@ -68,7 +68,7 @@ that is a content edit: use the rebuild path below and carry styling via `base=`
 
 Never edit from memory. The loop is read → change → rebuild → preview:
 
-1. `get_last_deck` (or `list_decks`) → file path.
+1. `get_last_deck` (or `list_decks`) → the `deck_id` of the deck.
 2. `get_deck_outline(file)` → titles, bullets, chart series and tables as JSON.
 3. Apply **only** the requested change; leave every other slide verbatim.
 4. `build_deck(template, title, slides=[...], base=<the file you read>)` with the full outline

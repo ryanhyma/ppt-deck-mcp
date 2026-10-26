@@ -100,6 +100,75 @@ class PathScopeRegressions(unittest.TestCase):
                                 slides=[{"title": "a", "image": str(outside_png)}])
 
 
+class NoPathLeakRegressions(unittest.TestCase):
+    """The MCP surface hands out opaque ids, never filesystem paths.
+
+    A returned path tells the caller where the box keeps its data, names the deck even when the user did
+    not ask for that, and invites a follow-up call with that path — the pattern that made preview_deck a
+    file-read primitive. The id -> file mapping lives in ``previews/<id>/.source``, which is not served.
+    """
+
+    def setUp(self):
+        self.built = TOOLS["build_deck"](template="corporate-2slide.pptx", title="No leak",
+                                         slides=[{"title": "One", "bullets": ["a", "b"]}])
+        self.deck_id = self.built["deck_id"]
+
+    def _offending_values(self, payload, where=""):
+        """Every string in a tool result that looks like a filesystem path."""
+        found = []
+        if isinstance(payload, str):
+            text = payload
+            if str(_TMP) in text:
+                found.append(f"{where}: {text[:80]}")
+            elif text.startswith("/") or (len(text) > 2 and text[1] == ":" and text[2] in "\\/"):
+                found.append(f"{where}: {text[:80]}")
+        elif isinstance(payload, dict):
+            for key, value in payload.items():
+                found += self._offending_values(value, f"{where}.{key}")
+        elif isinstance(payload, (list, tuple)):
+            for i, value in enumerate(payload):
+                found += self._offending_values(value, f"{where}[{i}]")
+        return found
+
+    def test_no_tool_result_contains_a_path(self):
+        preview = TOOLS["preview_deck"](file=self.deck_id)
+        results = {
+            "build_deck": self.built,
+            "preview_deck": preview,
+            "get_last_deck": TOOLS["get_last_deck"](),
+            "list_decks": TOOLS["list_decks"](),
+            "get_deck_outline": TOOLS["get_deck_outline"](file=self.deck_id),
+            "style_slide": TOOLS["style_slide"](file=self.deck_id, slide_index=2, title_size=34),
+            "style_text": TOOLS["style_text"](file=self.deck_id, slide_index=2, phrase="One", bold=True),
+            "verify_deck": TOOLS["verify_deck"](file=self.deck_id, expected_slides=2),
+        }
+        for name, payload in results.items():
+            with self.subTest(tool=name):
+                self.assertEqual(self._offending_values(payload, name), [])
+
+    def test_the_metadata_file_on_disk_holds_no_path_either(self):
+        """If it is ever served by mistake, it must not leak the host layout."""
+        TOOLS["preview_deck"](file=self.deck_id)
+        meta = json.loads((deck_preview.preview_root() / self.deck_id / "deck.json").read_text())
+        self.assertEqual(self._offending_values(meta, "deck.json"), [])
+
+    def test_the_id_round_trips_through_every_tool_that_takes_a_deck(self):
+        TOOLS["style_slide"](file=self.deck_id, slide_index=2, body_size=20)
+        self.assertTrue(TOOLS["verify_deck"](file=self.deck_id, expected_slides=2)["ok"])
+        self.assertEqual(TOOLS["get_deck_outline"](file=self.deck_id)["slide_count"], 2)
+        self.assertEqual(TOOLS["preview_deck"](file=self.deck_id)["deck_id"], self.deck_id)
+        again = TOOLS["import_deck"](file=self.deck_id)
+        self.assertEqual(again["slide_count"], 2)
+
+    def test_unknown_ids_fail_clearly(self):
+        with self.assertRaises(FileNotFoundError):
+            TOOLS["get_deck_outline"](file="d0123456789abcdef")
+
+    def test_the_source_record_is_not_reachable_over_http(self):
+        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, ".index"))
+        self.assertTrue((deck_preview.preview_root() / ".index" / self.deck_id).is_file())
+
+
 class DeckIdRegressions(unittest.TestCase):
     def _deck(self, name: str) -> Path:
         folder = _TMP / "out" / "made"
@@ -158,7 +227,8 @@ class AssetRouteRegressions(unittest.TestCase):
         self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", str(past), sig))
         future = int(_time.time()) + 600
         good = deck_preview.sign_asset(self.deck_id, "deck.pptx", future)
-        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", str(future), good[:-1] + "0"))
+        tampered = good[:-1] + ("1" if good[-1] != "1" else "2")  # never a no-op
+        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", str(future), tampered))
         # A signature minted for one deck must not unlock another file.
         self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.json", str(future), good))
 

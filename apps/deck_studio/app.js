@@ -35,7 +35,7 @@ const STRINGS = {
     viewerHint: "Arrow keys move between slides · Home / End jump to the ends · Esc closes.",
     download: "Download .pptx",
     downloadAria: "Download the PowerPoint file",
-    savedTo: "Saved to",
+    deckRef: "Deck",
     stylepanelHead: "Slide formatting",
     siTitle: "Title size (pt)",
     siBody: "Body size (pt)",
@@ -100,7 +100,7 @@ const STRINGS = {
     viewerHint: "Les flèches changent de diapositive · Début et Fin vont aux extrémités · Échap ferme.",
     download: "Télécharger le .pptx",
     downloadAria: "Télécharger le fichier PowerPoint",
-    savedTo: "Enregistré dans",
+    deckRef: "Diaporama",
     stylepanelHead: "Mise en forme de la diapositive",
     siTitle: "Taille du titre (pt)",
     siBody: "Taille du texte (pt)",
@@ -176,7 +176,7 @@ let langChosenByUser = false;
 let lastDeck = null;
 let statusState = null;   // {key, vars} so the message re-renders in the new language
 
-let currentFile = "";
+let currentDeck = "";
 let styleTarget = null;
 let styleOpener = null;
 let editTarget = null;
@@ -352,10 +352,10 @@ viewer.addEventListener("click", (event) => {
 });
 
 // ---------------------------------------------------------------- style panel
-function openStyle(slide, file, opener) {
+function openStyle(slide, deckRef, opener) {
   styleTarget = slide;
   styleOpener = opener || document.activeElement;
-  currentFile = file;
+  currentDeck = deckRef;
   stylePanel.classList.add("open");
   $("si-target").textContent = t("editingSlide", { n: slide.index, title: slideTitle(slide) });
   for (const id of ["si-title", "si-body", "si-tcolor", "si-bcolor", "si-font", "si-align"]) {
@@ -372,10 +372,10 @@ function closeStyle() {
 }
 
 // ---------------------------------------------------------------- edit panel
-function openEditor(slide, file, opener) {
+function openEditor(slide, deckRef, opener) {
   editTarget = slide;
   editOpener = opener || document.activeElement;
-  currentFile = file;
+  currentDeck = deckRef;
   editor.classList.add("open");
   editorInput.value = "";
   editorInput.placeholder = slide
@@ -409,7 +409,7 @@ on("st-apply", "click", async () => {
   if (!styleTarget) return;
   const phrase = ($("st-phrase")?.value || "").trim();
   if (!phrase) { setStatus("phraseFirst"); $("st-phrase").focus(); return; }
-  const args = { file: currentFile, slide_index: styleTarget.index, phrase };
+  const args = { file: currentDeck, slide_index: styleTarget.index, phrase };
   const colour = ($("st-color")?.value || "").trim();
   const emphasis = $("st-style")?.value || "";
   if (colour) args.color = colour;
@@ -436,7 +436,7 @@ on("si-cancel", "click", closeStyle);
 
 on("si-apply", "click", async () => {
   if (!styleTarget) return;
-  const args = { file: currentFile, slide_index: styleTarget.index };
+  const args = { file: currentDeck, slide_index: styleTarget.index };
   const title = $("si-title").value.trim();
   const body = $("si-body").value.trim();
   const font = $("si-font").value;
@@ -473,7 +473,7 @@ on("edit-send", "click", async () => {
   const text = editorInput.value.trim();
   if (!text) { setStatus("typeChange"); editorInput.focus(); return; }
   const message = editTarget
-    ? `Edit ${currentFile}: slide ${editTarget.index} — ${text}. Keep every other slide exactly as it is.`
+    ? `Edit deck ${currentDeck}: slide ${editTarget.index} — ${text}. Keep every other slide exactly as it is.`
     : text;
   try {
     await app.sendMessage({ role: "user", content: [{ type: "text", text: message }] });
@@ -522,7 +522,7 @@ function renderStyles(templates) {
   }
 }
 
-function slideCard(slide, file) {
+function slideCard(slide, deckRef) {
   const fig = document.createElement("figure");
 
   const thumb = document.createElement("button");
@@ -556,14 +556,14 @@ function slideCard(slide, file) {
   styleBtn.className = "btn";
   styleBtn.textContent = t("styleBtn");
   styleBtn.setAttribute("aria-label", t("styleSlide", { n: slide.index, title: slideTitle(slide) }));
-  styleBtn.addEventListener("click", (event) => openStyle(slide, file, event.currentTarget));
+  styleBtn.addEventListener("click", (event) => openStyle(slide, deckRef, event.currentTarget));
 
   const editBtn = document.createElement("button");
   editBtn.type = "button";
   editBtn.className = "btn";
   editBtn.textContent = t("askBtn");
   editBtn.setAttribute("aria-label", t("askSlide", { n: slide.index, title: slideTitle(slide) }));
-  editBtn.addEventListener("click", (event) => openEditor(slide, file, event.currentTarget));
+  editBtn.addEventListener("click", (event) => openEditor(slide, deckRef, event.currentTarget));
 
   actions.append(styleBtn, editBtn);
   fig.append(thumb, cap, actions);
@@ -599,12 +599,12 @@ function render(data) {
   stage.innerHTML = "";
   const grid = document.createElement("div");
   grid.className = "grid";
-  for (const slide of deckSlides) grid.append(slideCard(slide, data.file));
+  for (const slide of deckSlides) grid.append(slideCard(slide, data.deck_id));
   stage.append(grid);
 
-  currentFile = data.file || currentFile;
+  currentDeck = data.deck_id || currentDeck;
   renderToolbar(data);
-  foot.innerHTML = data.file ? `${t("savedTo")} <code>${data.file}</code>` : "";
+  foot.innerHTML = data.deck_id ? `${t("deckRef")} <code>${data.deck_id}</code>` : "";
 }
 
 app.ontoolresult = (params) => render(payload(params));

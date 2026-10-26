@@ -72,6 +72,23 @@ def is_allowed(path: Path) -> bool:
     return any(_within(path, root) for root in allowed_roots())
 
 
+IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp", ".gif")
+
+
+def resolve_image(ref: str | os.PathLike[str]) -> Path:
+    """Resolve an image reference: an id returned by render_svg, or a path inside the allowed roots."""
+    text = str(ref or "").strip().strip('"')
+    if text.startswith("i") and len(text) == 17 and all(c in "0123456789abcdef" for c in text[1:]):
+        for root in allowed_roots():
+            if not root.is_dir():
+                continue
+            for candidate in root.rglob(f"*-{text}.png"):
+                if candidate.is_file():
+                    return resolve_deck(candidate, suffixes=(".png",))
+        raise FileNotFoundError(f"unknown image id {text!r} — call render_svg first")
+    return resolve_deck(text, suffixes=IMAGE_SUFFIXES)
+
+
 def resolve_deck(name: str | os.PathLike[str], *, suffixes: tuple[str, ...] | None = None) -> Path:
     """Resolve a user-supplied deck path, or raise: FileNotFoundError / PathNotAllowed.
 

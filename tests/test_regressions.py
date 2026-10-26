@@ -49,6 +49,13 @@ def build(**kwargs):
     return TOOLS["build_deck"](**base)
 
 
+def file_of(result: dict) -> str:
+    """Tests inspect the real .pptx; the MCP surface only returns a deck id."""
+    from deck_preview import resolve_ref
+
+    return str(resolve_ref(result["deck_id"]))
+
+
 def assert_signed_download(case, url):
     """A deck download must be a signed, expiring URL — not an open path."""
     from urllib.parse import parse_qs, urlsplit
@@ -87,7 +94,7 @@ class LayoutRegressions(unittest.TestCase):
             "bullets": bullets(3),
             "chart": {"type": "column", "categories": ["A", "B"], "series": [{"name": "S", "values": [1, 2]}]},
         }])
-        prs = Presentation(out["file"])
+        prs = Presentation(file_of(out))
         slide = prs.slides[1]
         title = next(ph for ph in slide.placeholders if ph.placeholder_format.idx == 0)
         body = body_of(prs, 1)
@@ -102,7 +109,7 @@ class LayoutRegressions(unittest.TestCase):
             "layout": "image-left",
             "chart": {"type": "bar", "categories": ["A"], "series": [{"name": "S", "values": [3]}]},
         }])
-        prs = Presentation(out["file"])
+        prs = Presentation(file_of(out))
         slide = prs.slides[1]
         chart = next(sh for sh in slide.shapes if sh.has_chart)
         body = body_of(prs, 1)
@@ -115,7 +122,7 @@ class LayoutRegressions(unittest.TestCase):
             "layout": "visual-full",
             "chart": {"type": "line", "categories": ["A", "B"], "series": [{"name": "S", "values": [1, 2]}]},
         }])
-        prs = Presentation(out["file"])
+        prs = Presentation(file_of(out))
         self.assertIsNone(body_of(prs, 1))
 
 
@@ -140,7 +147,7 @@ class OutlineRegressions(unittest.TestCase):
     def test_outline_ignores_decorative_chrome(self):
         """Was: the footer wordmark came back as the title-slide subtitle and got rebuilt as content."""
         out = build(title="Deck", subtitle="", slides=[{"title": "Body", "bullets": bullets(2)}])
-        data = _outline(Path(out["file"]))
+        data = _outline(Path(file_of(out)))
         self.assertEqual(data["title"], "Deck")
         self.assertEqual(data["subtitle"], "")
         self.assertNotIn("Confidential", data["subtitle"])
@@ -151,7 +158,7 @@ class OutlineRegressions(unittest.TestCase):
             "title": "Chart",
             "chart": {"type": "column", "categories": ["A", "B"], "series": [{"name": "2026", "values": [10, 20]}]},
         }])
-        data = _outline(Path(out["file"]))
+        data = _outline(Path(file_of(out)))
         chart = data["slides"][1]["chart"]
         self.assertEqual(chart["categories"], ["A", "B"])
         self.assertEqual(chart["series"][0]["values"], [10.0, 20.0])
@@ -161,7 +168,7 @@ class StyleRegressions(unittest.TestCase):
     def test_title_bold_does_not_bold_the_body(self):
         """Was: one `bold` flag hit every placeholder, so "bold the title" bolded the bullets too."""
         out = build(slides=[{"title": "T", "bullets": bullets(2)}])
-        deck = out["file"]
+        deck = file_of(out)
         TOOLS["style_slide"](file=deck, slide_index=2, title_bold=True)
         prs = Presentation(deck)
         slide = prs.slides[1]
@@ -173,7 +180,7 @@ class StyleRegressions(unittest.TestCase):
     def test_styling_survives_a_content_rebuild_with_base(self):
         """Was: a content edit rebuilt from the outline and wiped the pane's per-slide styling."""
         out = build(slides=[{"title": "One", "bullets": bullets(2)}, {"title": "Two", "bullets": bullets(2)}])
-        deck = out["file"]
+        deck = file_of(out)
         TOOLS["style_slide"](file=deck, slide_index=2, title_size=40, title_color="#C4703C", font="Georgia")
 
         rebuilt = build(
@@ -182,7 +189,7 @@ class StyleRegressions(unittest.TestCase):
             base=deck,
             output_name="rebuilt",
         )
-        prs = Presentation(rebuilt["file"])
+        prs = Presentation(file_of(rebuilt))
         title = next(ph for ph in prs.slides[1].placeholders if ph.placeholder_format.idx == 0)
         run = title.text_frame.paragraphs[0].runs[0]
         self.assertEqual(run.font.size, Pt(40))
@@ -192,7 +199,7 @@ class StyleRegressions(unittest.TestCase):
 
     def test_style_text_emphasises_only_the_matching_run(self):
         out = build(slides=[{"title": "T", "bullets": ["Bundling raises retention", "Other point"]}])
-        deck = out["file"]
+        deck = file_of(out)
         result = TOOLS["style_text"](file=deck, slide_index=2, phrase="retention", bold=True, color="#C4703C")
         self.assertEqual(result["runs_changed"], 1)
         prs = Presentation(deck)
@@ -207,13 +214,13 @@ class StyleRegressions(unittest.TestCase):
         """A missing phrase must not be a silent no-op."""
         out = build(slides=[{"title": "T", "bullets": ["Something else"]}])
         with self.assertRaises(ValueError) as ctx:
-            TOOLS["style_text"](file=out["file"], slide_index=2, phrase="nonexistent", bold=True)
+            TOOLS["style_text"](file=file_of(out), slide_index=2, phrase="nonexistent", bold=True)
         self.assertIn("not found", str(ctx.exception))
 
     def test_dense_slides_shrink_bullets_and_warn(self):
         out = build(slides=[{"title": "Dense", "bullets": bullets(6, length=70)}])
         self.assertTrue(out["warnings"], "expected a shrink warning")
-        prs = Presentation(out["file"])
+        prs = Presentation(file_of(out))
         run = body_of(prs, 1).text_frame.paragraphs[0].runs[0]
         self.assertEqual(run.font.size, Pt(17))
 
@@ -221,7 +228,7 @@ class StyleRegressions(unittest.TestCase):
         """6 short bullets at 17 pt looked anaemic — the shrink is length-gated."""
         out = build(slides=[{"title": "Short", "bullets": ["One", "Two", "Three", "Four", "Five", "Six"]}])
         self.assertEqual(out["warnings"], [])
-        prs = Presentation(out["file"])
+        prs = Presentation(file_of(out))
         self.assertEqual(body_of(prs, 1).text_frame.paragraphs[0].runs[0].font.size, Pt(20))
 
     def test_chart_colours_override_the_palette(self):
@@ -230,20 +237,20 @@ class StyleRegressions(unittest.TestCase):
             "chart": {"type": "column", "categories": ["A"], "colors": ["#C4703C"],
                       "series": [{"name": "S", "values": [1]}]},
         }])
-        prs = Presentation(out["file"])
+        prs = Presentation(file_of(out))
         chart = next(sh.chart for sh in prs.slides[1].shapes if sh.has_chart)
         self.assertEqual(str(chart.plots[0].series[0].format.fill.fore_color.rgb), "C4703C")
 
     def test_dark_template_uses_light_body_text(self):
         """Was: layout-level styling never reached empty placeholders -> black text on a dark deck."""
         out = build(template="midnight.pptx", slides=[{"title": "Dark", "bullets": bullets(1)}])
-        prs = Presentation(out["file"])
+        prs = Presentation(file_of(out))
         run = body_of(prs, 1).text_frame.paragraphs[0].runs[0]
         self.assertEqual(str(run.font.color.rgb), "C3CDDB")
 
     def test_output_name_does_not_gain_a_pptx_suffix(self):
         out = build(output_name="quarterly.pptx", slides=[])
-        self.assertNotIn("pptx-", Path(out["file"]).stem)
+        self.assertNotIn("pptx-", Path(file_of(out)).stem)
 
 
 class ImportRegressions(unittest.TestCase):
@@ -257,7 +264,7 @@ class ImportRegressions(unittest.TestCase):
         src = _TMP / "uploads" / "user" / "Q3 Review.pptx"
         shutil.copyfile(_TEMPLATES / "corporate-2slide.pptx", src)
         result = TOOLS["import_deck"](file="Q3 Review.pptx")
-        self.assertEqual(result["imported_from"], str(src))
+        self.assertEqual(result["imported_name"], src.name)
         self.assertEqual(result["slide_count"], 2)
 
     def test_legacy_pot_is_rejected(self):
@@ -379,7 +386,7 @@ class RendererBackendRegressions(unittest.TestCase):
     def test_disabled_renderer_degrades_instead_of_failing(self):
         from deck_preview import build_preview
 
-        deck = build(slides=[{"title": "T", "bullets": bullets(1)}])["file"]
+        deck = file_of(build(slides=[{"title": "T", "bullets": bullets(1)}]))
         original = os.environ.get("PPT_RENDERER")
         os.environ["PPT_RENDERER"] = "none"
         try:
@@ -410,7 +417,7 @@ class PreviewRegressions(unittest.TestCase):
         return deck_preview, (original, original_warm)
 
     def test_build_preview_reports_the_error_instead_of_raising(self):
-        deck = build(slides=[{"title": "T", "bullets": bullets(1)}])["file"]
+        deck = file_of(build(slides=[{"title": "T", "bullets": bullets(1)}]))
         module, (original, original_warm) = self._break_renderer()
         try:
             from deck_preview import build_preview
@@ -430,12 +437,12 @@ class PreviewRegressions(unittest.TestCase):
         out = build(slides=[{"title": "T", "bullets": bullets(1)}])
         module, (original, original_warm) = self._break_renderer()
         try:
-            result = TOOLS["style_slide"](file=out["file"], slide_index=2, title_size=30)
+            result = TOOLS["style_slide"](file=file_of(out), slide_index=2, title_size=30)
         finally:
             module._render = original
             module.warm_enabled = original_warm
         self.assertEqual(result["slides"], [])
-        prs = Presentation(out["file"])
+        prs = Presentation(file_of(out))
         title = next(ph for ph in prs.slides[1].placeholders if ph.placeholder_format.idx == 0)
         self.assertEqual(title.text_frame.paragraphs[0].runs[0].font.size, Pt(30))
 
@@ -444,7 +451,7 @@ class VerifyRegressions(unittest.TestCase):
     """verify_deck is the safety net for the failure class the model keeps repeating."""
 
     def test_flags_missing_table_and_wrong_slide_count(self):
-        deck = build(slides=[{"title": "One", "bullets": bullets(2)}])["file"]
+        deck = file_of(build(slides=[{"title": "One", "bullets": bullets(2)}]))
         result = TOOLS["verify_deck"](file=deck, expected_slides=3, table=True, chart=False, image=False)
         self.assertFalse(result["ok"])
         self.assertTrue(any("slide count" in p for p in result["problems"]))
@@ -452,11 +459,12 @@ class VerifyRegressions(unittest.TestCase):
         self.assertEqual(result["slide_count"], 2)
 
     def test_passes_when_the_deck_matches_the_ask(self):
-        deck = build(slides=[
+        built = build(slides=[
             {"title": "One", "table": {"headers": ["a", "b"], "rows": [["1", "2"]]}},
             {"title": "Two", "chart": {"type": "column", "categories": ["A"],
                                        "series": [{"name": "S", "values": [1]}]}},
-        ])["file"]
+        ])
+        deck = file_of(built)
         result = TOOLS["verify_deck"](file=deck, expected_slides=3, table=True, chart=True)
         self.assertTrue(result["ok"], result["problems"])
         self.assertEqual((result["tables"], result["charts"]), (1, 1))
@@ -484,7 +492,7 @@ class OneVisualPerSlideRegressions(unittest.TestCase):
             {"title": "Chart slide", "chart": {"type": "pie", "categories": ["A", "B"],
                                                "series": [{"name": "S", "values": [1, 2]}]}},
         ])
-        check = TOOLS["verify_deck"](file=out["file"], expected_slides=3, table=True, chart=True)
+        check = TOOLS["verify_deck"](file=file_of(out), expected_slides=3, table=True, chart=True)
         self.assertTrue(check["ok"], check["problems"])
 
 
@@ -495,8 +503,8 @@ class ConcurrencyRegressions(unittest.TestCase):
         from concurrent.futures import ThreadPoolExecutor
 
         def make(i):
-            return build(title=f"Deck {i}", slides=[{"title": f"S{i}", "bullets": bullets(2)}],
-                         output_name="parallel")["file"]
+            return file_of(build(title=f"Deck {i}", slides=[{"title": f"S{i}", "bullets": bullets(2)}],
+                                 output_name="parallel"))
 
         with ThreadPoolExecutor(max_workers=6) as pool:
             files = list(pool.map(make, range(6)))
@@ -509,10 +517,11 @@ class ConcurrencyRegressions(unittest.TestCase):
 
         from deck_preview import build_preview
 
-        deck = build(slides=[{"title": "A", "bullets": bullets(1)},
-                             {"title": "B", "bullets": bullets(1)}])["file"]
+        built = build(slides=[{"title": "A", "bullets": bullets(1)},
+                              {"title": "B", "bullets": bullets(1)}])
+        deck_id = built["deck_id"]
         with ThreadPoolExecutor(max_workers=5) as pool:
-            results = list(pool.map(lambda _: build_preview(deck), range(5)))
+            results = list(pool.map(lambda _: build_preview(deck_id), range(5)))
         for data in results:
             self.assertEqual(data["slide_count"], 3)
             assert_signed_download(self, data["download"])
@@ -525,12 +534,14 @@ class ConcurrencyRegressions(unittest.TestCase):
 
         from deck_preview import build_preview
 
-        deck = build(slides=[{"title": "A", "bullets": bullets(2)}])["file"]
+        built = build(slides=[{"title": "A", "bullets": bullets(2)}])
+        deck = file_of(built)          # to inspect the artefact afterwards
+        deck_ref = built["deck_id"]    # what a client actually holds
 
         def work(i):
             if i % 2:
-                return TOOLS["style_slide"](file=deck, slide_index=2, body_size=18 + i)
-            return build_preview(deck)
+                return TOOLS["style_slide"](file=deck_ref, slide_index=2, body_size=18 + i)
+            return build_preview(deck_ref)
 
         with ThreadPoolExecutor(max_workers=4) as pool:
             list(pool.map(work, range(8)))
@@ -786,7 +797,7 @@ class SlideCacheRegressions(unittest.TestCase):
                                   slides=[{"title": "One", "bullets": bullets(3)},
                                           {"title": "Two", "bullets": bullets(3)},
                                           {"title": "Three", "bullets": bullets(3)}])
-        shutil.copyfile(out["file"], self.deck)
+        shutil.copyfile(file_of(out), self.deck)
         self.prs = Presentation(str(self.deck))
         self.slide_total = len(self.prs.slides)
         self.root = render_cache.cache_root(deck_preview.preview_root())

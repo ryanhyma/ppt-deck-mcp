@@ -90,8 +90,8 @@ class PromptAssets(unittest.TestCase):
     def test_main_prompt_example_commands_use_real_apis(self):
         """A workflow that passes a parameter the tool does not accept teaches the model to fail."""
         main = (ROOT / "prompts/main-prompt.md").read_text("utf-8")
-        for call in ("style_slide(file, slide_index=", "verify_deck(file, expected_slides=",
-                     "build_deck(…full outline…, base=", 'import_deck(file="', "render_svg(svg="):
+        for call in ("style_slide(file, slide_index=", "verify_deck(file=<deck_id>, expected_slides=",
+                     "build_deck(…full outline…, base=<deck_id>)", 'import_deck(file="', "render_svg(svg="):
             self.assertIn(call, main)
         # Guard the vocabulary that has burned us: chart/table keys and the bullet limits.
         for phrase in ("categories", "series", "headers", "rows", "90 characters", "TOTAL"):

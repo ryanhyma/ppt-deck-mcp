@@ -99,6 +99,18 @@ def parse_tool_calls(events: list[dict]) -> tuple[list[dict], str]:
     return calls, text
 
 
+def _deck_file(deck_id: str | None) -> str | None:
+    """The MCP surface returns an opaque deck id; this runner resolves it on the host to inspect it."""
+    if not deck_id:
+        return None
+    try:
+        from deck_preview import resolve_ref  # noqa: PLC0415 - host-side helper, not part of the MCP API
+
+        return str(resolve_ref(deck_id))
+    except Exception:
+        return None
+
+
 def deck_from_calls(calls: list[dict]) -> tuple[str | None, str | None]:
     """(file, deck_id) from preview_deck/build_deck outputs, preferring preview_deck."""
     found = {"preview": (None, None), "build": (None, None)}
@@ -110,9 +122,9 @@ def deck_from_calls(calls: list[dict]) -> tuple[str | None, str | None]:
         if not isinstance(payload, dict):
             continue
         if c["name"].startswith("preview_deck"):
-            found["preview"] = (payload.get("file"), payload.get("deck_id"))
+            found["preview"] = (_deck_file(payload.get("deck_id")), payload.get("deck_id"))
         elif c["name"].startswith("build_deck"):
-            found["build"] = (payload.get("file"), None)
+            found["build"] = (_deck_file(payload.get("deck_id")), payload.get("deck_id"))
     return found["preview"] if found["preview"][0] else found["build"]
 
 

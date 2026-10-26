@@ -51,8 +51,10 @@ So the split has to be applied at the layer that can actually enforce it:
   subject or keep only template previews shared.
 - **The reverse proxy is not an authorisation point** for images. It can restrict the *port* (allow only
   the LibreChat host); it cannot decide whether this person may see this slide.
-- **Deck ids must not be guessable.** `2025-hiring-plan-175350` reveals the title and is trivially
-  enumerable. Use an opaque id, and keep the human name inside the metadata.
+- **Deck ids are opaque and are the only handle the tools hand out** (`d<16 hex>`, plus `i<16 hex>` for
+  rendered images). No tool returns a filesystem path: a path tells the caller where the box keeps its
+  data and invites a follow-up call with that path — the pattern that made `preview_deck` a file-read
+  primitive. The id -> file mapping is `previews/.index/<id>` and is not served.
 - **`deck.json` and `deck.pptx` must not be served from the asset route.** `deck.json` leaks absolute
   host paths; `deck.pptx` is the user's content. Serve images only (signed), and a separate download
   route that checks the same signature.

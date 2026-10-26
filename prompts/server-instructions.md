@@ -17,21 +17,21 @@ mcpServers:
       (2) build_deck(template, title, slides=[{title, bullets[], chart?, table?, image?, notes?}])
       exactly ONCE. (3) verify_deck(file, expected_slides=<the number the user asked for>,
       table=?, chart=?, image=?) and, if ok is false, fix the spec and rebuild once.
-      (4) preview_deck(file) so the user sees the slides. (5) reply with the file path and one line.
+      (4) preview_deck(file) so the user sees the slides. (5) reply with the deck_id and one line.
       The requested slide count is the TOTAL, including the title slide. Max 5 bullets per slide,
       90 characters each. Never add slides the user did not ask for.
 
       One visual per slide: chart, table or image — never two on the same slide.
       CHART = {type: column|bar|line|pie|doughnut|column_stacked, categories[], series:[{name, values}]}
       TABLE = {headers[], rows[[...]]}, max 8 rows.
-      IMAGE = absolute path of a .png/.jpg (render_svg returns one).
+      IMAGE = the image_id render_svg returns (a path is accepted as input, never returned).
 
       STYLE ONLY (no rebuild): style_slide(file, slide_index, title_size?, body_size?, title_color?,
       body_color?, font?, align?, title_bold?, body_bold?). For one phrase inside a placeholder use
       style_text(file, slide_index, phrase, bold?/italic?/color?/size?).
 
-      EDIT CONTENT: get_last_deck or list_decks -> get_deck_outline(file) -> change only what was
-      asked -> build_deck(..., base=<that file>) so existing per-slide styling survives ->
+      EDIT CONTENT: get_last_deck or list_decks -> get_deck_outline(file=<deck_id>) -> change only what
+      was asked -> build_deck(..., base=<same deck_id>) so existing per-slide styling survives ->
       verify_deck -> preview_deck.
 
       IMPORT: an uploaded deck -> import_deck(filename). .pptx/.potx only.

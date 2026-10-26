@@ -28,9 +28,17 @@ from pptx.util import Inches, Pt
 
 from deck_style import Theme, decorate, hex_rgb, page_number, title_rule
 
+import deck_registry
 import paths as deck_paths
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+
+
+def _remember(path) -> str:
+    """Register a freshly written deck and return its opaque id (see deck_preview.remember)."""
+    from deck_preview import remember  # noqa: PLC0415 - avoids an import cycle at module load
+
+    return remember(path)
 
 CHART_TYPES = {
     "bar": XL_CHART_TYPE.BAR_CLUSTERED,
@@ -595,14 +603,14 @@ def register_deck_tools(app, template_dirs_fn) -> None:
 
         Use for icons, simple diagrams, or schematic drawings that a chart cannot express.
         Keep the SVG simple: solid fills, few paths, system font names, no external
-        images or <script>. Then pass the returned `png` path as an image to build_deck.
+        images or <script>. Then pass the returned `image_id` to build_deck.
 
         Args:
             svg: full SVG markup, including the <svg ...> root element
             name: file stem for the PNG
             width_px: output width in pixels (height follows the SVG aspect ratio)
 
-        Returns: {"png": <absolute path>, "width_px": ..., "height_px": ...}
+        Returns: {"image_id": "i…", "width_px": ..., "height_px": ...} — pass image_id to build_deck.
         """
         try:
             import cairosvg
@@ -616,7 +624,8 @@ def register_deck_tools(app, template_dirs_fn) -> None:
             raise ValueError("svg must not contain <script>")
 
         stem = _slug(name, "graphic")
-        dest = _output_dir() / f"{stem}-{datetime.now().strftime('%H%M%S')}.png"
+        image_id = deck_registry.new_image_id()
+        dest = _output_dir() / f"{stem}-{datetime.now().strftime('%H%M%S')}-{image_id}.png"
         png_bytes = cairosvg.svg2png(bytestring=markup.encode("utf-8"), output_width=int(width_px))
 
         dest.write_bytes(png_bytes)
@@ -625,10 +634,10 @@ def register_deck_tools(app, template_dirs_fn) -> None:
         with Image.open(dest) as im:
             w, h = im.size
         return {
-            "png": str(dest),
+            "image_id": image_id,
             "width_px": w,
             "height_px": h,
-            "hint": "Insert with build_deck(slide image=<png>) or pass as image=<png>.",
+            "hint": "Insert with build_deck(image=<image_id>) or on one slide as image=<image_id>.",
         }
 
     @app.tool()
@@ -665,12 +674,14 @@ def register_deck_tools(app, template_dirs_fn) -> None:
             base: optional .pptx whose per-slide styles (size/colour/font/align) are
                   re-applied to matching slides when a slide spec has no own "style"
 
-        Returns: {"file": <absolute path>, "slide_count": N, "visuals": [...]}
+        Returns: {"deck_id": "d…", "slide_count": N, "visuals": [...]}
         """
         _validate_slides(slides)
         base_styles: List[Dict[str, Any]] = []
         if base:
-            base_path = deck_paths.resolve_deck(base)
+            from deck_preview import resolve_ref  # noqa: PLC0415 - avoids an import cycle at module load
+
+            base_path = resolve_ref(base)
             base_prs = Presentation(str(base_path))
             base_styles = [_style_for_slide(sl) for sl in base_prs.slides]
         dirs = _template_dirs(template_dirs_fn)
@@ -686,7 +697,7 @@ def register_deck_tools(app, template_dirs_fn) -> None:
 
         default_image = None
         if image:
-            default_image = deck_paths.resolve_deck(image, suffixes=tuple(IMAGE_SUFFIXES))
+            default_image = deck_paths.resolve_image(image)
 
         visuals: List[str] = []
         styled: List[str] = []
@@ -703,8 +714,7 @@ def register_deck_tools(app, template_dirs_fn) -> None:
             elif isinstance(item.get("table"), dict):
                 visual = {"kind": "table", "spec": item["table"]}
             elif item.get("image"):
-                visual = {"kind": "image",
-                          "path": deck_paths.resolve_deck(str(item["image"]), suffixes=tuple(IMAGE_SUFFIXES))}
+                visual = {"kind": "image", "path": deck_paths.resolve_image(str(item["image"]))}
             elif default_image is not None:
                 visual = {"kind": "image", "path": default_image}
 
@@ -735,7 +745,7 @@ def register_deck_tools(app, template_dirs_fn) -> None:
         _save_atomic(prs, dest)
 
         return {
-            "file": str(dest),
+            "deck_id": _remember(dest),
             "slide_count": len(prs.slides._sldIdLst),
             "content_slides": made,
             "template": tpl.name,
@@ -805,7 +815,7 @@ def _outline(path: Path) -> Dict[str, Any]:
         slides.append(entry)
 
     return {
-        "file": str(path),
+        "deck_id": deck_registry.deck_id(path),
         "title": title_text,
         "subtitle": subtitle_text,
         "slide_count": len(slides),
@@ -831,11 +841,13 @@ def register_verify_tools(app) -> None:
         `problems` list, so the fix is obvious: correct the slide spec and rebuild **once**.
 
         Args:
-            file: absolute path of the .pptx returned by build_deck
+            file: deck id returned by build_deck (or a path)
             expected_slides: total slides the user asked for, including the title slide
             table / chart / image: True if the user asked for that visual in the deck
         """
-        path = deck_paths.resolve_deck(file)
+        from deck_preview import resolve_ref  # noqa: PLC0415
+
+        path = resolve_ref(file)
         prs = Presentation(str(path))
         slides = list(prs.slides)
 
@@ -864,7 +876,7 @@ def register_verify_tools(app) -> None:
 
         return {
             "ok": not problems,
-            "file": str(path),
+            "deck_id": deck_registry.deck_id(path),
             "slide_count": len(slides),
             "charts": charts,
             "tables": tables,
@@ -885,9 +897,11 @@ def register_readback_tools(app, output_dir_getter) -> None:
         current content.
 
         Args:
-            file: absolute path of a .pptx (from build_deck or list_decks)
+            file: deck id (from build_deck / list_decks) or a path
         """
-        path = deck_paths.resolve_deck(file)
+        from deck_preview import resolve_ref  # noqa: PLC0415
+
+        path = resolve_ref(file)
         return _outline(path)
 
 
@@ -924,7 +938,7 @@ def register_style_tools(app) -> None:
         slide, so styling never depends on a model interpreting words like "bigger".
 
         Args:
-            file: absolute path of the .pptx (from build_deck / list_decks)
+            file: deck id (from build_deck / list_decks) or a path
             slide_index: 1-based slide number
             title_size / body_size: points, 8..72
             title_color / body_color: hex like "#1F3864"
@@ -934,7 +948,9 @@ def register_style_tools(app) -> None:
             title_bold / body_bold / title_italic / body_italic: per-placeholder emphasis.
                 (bold/italic are kept as aliases that apply to both; prefer the explicit ones.)
         """
-        path = deck_paths.resolve_deck(file)
+        from deck_preview import resolve_ref  # noqa: PLC0415
+
+        path = resolve_ref(file)
 
         for name, value in (("title_size", title_size), ("body_size", body_size)):
             if value is not None and not 8 <= int(value) <= 72:
@@ -994,7 +1010,7 @@ def register_style_tools(app) -> None:
 
         preview = build_preview(path)
         return {
-            "file": str(path),
+            "deck_id": deck_registry.deck_id(path),
             "slide_index": int(slide_index),
             "applied": sorted(set(changed)),
             "slide_count": preview["slide_count"],
@@ -1035,7 +1051,9 @@ def register_text_tools(app) -> None:
         Returns: {"runs_changed": n, "matches": [str, ...]} — an empty match list means the phrase
         spans several runs; use a shorter phrase.
         """
-        path = deck_paths.resolve_deck(file)
+        from deck_preview import resolve_ref  # noqa: PLC0415
+
+        path = resolve_ref(file)
         if not phrase or not phrase.strip():
             raise ValueError("phrase must not be empty")
         if color is not None and not re.fullmatch(r"#[0-9A-Fa-f]{6}", color):
@@ -1089,7 +1107,7 @@ def register_text_tools(app) -> None:
 
         preview = build_preview(path)
         return {
-            "file": str(path),
+            "deck_id": deck_registry.deck_id(path),
             "slide_index": int(slide_index),
             "phrase": phrase,
             "runs_changed": changed,

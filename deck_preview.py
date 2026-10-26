@@ -24,6 +24,7 @@ from urllib.parse import urlsplit
 from mcp.types import ToolAnnotations
 from pptx import Presentation
 
+import deck_registry
 import paths as deck_paths
 import render_cache
 import render_warm
@@ -297,23 +298,12 @@ def _render(pptx: Path, outdir: Path, width: int | None = None) -> int:
 
 
 # ---------------------------------------------------------------- opaque ids + signed asset URLs
-DECK_ID_HEX = 16  # 64 bits: far beyond what enumeration could reach, still short in a URL
+DECK_ID_HEX = 16  # kept for the existing tests; the hashing lives in deck_registry
 
 
 def _deck_id(path: Path) -> str:
-    """An opaque, stable id for a deck file.
-
-    It used to be the filename slug ("2025-hiring-plan-175350"), which told anyone who could reach the
-    server what the deck was called and made every preview directory guessable. Now it is derived from
-    the resolved path, so ids are unguessable from the outside, stable across previews (the cache and
-    the template gallery both rely on that), and unrelated to the title.
-    """
-    try:
-        resolved = str(Path(path).resolve())
-    except OSError:
-        resolved = str(path)
-    digest = hashlib.sha256(resolved.encode("utf-8", "surrogatepass")).hexdigest()
-    return "d" + digest[:DECK_ID_HEX]
+    """Opaque, stable id for a deck file (see :mod:`deck_registry`)."""
+    return deck_registry.deck_id(path)
 
 
 def url_secret() -> bytes:
@@ -390,8 +380,32 @@ def deck_asset_path(deck_id: str, name: str, expires: str | None = None,
     return resolved
 
 
+def remember(path: str | Path) -> str:
+    """Register a deck the moment it is created, so its id resolves before it is ever previewed."""
+    source = deck_paths.resolve_deck(str(path), suffixes=())
+    deck_id = deck_registry.deck_id(source)
+    (preview_root() / deck_id).mkdir(parents=True, exist_ok=True)
+    deck_registry.record(preview_root(), deck_id, source)
+    return deck_id
+
+
+def resolve_ref(ref: str | Path) -> Path:
+    """Resolve a caller's deck reference: an opaque id from a previous result, or a path/filename.
+
+    Tools accept either, and only ever return the id. The id -> file mapping is the ``.source`` record
+    written next to each preview, so the model never has to see (or be trusted with) a filesystem path.
+    """
+    text = str(ref or "").strip().strip('"')
+    if deck_registry.DECK_ID_RE.match(text):
+        source = deck_registry.source_for(preview_root(), text)
+        if source is None:
+            raise FileNotFoundError(f"unknown deck id {text!r} — list_decks or build_deck first")
+        return deck_paths.resolve_deck(source, suffixes=())
+    return _resolve_input(text)
+
+
 def build_preview(pptx_path: str | Path, title: str = "") -> Dict[str, Any]:
-    src = deck_paths.resolve_deck(str(pptx_path))
+    src = resolve_ref(pptx_path)
     if src.suffix.lower() not in (".pptx", ".potx"):
         raise ValueError("preview_deck expects a .pptx/.potx file")
 
@@ -406,6 +420,9 @@ def _build_preview_locked(src: Path, deck_id: str, outdir: Path, title: str) -> 
     if outdir.exists():
         shutil.rmtree(outdir)
     outdir.mkdir(parents=True)
+    # Re-record the id -> source mapping (the index lives outside this directory, so the wipe above
+    # cannot lose it; re-recording keeps ids created before the index existed resolvable).
+    deck_registry.record(preview_root(), deck_id, src)
 
     # Copy the deck next to its previews so the browser can download it from this server.
     shipped = outdir / "deck.pptx"
@@ -440,7 +457,7 @@ def _build_preview_locked(src: Path, deck_id: str, outdir: Path, title: str) -> 
         "templates": _template_gallery(),
         "deck_id": deck_id,
         "title": title or labels[0] if labels else (title or src.stem),
-        "file": str(src),
+        "source_name": src.name,
         "slide_count": total,
         "rendered_slides": rendered,
         "download": signed_url(deck_id, "deck.pptx"),
@@ -603,7 +620,7 @@ def register_preview_tools(app, template_dirs_fn=None) -> None:
         result. Returns the same data the view renders.
 
         Args:
-            file: absolute path of a .pptx (e.g. the value returned by build_deck)
+            file: deck id from build_deck/preview_deck (preferred) or a path
         """
         return build_preview(file)
 
@@ -626,7 +643,7 @@ def register_preview_tools(app, template_dirs_fn=None) -> None:
                 try:
                     d = json.loads(meta_file.read_text(encoding="utf-8"))
                     rows.append({"deck_id": d.get("deck_id"), "title": d.get("title"),
-                                 "slides": d.get("slide_count"), "file": d.get("file")})
+                                 "slides": d.get("slide_count")})
                 except Exception:
                     continue
         return {"decks": rows[:20]}
@@ -699,14 +716,14 @@ def register_import_tools(app) -> None:
     def import_deck(file: str) -> Dict[str, Any]:
         """Open a .pptx the user uploaded to the chat, so it can be edited or restyled.
 
-        Accepts the uploaded filename (e.g. "Q3 review.pptx"), a container path
-        ("/app/uploads/...") or an absolute path. Copies it into the deck workspace, renders
+        Accepts the uploaded filename (e.g. "Q3 review.pptx"), a deck id from another tool, a
+        container path ("/app/uploads/...") or a path. Copies it into the deck workspace, renders
         previews, and returns the outline as well, so a follow-up edit can preserve content.
 
         Args:
-            file: uploaded filename or path to a .pptx
+            file: uploaded filename, deck id, or path to a .pptx
         """
-        src = _resolve_input(file)
+        src = resolve_ref(file)
         if src.suffix.lower() not in (".pptx", ".potx"):
             raise ValueError("only .pptx files can be imported (legacy .pot/.ppt is not supported)")
 
@@ -719,6 +736,6 @@ def register_import_tools(app) -> None:
         shutil.copyfile(src, dest)
 
         data = build_preview(dest, title="")
-        data["imported_from"] = str(src)
+        data["imported_name"] = src.name
         data["outline"] = _outline(dest)
         return data

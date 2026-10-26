@@ -34,7 +34,7 @@
   const fixture = {
     deck_id: deck || "fixture",
     title: params.get("title") || "The Water Cycle",
-    file: `/example/${deck || "fixture"}.pptx`,
+    // No `file`: the real tool result never carries a path, only the opaque id.
     slides: Array.from({ length: slides }, (_, i) => ({
       index: i + 1,
       label: labels[i] || ["The Water Cycle", "Overview", "Condensation & Precipitation",

@@ -14,14 +14,16 @@ TEMPLATE: corporate-2slide.pptx unless the user names another template.
 ONE VISUAL PER SLIDE: a slide spec holds either `chart`, `table` or `image` — never two. Put a requested
   table on its own slide if the deck also needs a chart.
 TABLE = {"headers":[...], "rows":[[...]]}; CHART = {"type","categories","series":[{"name","values"}]}.
-NEW DECK: list_templates -> outline -> build_deck once -> **verify_deck(file, expected_slides=<total asked>,
+NEW DECK: list_templates -> outline -> build_deck once -> **verify_deck(file=<deck_id>, expected_slides=<total asked>,
   table=<asked?>, chart=<asked?>, image=<asked?>)**: if ok is false, read `problems`, fix the spec and
-  rebuild ONCE, then verify again -> preview_deck -> reply with path and one line.
+  rebuild ONCE, then verify again -> preview_deck -> reply with the deck_id and one line.
 FORMATTING-ONLY: style_slide per slide (title_bold/body_size/colour/font/align); one word -> style_text.
-CONTENT EDIT: get_last_deck/list_decks -> get_deck_outline -> change only what was asked -> build_deck(base=<file>)
+CONTENT EDIT: get_last_deck/list_decks -> get_deck_outline -> change only what was asked -> build_deck(base=<deck_id>)
   -> verify_deck -> preview_deck.
 IMPORT: uploaded .pptx -> import_deck(filename).
 SLIDE COUNT: the number asked is the TOTAL including the title slide. Max 5 bullets, 90 chars each.
+DECK HANDLE: tools return a deck_id like d1a2b3c4d5e6f708. Pass that id back as `file`; never a path.
+  Never show the user a file path — there is none to show.
 ```
 
 ## Why these lines exist (the defects each one prevents)
@@ -34,6 +36,7 @@ SLIDE COUNT: the number asked is the TOTAL including the title slide. Max 5 bull
 | `FORMATTING-ONLY: style_slide … one word -> style_text` | A styling request used to trigger a full rebuild, which discarded in-pane formatting. |
 | `CONTENT EDIT: … build_deck(base=<file>)` | Rebuilding without `base=` wiped per-slide styling done in the pane. |
 | `SLIDE COUNT: … TOTAL including the title slide` | The remaining top failure mode in the 108-case corpus. |
+| `DECK HANDLE: … never a path` | Tools used to return absolute paths, which leaked the host layout and invited follow-up calls with a path (how `preview_deck` became a file-read primitive). The surface now returns an opaque `deck_id`. |
 
 ## Deliberately absent from this prompt
 

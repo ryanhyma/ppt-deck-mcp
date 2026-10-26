@@ -5,8 +5,9 @@ description: Create simple SVG icons or schematic diagrams and rasterize them to
 
 # SVG graphics for slides
 
-`render_svg(svg, name, width_px=1600)` converts SVG markup to a transparent PNG and
-returns its path. Pass that path as `image` on a slide spec of `build_deck`.
+`render_svg(svg, name, width_px=1600)` converts SVG markup to a transparent PNG and returns an
+opaque `image_id` (e.g. `i9023ad1147355e4c`), not a file path. Pass that id as `image` on a slide spec of
+`build_deck`.
 
 PowerPoint cannot import SVG through this toolchain, and python-pptx cannot embed SVG
 directly — the PNG is the insertion format. If the user later edits the deck in
@@ -39,7 +40,7 @@ PowerPoint they can right-click → Change Picture with the original SVG.
 
 1. Sketch the shape with 5-15 elements; keep one idea per graphic.
 2. `render_svg(svg=..., name="fish-anatomy", width_px=1200)`.
-3. `build_deck(..., slides=[{"title": ..., "bullets": [...], "image": <png path>}])`.
+3. `build_deck(..., slides=[{"title": ..., "bullets": [...], "image": <image_id>}])`.
 
 If `render_svg` errors on invalid markup, simplify — most failures are unclosed tags
 or a missing `xmlns`.
