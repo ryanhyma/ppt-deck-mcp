@@ -54,10 +54,21 @@ curl -si -X POST https://mcp.example.gc.ca/mcp \
 tail -3 /var/log/ppt-mcp/audit.jsonl
 ```
 
+### Exercise the OAuth path without a tenant
+
+[`oidc/`](oidc/) runs a real authorization server locally (discovery + JWKS + token endpoint) that mints
+Entra-shaped tokens:
+
+```sh
+docker compose -f oidc/docker-compose.yml up -d          # http://localhost:8899
+PPT_OIDC_REQUIRED=1 .venv/bin/python -m unittest tests.test_oidc_mock
+```
+
 Then run the suite that pins all of it:
 
 ```sh
-.venv/bin/python -m unittest discover -s tests      # 163 tests, no services needed
+.venv/bin/python -m unittest discover -s tests      # 171 tests (the OIDC mock group is skipped
+                                                    # unless the container is up)
 ```
 
 ## 5. Still the operator's job

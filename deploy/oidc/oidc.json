@@ -1,0 +1,60 @@
+{
+  "interactiveLogin": true,
+  "httpServer": "NettyWrapper",
+  "tokenCallbacks": [
+    {
+      "issuerId": "default",
+      "tokenExpiry": 3600,
+      "requestMappings": [
+        {
+          "requestParam": "scope",
+          "match": "api://something-else/Decks.Read",
+          "claims": {
+            "tid": "11111111-1111-1111-1111-111111111111",
+            "oid": "svc-deck-builder",
+            "sub": "svc-deck-builder",
+            "scp": "Decks.Read",
+            "ver": "2.0",
+            "azp": "librechat-deck-studio",
+            "roles": [
+              "Decks.Access"
+            ],
+            "aud": "api://something-else"
+          }
+        },
+        {
+          "requestParam": "grant_type",
+          "match": "authorization_code",
+          "claims": {
+            "tid": "11111111-1111-1111-1111-111111111111",
+            "oid": "user-alice",
+            "sub": "user-alice",
+            "scp": "Decks.Read",
+            "ver": "2.0",
+            "azp": "librechat-deck-studio",
+            "roles": [
+              "Decks.Access"
+            ],
+            "aud": "api://deck-mcp"
+          }
+        },
+        {
+          "requestParam": "grant_type",
+          "match": "client_credentials",
+          "claims": {
+            "tid": "11111111-1111-1111-1111-111111111111",
+            "oid": "svc-deck-builder",
+            "sub": "svc-deck-builder",
+            "scp": "Decks.Read",
+            "ver": "2.0",
+            "azp": "librechat-deck-studio",
+            "roles": [
+              "Decks.Access"
+            ],
+            "aud": "api://deck-mcp"
+          }
+        }
+      ]
+    }
+  ]
+}

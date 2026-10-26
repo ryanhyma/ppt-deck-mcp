@@ -152,6 +152,35 @@ class EntraVerifierRegressions(unittest.TestCase):
         self.assertIn("resource_metadata=", challenge)
 
 
+class IssuerConfigRegressions(unittest.TestCase):
+    """The factory must honour PPT_ENTRA_ISSUER — a mock/sovereign issuer is not login.microsoftonline.com.
+
+    Found by running the server in entra mode against the mock IdP container: the verifier was built
+    without the configured issuer, so every otherwise-valid token failed with "different issuer".
+    """
+
+    def tearDown(self):
+        for key in ("PPT_AUTH_MODE", "PPT_ENTRA_TENANT_ID", "PPT_ENTRA_AUDIENCE", "PPT_ENTRA_ISSUER"):
+            os.environ.pop(key, None)
+        auth.reset_verifier()
+
+    def test_the_configured_issuer_is_used_by_the_verifier_factory(self):
+        os.environ["PPT_AUTH_MODE"] = "entra"
+        os.environ["PPT_ENTRA_TENANT_ID"] = "11111111-1111-1111-1111-111111111111"
+        os.environ["PPT_ENTRA_AUDIENCE"] = "api://deck-mcp"
+        os.environ["PPT_ENTRA_ISSUER"] = "http://localhost:8899/default"
+        auth.reset_verifier()
+        self.assertEqual(auth.verifier().issuer, "http://localhost:8899/default")
+
+    def test_the_default_issuer_is_still_the_tenant_endpoint(self):
+        os.environ["PPT_AUTH_MODE"] = "entra"
+        os.environ["PPT_ENTRA_TENANT_ID"] = "11111111-1111-1111-1111-111111111111"
+        os.environ["PPT_ENTRA_AUDIENCE"] = "api://deck-mcp"
+        auth.reset_verifier()
+        self.assertEqual(auth.verifier().issuer,
+                         "https://login.microsoftonline.com/11111111-1111-1111-1111-111111111111/v2.0")
+
+
 class SharedTokenRegressions(unittest.TestCase):
     def test_the_shared_token_is_compared_in_constant_time_and_required(self):
         verifier = auth.SharedTokenVerifier("s3cret")

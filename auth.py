@@ -322,6 +322,9 @@ def verifier():
             _VERIFIER = EntraVerifier(
                 tenant_id=str(_setting("PPT_ENTRA_TENANT_ID", "entra_tenant_id", "") or ""),
                 audience=str(_setting("PPT_ENTRA_AUDIENCE", "entra_audience", "") or ""),
+                # A sovereign/mock issuer is not login.microsoftonline.com; without this the verifier
+                # silently defaults to the commercial endpoint and rejects every valid token.
+                issuer=str(_setting("PPT_ENTRA_ISSUER", "entra_issuer", "") or ""),
                 required_scopes=str(_setting("PPT_ENTRA_REQUIRED_SCOPES", "entra_required_scopes", "") or "").replace(",", " ").split(),
                 required_roles=str(_setting("PPT_ENTRA_REQUIRED_ROLES", "entra_required_roles", "") or "").replace(",", " ").split(),
                 jwks_url=str(_setting("PPT_ENTRA_JWKS_URL", "entra_jwks_url", "") or ""),

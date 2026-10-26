@@ -260,10 +260,24 @@ PPT_AUDIT_MAX_BYTES=10485760         # rotates, one previous file kept — ship 
 - Rendering is still LibreOffice parsing untrusted files; treat the sandbox as part of the deployment
   (`docs/security.md` item 3) — a dedicated low-privilege account, no egress, timeouts.
 
-### 5. Verify, don't assume
+### 5. Test the OAuth path without a cloud tenant
+
+The container in [`deploy/oidc/`](deploy/oidc/) is a real authorization server (discovery, JWKS, token
+endpoint) that mints Entra-shaped tokens, so the resource-server side can be exercised end to end:
 
 ```sh
-.venv/bin/python -m unittest discover -s tests   # 162 tests: security, auth, audit, assets, regressions
+docker compose -f deploy/oidc/docker-compose.yml up -d      # http://localhost:8899
+PPT_OIDC_REQUIRED=1 .venv/bin/python -m unittest tests.test_oidc_mock
+```
+
+It proves key fetch over HTTP, RS256 verification, audience/tenant rejection and a full MCP tool call with
+a token — it does **not** prove Conditional Access or other tenant policy: one staging run against the real
+Entra tenant is still required before go-live.
+
+### 6. Verify, don't assume
+
+```sh
+.venv/bin/python -m unittest discover -s tests   # 171 tests: security, auth, audit, assets, regressions
 curl -si -X POST http://host:8931/mcp | head -3  # 401 + WWW-Authenticate when auth is on
 ```
 
