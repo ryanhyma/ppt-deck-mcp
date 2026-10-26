@@ -1,0 +1,25 @@
+# LibreChat -> this gateway -> ppt-mcp (token mode). The gateway is the only holder of the credential
+# and is reachable only from the LibreChat docker network.
+services:
+  mcp-gateway:
+    image: nginx:1.27-alpine
+    container_name: mcp-gateway
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/gateway/entrypoint.sh"]
+    environment:
+      MCP_UPSTREAM: host.docker.internal:8931
+      # Read from .env next to this file (or the shell); never commit a real token.
+      MCP_TOKEN: ${MCP_TOKEN:?set MCP_TOKEN}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./nginx.conf.template:/etc/nginx/nginx.conf.template:ro
+      - ./entrypoint.sh:/gateway/entrypoint.sh:ro
+    networks:
+      - librechat
+    # no ports: published only inside the docker network, never on the host or the LAN
+
+networks:
+  librechat:
+    external: true
+    name: librechat_default

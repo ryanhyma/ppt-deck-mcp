@@ -219,6 +219,22 @@ Entra does not support the RFC 8707 `resource` parameter, so audience binding is
 `aud` claim; `tid` is checked separately from `iss`; identity is `oid`/`sub` (never
 `preferred_username`/`upn`/`email`).
 
+#### LibreChat does not send `headers:` on this transport
+
+Verified on v0.8.9-rc1: with `headers: { Authorization: 'Bearer ${PPT_MCP_TOKEN}' }` LibreChat still sends
+`POST /mcp` with no Authorization header, gets 401, and reports "OAuth required" — token mode then fails
+even though the server is correct. The supported shape is a small **authenticating gateway**
+([`deploy/mcp-gateway/`](deploy/mcp-gateway/)) on the LibreChat network:
+
+```
+LibreChat ──plain HTTP──► mcp-gateway:8931 ──Bearer──► ppt-mcp :8931/mcp
+                                (no host port, docker network only)
+```
+
+The server stays in `token` mode and validates every request; the credential lives only in the gateway's
+`.env`. LibreChat config then needs just the URL plus `mcpSettings.allowedDomains`/`allowedAddresses`
+entries for `mcp-gateway`.
+
 LibreChat side — `deploy/librechat/mcpServers.ppt.yaml`:
 
 ```yaml

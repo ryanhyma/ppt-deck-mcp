@@ -701,6 +701,10 @@ def template_preview_urls(pptx_path: str | Path) -> List[str]:
                 return []
     base = public_base()
     files = sorted(outdir.glob("slide-*.png"), key=lambda p: int(p.stem.split("-")[1]))
+    if auth.auth_mode() != "none":
+        # Images require a signature once authentication is on; the gallery is no exception, or the
+        # pane shows broken thumbnails.
+        return [signed_url(outdir.name, f.name) for f in files]
     return [f"{base}/decks/{outdir.name}/{f.name}" for f in files]
 
 

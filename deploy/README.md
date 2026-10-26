@@ -33,14 +33,25 @@ Copy [`windows/ppt-mcp.env.example`](windows/ppt-mcp.env.example) as the startin
 `/apps/` stays public on purpose: the Deck Studio pane is static HTML/JS fetched by the browser with no
 bearer, and it holds no user data. Slide images are authorised by signed, expiring URLs instead.
 
-## 3. Network
+## 3. Deliver the credential to LibreChat
+
+LibreChat v0.8.9-rc1 does not apply `headers:` to the MCP transport (it sends no Authorization header and
+misreads the 401 as "OAuth required"). Use the gateway in [`mcp-gateway/`](mcp-gateway/): it sits on the
+LibreChat network, injects the bearer, publishes no host port, and the server keeps validating tokens.
+
+```sh
+cd mcp-gateway && printf 'MCP_TOKEN=%s\n' "$(openssl rand -hex 24)" > .env && chmod 600 .env
+docker compose up -d          # LibreChat then uses http://mcp-gateway:8931/mcp
+```
+
+## 4. Network
 
 - The MCP port is for **LibreChat only**. On Windows the installer adds an inbound rule limited to that
   host, plus an outbound block on `soffice.exe` — untrusted decks must not reach the network.
 - Single-user deployment? Use `--transport stdio`: no listening socket at all.
 - Never expose `/decks/` directly to the LAN or a WAF without the signature check intact.
 
-## 4. Validate the deployment
+## 5. Validate the deployment
 
 ```sh
 # 1. unauthenticated requests must be refused, with a challenge
@@ -71,7 +82,7 @@ Then run the suite that pins all of it:
                                                     # unless the container is up)
 ```
 
-## 5. Still the operator's job
+## 6. Still the operator's job
 
 - **LibreOffice sandbox** (`docs/security.md` item 3): dedicated low-privilege account, no egress,
   render timeouts, patching. The audit log records what was rendered, not what it contained.

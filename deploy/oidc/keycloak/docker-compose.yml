@@ -1,0 +1,29 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: kc-deck
+    command: ["start-dev", "--import-realm", "--http-port=8080"]
+    restart: unless-stopped
+    ports:
+      # loopback + the docker bridge only: the browser uses the host name, the LibreChat
+      # container uses host.docker.internal. Nothing is published to the LAN.
+      - "127.0.0.1:8898:8080"
+      - "172.17.0.1:8898:8080"
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-change-me-admin}
+      # The issuer must be one value that both the browser and the containers can resolve.
+      KC_HOSTNAME: http://host.docker.internal:8898
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+      KC_LOG_LEVEL: INFO
+    volumes:
+      - ./realm-deck.json:/opt/keycloak/data/import/realm-deck.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && head -1 <&3 | grep -q '200'"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 40s

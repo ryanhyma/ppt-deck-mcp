@@ -191,6 +191,37 @@ class TemplateGalleryRegressions(unittest.TestCase):
             name = url.rsplit("/", 1)[-1]
             self.assertTrue((self.out / name).is_file(), f"{name} advertised but absent")
 
+    def test_gallery_urls_are_usable_when_authentication_is_on(self):
+        """With auth enabled, only signed URLs are served — the template gallery must mint them too.
+
+        Found live: the pane showed broken thumbnails because template URLs stayed unsigned while
+        image requests started requiring a signature.
+        """
+        original = os.environ.get("PPT_AUTH_MODE")
+        os.environ["PPT_AUTH_MODE"] = "token"
+        os.environ["PPT_MCP_TOKEN"] = "test-token"
+        import auth
+
+        auth.reset_verifier()
+        try:
+            urls = deck_preview.template_preview_urls(TEMPLATE)
+            self.assertTrue(urls)
+            for url in urls:
+                query = parse_qs(urlsplit(url).query)
+                name = url.split("?")[0].rsplit("/", 1)[-1]
+                served = deck_preview.deck_asset_path(
+                    f"tpl-{deck_preview._deck_id(TEMPLATE)}", name,
+                    query.get("exp", [None])[0], query.get("sig", [None])[0],
+                    query.get("sub", [""])[0])
+                self.assertIsNotNone(served, f"unsigned gallery URL under auth: {url}")
+        finally:
+            if original is None:
+                os.environ.pop("PPT_AUTH_MODE", None)
+            else:
+                os.environ["PPT_AUTH_MODE"] = original
+            os.environ.pop("PPT_MCP_TOKEN", None)
+            auth.reset_verifier()
+
     def test_gallery_ids_are_reachable_through_the_asset_route(self):
         """Template previews live under `tpl-<id>`; the route's id rule must accept that shape."""
         deck_preview.template_preview_urls(TEMPLATE)

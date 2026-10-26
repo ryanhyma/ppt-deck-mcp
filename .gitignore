@@ -6,3 +6,6 @@ upstream/.git/
 upstream/public/
 tests/results/*.json
 tests/results/
+
+# Gateway credential (never commit)
+deploy/mcp-gateway/.env

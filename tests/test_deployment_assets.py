@@ -137,6 +137,36 @@ class SkillAssets(unittest.TestCase):
             self.assertIn(tool, REGISTERED, f"skill references unknown tool {tool}()")
 
 
+class GatewayAssets(unittest.TestCase):
+    """LibreChat ignores `headers:` on the MCP transport, so the bearer is injected by a gateway.
+
+    These assertions keep that proxy honest: the header must be injected, the container must publish
+    no port, and the credential must not be committed.
+    """
+
+    def setUp(self):
+        self.dir = ROOT / "deploy/mcp-gateway"
+        self.template = (self.dir / "nginx.conf.template").read_text("utf-8")
+        self.compose = (self.dir / "docker-compose.yml").read_text("utf-8")
+        self.entry = (self.dir / "entrypoint.sh").read_text("utf-8")
+
+    def test_the_gateway_injects_the_bearer_and_streams(self):
+        self.assertIn('proxy_set_header Authorization "Bearer ${MCP_TOKEN}"', self.template)
+        self.assertIn("proxy_buffering off", self.template)
+        self.assertIn("chunked_transfer_encoding on", self.template)
+        self.assertIn("envsubst", self.entry)
+
+    def test_the_gateway_publishes_no_host_port(self):
+        # a real mapping looks like `    - "8931:8931"` under a `ports:` key, not a mention in a comment
+        self.assertIsNone(re.search(r"^\s+ports:\s*$", self.compose, re.MULTILINE),
+                          "the gateway must not publish a host port")
+        self.assertIn("librechat_default", self.compose)
+
+    def test_the_credential_is_not_committed(self):
+        gitignore = (ROOT / ".gitignore").read_text("utf-8")
+        self.assertIn("deploy/mcp-gateway/.env", gitignore)
+
+
 class WindowsServiceAssets(unittest.TestCase):
     """The installer is never run in CI, so its hardening flags are pinned here instead."""
 
