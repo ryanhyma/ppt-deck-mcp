@@ -243,7 +243,9 @@ def main() -> int:
     # A parent that disappears (SIGTERM/SIGKILL of the server, a killed bridge) must not leave a
     # headless LibreOffice behind: turning these signals into a clean shutdown is what stops it.
     def _shutdown(signum, _frame):
-        log(f"signal {signum}: stopping soffice")
+        # SIGTERM is what our own parent sends on close: routine, so keep the log quiet.
+        if signum != signal.SIGTERM or os.environ.get("PPT_DEBUG"):
+            log(f"signal {signum}: stopping soffice")
         soffice.stop()
         raise SystemExit(0)
 

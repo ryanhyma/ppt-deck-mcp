@@ -18,10 +18,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 
-_TMP = Path(tempfile.mkdtemp(prefix="deploy-tests-"))
-os.environ.setdefault("PPT_TEMPLATE_PATH", str(ROOT / "templates"))
-os.environ.setdefault("PPT_OUTPUT_DIR", str(_TMP / "out"))
-os.environ.setdefault("PPT_PUBLIC_BASE", "http://test.local:8931")
+sys.path.insert(0, str(HERE))
+from _env import TMP as _TMP  # noqa: E402
 
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "upstream"))
@@ -168,16 +166,11 @@ class WindowsServiceAssets(unittest.TestCase):
 
     def test_env_template_carries_the_production_switches(self):
         for key in ("PPT_AUTH_MODE", "PPT_ENV", "PPT_ENTRA_TENANT_ID", "PPT_ENTRA_AUDIENCE",
-                    "PPT_ENTRA_REQUIRED_SCOPES", "PPT_PUBLIC_BASE", "PPT_PREVIEW_WIDTH"):
+                    "PPT_ENTRA_REQUIRED_SCOPES", "PPT_PUBLIC_BASE", "PPT_PREVIEW_WIDTH",
+                    "PPT_URL_SECRET", "PPT_ALLOWED_ROOTS"):
             self.assertIn(key, self.env, f"env template is missing {key}")
         self.assertIn("hostname, not an IP literal", self.env,
                       "PPT_PUBLIC_BASE must be a hostname (LibreChat blocks IP literals)")
-
-
-def tearDownModule():
-    import shutil
-
-    shutil.rmtree(_TMP, ignore_errors=True)
 
 
 if __name__ == "__main__":

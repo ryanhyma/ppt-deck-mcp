@@ -5,6 +5,8 @@ the tool result and loads them from this server's `/decks/...` HTTP route.
 """
 from __future__ import annotations
 
+import hashlib
+import hmac as _hmac
 import ipaddress
 import json
 import os
@@ -22,6 +24,7 @@ from urllib.parse import urlsplit
 from mcp.types import ToolAnnotations
 from pptx import Presentation
 
+import paths as deck_paths
 import render_cache
 import render_warm
 
@@ -293,15 +296,102 @@ def _render(pptx: Path, outdir: Path, width: int | None = None) -> int:
     return _render_soffice(pptx, outdir, width)
 
 
+# ---------------------------------------------------------------- opaque ids + signed asset URLs
+DECK_ID_HEX = 16  # 64 bits: far beyond what enumeration could reach, still short in a URL
+
+
 def _deck_id(path: Path) -> str:
-    stem = re.sub(r"[^A-Za-z0-9._-]+", "-", path.stem).strip("-")[:60] or "deck"
-    return stem
+    """An opaque, stable id for a deck file.
+
+    It used to be the filename slug ("2025-hiring-plan-175350"), which told anyone who could reach the
+    server what the deck was called and made every preview directory guessable. Now it is derived from
+    the resolved path, so ids are unguessable from the outside, stable across previews (the cache and
+    the template gallery both rely on that), and unrelated to the title.
+    """
+    try:
+        resolved = str(Path(path).resolve())
+    except OSError:
+        resolved = str(path)
+    digest = hashlib.sha256(resolved.encode("utf-8", "surrogatepass")).hexdigest()
+    return "d" + digest[:DECK_ID_HEX]
+
+
+def url_secret() -> bytes:
+    """HMAC key for download URLs. A random per-process key is fine for dev; prod sets PPT_URL_SECRET."""
+    explicit = os.environ.get("PPT_URL_SECRET") or load_config().get("url_secret")
+    if explicit:
+        return str(explicit).encode("utf-8")
+    global _FALLBACK_SECRET
+    if _FALLBACK_SECRET is None:
+        _FALLBACK_SECRET = os.urandom(32)
+    return _FALLBACK_SECRET
+
+
+_FALLBACK_SECRET: bytes | None = None
+URL_TTL_S = 3600
+
+
+def sign_asset(deck_id: str, name: str, expires: int) -> str:
+    payload = f"{deck_id}/{name}/{int(expires)}".encode("utf-8")
+    return _hmac.new(url_secret(), payload, hashlib.sha256).hexdigest()[:32]
+
+
+def signed_url(deck_id: str, name: str, ttl: int = URL_TTL_S) -> str:
+    expires = int(time.time()) + int(ttl)
+    sig = sign_asset(deck_id, name, expires)
+    return f"{public_base()}/decks/{deck_id}/{name}?exp={expires}&sig={sig}"
+
+
+def verify_signature(deck_id: str, name: str, expires: str | None, sig: str | None) -> bool:
+    if not expires or not sig:
+        return False
+    try:
+        exp = int(expires)
+    except (TypeError, ValueError):
+        return False
+    if exp < int(time.time()):
+        return False
+    return _hmac.compare_digest(sign_asset(deck_id, name, exp), sig)
+
+
+SLIDE_NAME_RE = re.compile(r"^slide-\d{1,3}\.png$")
+DECK_NAME_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}\.(pptx|potx)$")
+
+
+def deck_asset_path(deck_id: str, name: str, expires: str | None = None,
+                    sig: str | None = None) -> Path | None:
+    """The one policy for `/decks/<deck_id>/<name>`.
+
+    Slide images are served by name inside the deck's own directory; everything else — `deck.json`
+    (which leaked absolute host paths), `deck.pptx` (the user's content) and any stray file — requires
+    a valid, unexpired signature. Nothing outside the deck directory is reachable by construction.
+    """
+    if not re.fullmatch(r"[A-Za-z0-9]{1,64}", deck_id or ""):
+        return None
+    directory = preview_root() / deck_id
+    try:
+        base = directory.resolve(strict=True)
+    except OSError:
+        return None
+    if SLIDE_NAME_RE.match(name or ""):
+        candidate = base / name
+    elif DECK_NAME_RE.match(name or "") or name == "deck.json":
+        if not verify_signature(deck_id, name, expires, sig):
+            return None
+        candidate = base / name
+    else:
+        return None
+    try:
+        resolved = candidate.resolve(strict=True)
+    except OSError:
+        return None
+    if not resolved.is_file() or not str(resolved).startswith(str(base) + os.sep):
+        return None
+    return resolved
 
 
 def build_preview(pptx_path: str | Path, title: str = "") -> Dict[str, Any]:
-    src = Path(pptx_path)
-    if not src.is_file():
-        raise FileNotFoundError(f"deck not found: {src}")
+    src = deck_paths.resolve_deck(str(pptx_path))
     if src.suffix.lower() not in (".pptx", ".potx"):
         raise ValueError("preview_deck expects a .pptx/.potx file")
 
@@ -353,7 +443,7 @@ def _build_preview_locked(src: Path, deck_id: str, outdir: Path, title: str) -> 
         "file": str(src),
         "slide_count": total,
         "rendered_slides": rendered,
-        "download": f"{base}/decks/{deck_id}/deck.pptx",
+        "download": signed_url(deck_id, "deck.pptx"),
         "preview_error": preview_error,
         "render": render_info,
         "slides": slides,
@@ -569,30 +659,36 @@ def upload_dir() -> Path:
 
 
 def _resolve_input(name: str) -> Path:
-    """Find a deck by absolute path, container path, or a filename inside LibreChat uploads."""
+    """Find a deck by path or by filename inside the uploads directory — and keep it in bounds.
+
+    Three accepted shapes, in this order: a LibreChat container path (translated to the upload dir), an
+    absolute/relative path (validated by :mod:`paths`), or a bare filename searched for inside the
+    upload directory only. Anything outside the configured roots raises :class:`paths.PathNotAllowed`.
+    """
     raw = (name or "").strip().strip('"')
-    direct = Path(os.path.expanduser(raw))
-    if direct.is_file():
-        return direct
-    base_dir = upload_dir()
+    if not raw:
+        raise FileNotFoundError("empty path")
+
     for prefix in ("/app/uploads/", "/app/client/public/images/"):
         if raw.startswith(prefix):
-            cand = base_dir / raw[len(prefix):]
-            if cand.is_file():
-                return cand
-    if Path(raw).is_absolute():
-        raise FileNotFoundError(f"no file at '{raw}' — check the path, or pass just the filename")
-    base = base_dir
+            return deck_paths.resolve_deck(upload_dir() / raw[len(prefix):], suffixes=())
+
+    direct = Path(os.path.expanduser(raw))
+    if direct.is_absolute() or os.sep in raw or "/" in raw:
+        return deck_paths.resolve_deck(raw, suffixes=())
+
+    base = upload_dir()
+    wanted = Path(raw).name
     if base.is_dir():
-        name = Path(raw).name
-        exact = sorted(base.rglob(name), key=lambda p: p.stat().st_mtime, reverse=True)
-        if exact:
-            return exact[0]
-        loose = sorted(base.rglob(f"*{name}*"), key=lambda p: p.stat().st_mtime, reverse=True)
-        if loose:
-            return loose[0]
+        candidates = sorted(base.rglob(wanted), key=lambda p: p.stat().st_mtime, reverse=True)
+        candidates += sorted(base.rglob(f"*{wanted}*"), key=lambda p: p.stat().st_mtime, reverse=True)
+        for candidate in candidates:
+            try:
+                return deck_paths.resolve_deck(candidate, suffixes=())
+            except (FileNotFoundError, deck_paths.PathNotAllowed):
+                continue
     raise FileNotFoundError(
-        f"'{name}' not found. Pass an absolute path, or the filename of a file uploaded to the chat."
+        f"'{wanted}' not found. Pass an absolute path, or the filename of a file uploaded to the chat."
     )
 
 

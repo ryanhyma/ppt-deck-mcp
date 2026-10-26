@@ -27,8 +27,8 @@ from starlette.applications import Starlette  # noqa: E402
 from starlette.responses import FileResponse, PlainTextResponse  # noqa: E402
 from starlette.routing import Mount, Route  # noqa: E402
 
-from deck_preview import (APP_URI, preview_root, public_base, register_import_tools,  # noqa: E402
-                          register_preview_tools)
+from deck_preview import (APP_URI, deck_asset_path, preview_root, public_base,  # noqa: E402
+                          register_import_tools, register_preview_tools)
 from deck_tools import (register_deck_tools, register_readback_tools,  # noqa: E402
                         register_style_tools, register_text_tools, register_verify_tools)
 
@@ -79,7 +79,11 @@ def build_http_app():
         return FileResponse(p, headers={"Access-Control-Allow-Origin": "*", "Cache-Control": "no-store"})
 
     async def deck_asset(request):
-        p = _safe_file(preview_root() / request.path_params["deck_id"], request.path_params["name"])
+        """Slide images by name; data files (deck.json, the .pptx) only with a signed, expiring URL."""
+        deck_id = request.path_params["deck_id"]
+        name = request.path_params["name"]
+        p = deck_asset_path(deck_id, name,
+                            request.query_params.get("exp"), request.query_params.get("sig"))
         if p is None:
             return PlainTextResponse("not found", status_code=404)
         headers = {"Cache-Control": "no-store"}

@@ -6,7 +6,7 @@ interactive pane inside LibreChat for previewing, restyling and downloading them
 Designed for a **small local model** (Qwen3.6-27B in 3-bit) as the driver: the model emits structure,
 the server owns layout. It also works with any MCP client.
 
-**Status (2026-10-26):** 100-case corpus **97/100**, plus 8 regression cases **8/8** (all 3 former failures now pass) · **89 unit tests** · 16 browser checks · concurrency probe **6/6 parallel renders** · previews render **warm** (one LibreOffice, direct PNG, per-slide cache) · CI green on Python 3.12 & 3.13.
+**Status (2026-10-26):** 100-case corpus **97/100**, plus 8 regression cases **8/8** (all 3 former failures now pass) · **106 unit tests** · 16 browser checks · concurrency probe **6/6 parallel renders** · previews render **warm** (one LibreOffice, direct PNG, per-slide cache) · CI green on Python 3.12 & 3.13.
 
 ```mermaid
 flowchart LR
@@ -197,7 +197,9 @@ The MCP tool labels are separate and bilingual on purpose: tool ids must stay AS
 ## Hardening
 
 **This server is not hardened.** It runs unauthenticated, `preview_deck(file=…)` accepts any absolute
-path, and rendering hands untrusted `.pptx` files to LibreOffice. That is acceptable for a single-user
+path, and rendering hands untrusted `.pptx` files to LibreOffice. Path scoping, opaque deck ids and
+signed download URLs landed on 2026-10-26 (`docs/security.md`); authentication is still open.
+That is acceptable for a single-user
 dev box on a trusted host and **not** acceptable for anything shared or network-reachable.
 
 The backlog — with what was verified in the code and the suggested treatment — is in
@@ -306,7 +308,7 @@ config, the instructions or a skill still call it by the old name, and the insta
 ## Tests
 
 ```sh
-.venv/bin/python -m unittest discover -s tests -v     # 89 unit tests, ~6 s, no services
+.venv/bin/python -m unittest discover -s tests -v     # 106 unit tests, ~5 s, no services
 RUN_E2E=1 CONVO=<id> tests/run_all.sh                 # + 7 browser checks (needs the stack)
 .venv/bin/python tests/run_suite.py --limit 10        # behaviour corpus, one chat per case
 ```

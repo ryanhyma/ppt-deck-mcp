@@ -13,5 +13,8 @@
   "render_queue_max": 256,
   "render_timeout_s": 180,
   "uno_python": "",
-  "_uno_python": "Interpreter with `import uno`: blank = auto (system python3 / LibreOffice's python.exe). Blank on a host without pyuno simply falls back to the cold PDF chain."
+  "_uno_python": "Interpreter with `import uno`: blank = auto (system python3 / LibreOffice's python.exe). Blank on a host without pyuno simply falls back to the cold PDF chain.",
+  "_access": "Decks are only read from output_dir, upload_dir, template_path and allowed_roots.",
+  "allowed_roots": [],
+  "url_secret": ""
 }

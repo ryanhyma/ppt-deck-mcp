@@ -1,12 +1,24 @@
 # Security hardening backlog
 
-Status: **not hardened**. The server is fine for a single-user dev box on a trusted host. Nothing below
-has been exploited or is known-broken; these are the gaps to close before this runs anywhere shared,
-multi-user, or reachable from a network you do not control.
+Status: **partially hardened (2026-10-26)**. Items 1 and 2 of the 2026-10-26 review are closed — see
+"Fixed" below. Everything else is still open: the server remains fine for a single-user dev box on a
+trusted host and is not ready for a shared or network-reachable deployment.
 
 Each item states what was actually verified in the code (file reference) rather than what is assumed.
 
-## 1. The MCP HTTP endpoint has no authentication — *verified*
+## Fixed 2026-10-26
+
+| Was | Now | Where | Proof |
+|---|---|---|---|
+| `preview_deck`/`import_deck`/`get_deck_outline`/`style_slide`/`style_text`/`verify_deck`/`build_deck(base=)`/`image=` accepted any existing path, so any `.pptx` (or `.png`) on the host could be read | every path is resolved (`..`, symlinks) then required to sit inside `PPT_OUTPUT_DIR`, `PPT_UPLOAD_DIR`, `PPT_TEMPLATE_PATH` or `PPT_ALLOWED_ROOTS`; wrong suffix rejected | `paths.py` (`resolve_deck`), used by `deck_preview` + `deck_tools` | `tests/test_security.py::PathScopeRegressions`; live: `preview_deck(file="/etc/hostname")` → "outside the allowed locations" |
+| Deck ids were filename slugs (`2025-hiring-plan-175350`), so preview directories were guessable | opaque `d<16 hex>` id derived from the resolved path; stable across previews (cache + gallery depend on it) | `deck_preview._deck_id` | `tests/test_security.py::DeckIdRegressions`; live: old slug id → 404 |
+| `/decks/<id>/<name>` served **every** file in the preview dir — `deck.json` (absolute host paths) and `deck.pptx` (user content) with no authentication | slide images are name-served; `deck.json`/`deck.pptx` require an HMAC signature with an expiry (`?exp=&sig=`); anything else, any traversal, any unknown id → 404 | `deck_preview.deck_asset_path` + `server.deck_asset` | `tests/test_security.py::AssetRouteRegressions`; live: `deck.json` 404, unsigned/tampered/expired `deck.pptx` 404, signed 200 |
+
+Operational consequence: download URLs now expire after an hour (`URL_TTL_S`). Set `PPT_URL_SECRET` in
+production — without it the signing key is random per process, so every restart invalidates outstanding
+links (correct, just annoying).
+
+## 1. The MCP HTTP endpoint has no authentication — *still open*
 
 `server.py` starts uvicorn on `--host` (dev: `172.17.0.1:8931`) with no auth layer, no API key, no
 per-request identity. `librechat.yaml` declares the server with no `headers`/`apiKey`. Anything that
@@ -18,16 +30,16 @@ Treatment: bind to loopback only, put a shared-secret header in front, or front 
 authenticating reverse proxy that LibreChat also uses. The `--transport stdio` mode used on the
 Windows production box has no network surface at all, which is why it is the recommended prod shape.
 
-## 2. `preview_deck(file=…)` / `import_deck(file=…)` accept any absolute path — *verified*
+## 2. `preview_deck(file=…)` / `import_deck(file=…)` accept any absolute path — **fixed 2026-10-26**
 
 `deck_preview._resolve_input()` returns `Path(raw)` whenever `direct.is_file()` is true, and
 `preview_deck(file)` passes its argument straight through. Combined with item 1, a caller can point the
 renderer at any `.pptx`/`.potx` on the machine and receive rendered PNGs of it back through
 `/decks/<id>/slide-N.png`.
 
-Treatment: allowlist the roots (`PPT_OUTPUT_DIR`, `PPT_UPLOAD_DIR`, configured template dirs) and reject
-anything whose resolved path is not inside one of them — the same `_safe_file()` discipline already used
-for the HTTP asset routes.
+~~Treatment~~ Done: `paths.resolve_deck()` allowlists the roots and resolves first, so a symlink inside
+the upload directory cannot point out of it. The asset route is separately restricted by
+`deck_asset_path()`.
 
 ## 3. Rendering shells out to LibreOffice on untrusted input — *verified (design), unmeasured risk*
 

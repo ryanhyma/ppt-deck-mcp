@@ -21,15 +21,11 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 
-# Env must be set before importing the server (it registers tools against these paths).
-_TMP = Path(tempfile.mkdtemp(prefix="deck-tests-"))
+# Environment comes from one place, before any server module is imported.
+sys.path.insert(0, str(HERE))
+from _env import TMP as _TMP  # noqa: E402
+
 _TEMPLATES = ROOT / "templates"
-os.environ["PPT_TEMPLATE_PATH"] = str(_TEMPLATES)
-os.environ["PPT_OUTPUT_DIR"] = str(_TMP / "out")
-os.environ["PPT_UPLOAD_DIR"] = str(_TMP / "uploads")
-os.environ["PPT_PUBLIC_BASE"] = "http://test.local:8931"
-(_TMP / "out").mkdir(parents=True, exist_ok=True)
-(_TMP / "uploads" / "user").mkdir(parents=True, exist_ok=True)
 
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "upstream"))
@@ -51,6 +47,18 @@ def build(**kwargs):
     base = {"template": "corporate-2slide.pptx", "title": "Regression deck", "slides": []}
     base.update(kwargs)
     return TOOLS["build_deck"](**base)
+
+
+def assert_signed_download(case, url):
+    """A deck download must be a signed, expiring URL — not an open path."""
+    from urllib.parse import parse_qs, urlsplit
+
+    parts = urlsplit(url)
+    case.assertTrue(parts.path.endswith("/deck.pptx"), url)
+    query = parse_qs(parts.query)
+    case.assertIn("exp", query)
+    case.assertIn("sig", query)
+    case.assertGreaterEqual(len(query["sig"][0]), 32)
 
 
 def bullets(n, length=40):
@@ -384,7 +392,7 @@ class RendererBackendRegressions(unittest.TestCase):
         self.assertEqual(data["slides"], [])
         self.assertIn("renderer", data["preview_error"].lower())
         self.assertEqual(data["slide_count"], 2)
-        self.assertTrue(data["download"].endswith("deck.pptx"))
+        assert_signed_download(self, data["download"])
 
 
 class PreviewRegressions(unittest.TestCase):
@@ -416,7 +424,7 @@ class PreviewRegressions(unittest.TestCase):
         # The deck's size must not depend on whether a renderer exists.
         self.assertEqual(data["slide_count"], 2)
         self.assertEqual(data["rendered_slides"], 0)
-        self.assertTrue(data["download"].endswith("deck.pptx"))
+        assert_signed_download(self, data["download"])
 
     def test_style_slide_still_applies_without_a_renderer(self):
         out = build(slides=[{"title": "T", "bullets": bullets(1)}])
@@ -507,7 +515,7 @@ class ConcurrencyRegressions(unittest.TestCase):
             results = list(pool.map(lambda _: build_preview(deck), range(5)))
         for data in results:
             self.assertEqual(data["slide_count"], 3)
-            self.assertTrue(data["download"].endswith("deck.pptx"))
+            assert_signed_download(self, data["download"])
         # the surviving preview must be complete and readable
         first = results[-1]
         self.assertEqual(first["slide_count"], 3)
@@ -979,10 +987,6 @@ class WarmQueueRegressions(unittest.TestCase):
         finally:
             render_warm.soffice_version = original
             render_warm._ENGINE_CACHE.clear()
-
-
-def tearDownModule():
-    shutil.rmtree(_TMP, ignore_errors=True)
 
 
 if __name__ == "__main__":

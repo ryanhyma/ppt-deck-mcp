@@ -28,6 +28,8 @@ from pptx.util import Inches, Pt
 
 from deck_style import Theme, decorate, hex_rgb, page_number, title_rule
 
+import paths as deck_paths
+
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
 CHART_TYPES = {
@@ -668,9 +670,7 @@ def register_deck_tools(app, template_dirs_fn) -> None:
         _validate_slides(slides)
         base_styles: List[Dict[str, Any]] = []
         if base:
-            base_path = Path(base)
-            if not base_path.is_file():
-                raise FileNotFoundError(f"base deck not found: {base}")
+            base_path = deck_paths.resolve_deck(base)
             base_prs = Presentation(str(base_path))
             base_styles = [_style_for_slide(sl) for sl in base_prs.slides]
         dirs = _template_dirs(template_dirs_fn)
@@ -684,7 +684,9 @@ def register_deck_tools(app, template_dirs_fn) -> None:
         _fill_title_slide(title_slide, title, subtitle, theme)
         decorate(title_slide, theme)
 
-        default_image = Path(image) if image and Path(image).is_file() else None
+        default_image = None
+        if image:
+            default_image = deck_paths.resolve_deck(image, suffixes=tuple(IMAGE_SUFFIXES))
 
         visuals: List[str] = []
         styled: List[str] = []
@@ -700,8 +702,9 @@ def register_deck_tools(app, template_dirs_fn) -> None:
                 visual = {"kind": "chart", "spec": item["chart"]}
             elif isinstance(item.get("table"), dict):
                 visual = {"kind": "table", "spec": item["table"]}
-            elif item.get("image") and Path(str(item["image"])).is_file():
-                visual = {"kind": "image", "path": Path(str(item["image"]))}
+            elif item.get("image"):
+                visual = {"kind": "image",
+                          "path": deck_paths.resolve_deck(str(item["image"]), suffixes=tuple(IMAGE_SUFFIXES))}
             elif default_image is not None:
                 visual = {"kind": "image", "path": default_image}
 
@@ -832,9 +835,7 @@ def register_verify_tools(app) -> None:
             expected_slides: total slides the user asked for, including the title slide
             table / chart / image: True if the user asked for that visual in the deck
         """
-        path = Path(file)
-        if not path.is_file():
-            raise FileNotFoundError(f"deck not found: {file}")
+        path = deck_paths.resolve_deck(file)
         prs = Presentation(str(path))
         slides = list(prs.slides)
 
@@ -886,9 +887,7 @@ def register_readback_tools(app, output_dir_getter) -> None:
         Args:
             file: absolute path of a .pptx (from build_deck or list_decks)
         """
-        path = Path(file)
-        if not path.is_file():
-            raise FileNotFoundError(f"deck not found: {file}")
+        path = deck_paths.resolve_deck(file)
         return _outline(path)
 
 
@@ -935,9 +934,7 @@ def register_style_tools(app) -> None:
             title_bold / body_bold / title_italic / body_italic: per-placeholder emphasis.
                 (bold/italic are kept as aliases that apply to both; prefer the explicit ones.)
         """
-        path = Path(file)
-        if not path.is_file():
-            raise FileNotFoundError(f"deck not found: {file}")
+        path = deck_paths.resolve_deck(file)
 
         for name, value in (("title_size", title_size), ("body_size", body_size)):
             if value is not None and not 8 <= int(value) <= 72:
@@ -1038,9 +1035,7 @@ def register_text_tools(app) -> None:
         Returns: {"runs_changed": n, "matches": [str, ...]} — an empty match list means the phrase
         spans several runs; use a shorter phrase.
         """
-        path = Path(file)
-        if not path.is_file():
-            raise FileNotFoundError(f"deck not found: {file}")
+        path = deck_paths.resolve_deck(file)
         if not phrase or not phrase.strip():
             raise ValueError("phrase must not be empty")
         if color is not None and not re.fullmatch(r"#[0-9A-Fa-f]{6}", color):
