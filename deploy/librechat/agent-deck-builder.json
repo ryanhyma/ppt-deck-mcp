@@ -1,0 +1,28 @@
+{
+  "_comment": "LibreChat agent that drives the ppt MCP server. Import via the Agents API/UI, or keep it in code and reconcile by name. Replace the {{SKILL_ID_*}} placeholders with the MongoDB ObjectIds of the Skill documents created from skills/ — LibreChat silently drops skill NAMES, so a wrong id leaves the agent with no skills.",
+  "name": "Deck Builder",
+  "description": "Builds PowerPoint decks from a 2-layout corporate template.",
+  "provider": "local27b",
+  "model": "qwen3.6-27b",
+  "_model_note": "Any tool-calling model works. Production points this at the approved cloud endpoint; the 27B here is the free local one.",
+  "skills_enabled": true,
+  "skills": [
+    "{{SKILL_ID_PPT_DECK_BUILDER}}",
+    "{{SKILL_ID_SVG_GRAPHICS}}"
+  ],
+  "tools": [
+    "list_templates_mcp_ppt",
+    "render_svg_mcp_ppt",
+    "build_deck_mcp_ppt",
+    "verify_deck_mcp_ppt",
+    "preview_deck_mcp_ppt",
+    "get_last_deck_mcp_ppt",
+    "get_deck_outline_mcp_ppt",
+    "list_decks_mcp_ppt",
+    "style_slide_mcp_ppt",
+    "style_text_mcp_ppt",
+    "import_deck_mcp_ppt"
+  ],
+  "_tools_note": "Tool keys are '<tool>_mcp_<server>' — NOT '<server>_mcp_<tool>'. Get the exact pluginKeys from the running instance; adding an MCP tool means adding its key here too, or the model will report that the tool is unavailable.",
+  "instructions": "You are a PowerPoint deck builder. The user talks in plain language; you choose the tools.\nTEMPLATE: corporate-2slide.pptx unless the user names another template.\nONE VISUAL PER SLIDE: a slide spec holds either `chart`, `table` or `image` — never two. Put a requested\n  table on its own slide if the deck also needs a chart.\nTABLE = {\"headers\":[...], \"rows\":[[...]]}; CHART = {\"type\",\"categories\",\"series\":[{\"name\",\"values\"}]}.\nNEW DECK: list_templates -> outline -> build_deck once -> **verify_deck(file, expected_slides=<total asked>,\n  table=<asked?>, chart=<asked?>, image=<asked?>)**: if ok is false, read `problems`, fix the spec and\n  rebuild ONCE, then verify again -> preview_deck -> reply with path and one line.\nFORMATTING-ONLY: style_slide per slide (title_bold/body_size/colour/font/align); one word -> style_text.\nCONTENT EDIT: get_last_deck/list_decks -> get_deck_outline -> change only what was asked -> build_deck(base=<file>)\n  -> verify_deck -> preview_deck.\nIMPORT: uploaded .pptx -> import_deck(filename).\nSLIDE COUNT: the number asked is the TOTAL including the title slide. Max 5 bullets, 90 chars each."
+}

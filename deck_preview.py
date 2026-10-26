@@ -558,9 +558,14 @@ def template_preview_urls(pptx_path: str | Path) -> List[str]:
     return [f"{base}/decks/{outdir.name}/{f.name}" for f in files]
 
 
-# ---------------------------------------------------------------- import an uploaded deck
+# Resolved per call, not at import time: `server.py --transport http` applies ppt-mcp.config.json
+# *after* importing this module, so a module-level constant would silently ignore `upload_dir`.
+DEFAULT_UPLOAD_DIR = "/home/hyma/dev/librechat/uploads"
+UPLOAD_DIR = os.environ.get("PPT_UPLOAD_DIR", DEFAULT_UPLOAD_DIR)  # kept for callers/tests
 
-UPLOAD_DIR = os.environ.get("PPT_UPLOAD_DIR", "/home/hyma/dev/librechat/uploads")
+
+def upload_dir() -> Path:
+    return Path(os.environ.get("PPT_UPLOAD_DIR") or UPLOAD_DIR or DEFAULT_UPLOAD_DIR)
 
 
 def _resolve_input(name: str) -> Path:
@@ -569,14 +574,15 @@ def _resolve_input(name: str) -> Path:
     direct = Path(os.path.expanduser(raw))
     if direct.is_file():
         return direct
+    base_dir = upload_dir()
     for prefix in ("/app/uploads/", "/app/client/public/images/"):
         if raw.startswith(prefix):
-            cand = Path(UPLOAD_DIR) / raw[len(prefix):]
+            cand = base_dir / raw[len(prefix):]
             if cand.is_file():
                 return cand
     if Path(raw).is_absolute():
         raise FileNotFoundError(f"no file at '{raw}' — check the path, or pass just the filename")
-    base = Path(UPLOAD_DIR)
+    base = base_dir
     if base.is_dir():
         name = Path(raw).name
         exact = sorted(base.rglob(name), key=lambda p: p.stat().st_mtime, reverse=True)

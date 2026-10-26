@@ -1,0 +1,52 @@
+# LibreChat wiring for the `ppt` MCP server
+#
+# Merge into your librechat.yaml. The text of serverInstructions lives in
+# ../prompts/server-instructions.md (and is asserted against the registered tools by CI).
+#
+# Two settings are NOT optional for the Deck Studio pane:
+#   1. mcpSettings.apps: true                  — otherwise the App attachment is inert legacy HTML
+#   2. mcpAppSandbox.url on a *different* origin — otherwise the view refuses to load
+#      ("Interactive view could not be loaded"), see docs/mcp-app-notes.md
+
+version: 1.3.4
+cache: true
+
+mcpSettings:
+  apps: true
+  allowedDomains:
+    - 'host.docker.internal'          # container -> host bridge
+    - 'http://host.docker.internal:8931'
+  allowedAddresses:
+    - 'host.docker.internal:8931'     # SSRF guard: allow-list the one address we intend
+
+mcpAppSandbox:
+  # A second host port (3081:3080) in docker-compose.override.yml exposes the same API on a
+  # different origin. Production: give this its own internal name, e.g. https://decks.local/api/mcp/sandbox
+  url: http://localhost:3081/api/mcp/sandbox
+
+mcpServers:
+  ppt:
+    type: streamable-http
+    url: http://host.docker.internal:8931/mcp
+    timeout: 180000
+    initTimeout: 30000
+    # serverInstructions: paste the block from ../prompts/server-instructions.md
+    serverInstructions: |
+      PowerPoint deck builder — build, restyle and preview .pptx on this machine.
+      NEW DECK: list_templates -> build_deck ONCE -> verify_deck(expected_slides=...) -> preview_deck.
+      STYLE ONLY: style_slide / style_text (no rebuild). CONTENT EDIT: get_deck_outline ->
+      build_deck(base=<file>) -> verify_deck -> preview_deck. IMPORT: import_deck(filename).
+      The requested slide count is the TOTAL including the title slide.
+    # Authentication. Pick ONE of the following, matching PPT_AUTH_MODE on the server:
+    #
+    # headers:                                  # mode=token (dev/internal service token)
+    #   Authorization: 'Bearer ${PPT_MCP_TOKEN}'
+    #
+    # oauth:                                    # mode=entra (production)
+    #   authorization_url: https://login.microsoftonline.com/{{TENANT_ID}}/oauth2/v2.0/authorize
+    #   token_url: https://login.microsoftonline.com/{{TENANT_ID}}/oauth2/v2.0/token
+    #   client_id: '{{LIBRECHAT_APP_CLIENT_ID}}'
+    #   client_secret: '{{LIBRECHAT_APP_CLIENT_SECRET}}'
+    #   redirect_uri: https://chat.example.gc.ca/api/mcp/ppt/oauth/callback
+    #   scope: 'openid profile offline_access api://{{PPT_API_CLIENT_ID}}/Decks.Read'
+    #   # Entra ignores RFC 8707 `resource`; the audience arrives in the `aud` claim (v2 = API client id).
