@@ -6,7 +6,7 @@ interactive pane inside LibreChat for previewing, restyling and downloading them
 Designed for a **small local model** (Qwen3.6-27B in 3-bit) as the driver: the model emits structure,
 the server owns layout. It also works with any MCP client.
 
-**Status (2026-10-26):** 100-case corpus **97/100**, plus 8 regression cases **8/8** (all 3 former failures now pass) · **150 unit tests** · 16 browser checks · concurrency probe **6/6 parallel renders** · previews render **warm** (one LibreOffice, direct PNG, per-slide cache) · CI green on Python 3.12 & 3.13.
+**Status (2026-10-26):** 100-case corpus **97/100**, plus 8 regression cases **8/8** (all 3 former failures now pass) · **159 unit tests** · 16 browser checks · concurrency probe **6/6 parallel renders** · previews render **warm** (one LibreOffice, direct PNG, per-slide cache) · CI green on Python 3.12 & 3.13.
 
 ```mermaid
 flowchart LR
@@ -284,6 +284,12 @@ previews queue; identical requests for the same deck are coalesced into one rend
 crashed bridge is killed and restarted. Unchanged slides are never re-rendered — editing one slide
 re-renders one slide.
 
+## Tests come first
+
+`docs/tdd.md` is the standing rule: write the failing test, show the red run, then the smallest
+implementation. Security work is where it pays — one test file per contract (scope, tokens, gate, audit),
+each negative case pinned.
+
 ## Authentication
 
 `PPT_AUTH_MODE` decides who may call the server (`docs/security.md`, `docs/authz-model.md`):
@@ -326,7 +332,7 @@ config, the instructions or a skill still call it by the old name, and the insta
 ## Tests
 
 ```sh
-.venv/bin/python -m unittest discover -s tests -v     # 150 unit tests, ~8 s, no services
+.venv/bin/python -m unittest discover -s tests -v     # 159 unit tests, ~8 s, no services
 RUN_E2E=1 CONVO=<id> tests/run_all.sh                 # + 7 browser checks (needs the stack)
 .venv/bin/python tests/run_suite.py --limit 10        # behaviour corpus, one chat per case
 ```

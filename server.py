@@ -35,6 +35,8 @@ from deck_preview import (APP_URI, deck_asset_path, preview_root, public_base,  
 from deck_tools import (register_deck_tools, register_readback_tools,  # noqa: E402
                         register_style_tools, register_text_tools, register_verify_tools)
 
+import audit  # noqa: E402
+
 register_deck_tools(app, get_template_search_directories)
 register_readback_tools(app, None)
 register_style_tools(app)
@@ -42,6 +44,9 @@ register_import_tools(app)
 register_text_tools(app)
 register_verify_tools(app)
 register_preview_tools(app, get_template_search_directories)
+
+# One wrapper records every tool call (ours and the vendored ones) with the request identity.
+AUDITED_TOOLS = audit.wrap_tool_fns(app)
 
 APP_DIR = HERE / "apps" / "deck_studio"
 
@@ -90,7 +95,9 @@ def build_http_app():
                             auth.current_identity().subject if not auth.current_identity().anonymous else
                             request.query_params.get("sub", ""))
         if p is None:
+            audit.record_asset(deck_id=deck_id, name=name, outcome="denied")
             return PlainTextResponse("not found", status_code=404)
+        audit.record_asset(deck_id=deck_id, name=name, outcome="ok")
         headers = {"Cache-Control": "no-store"}
         if p.suffix.lower() in {".pptx", ".potx"}:
             headers["Content-Disposition"] = f'attachment; filename="{p.name}"'
@@ -160,6 +167,7 @@ class AuthGate:
         try:
             identity = self._identify(path, headers, query)
         except auth.AuthError as exc:
+            audit.record_auth_failure(path=path, status=exc.status, error=exc.error)
             body = {"error": exc.error, "error_description": exc.description}
             # Only advertise protected-resource metadata when there really is an authorization server
             # behind us: a 401 that points at one makes clients start an OAuth flow (LibreChat will

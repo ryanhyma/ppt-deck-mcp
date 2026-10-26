@@ -1,7 +1,8 @@
 # Security hardening backlog
 
-Status: **partially hardened (2026-10-26)**. Items 1 and 2 of the 2026-10-26 review are closed — see
-"Fixed" below. Everything else is still open: the server remains fine for a single-user dev box on a
+Status: **partially hardened (2026-10-26)**. Path scoping, opaque ids, signed URLs, authentication and
+the audit trail are done — see "Fixed" below. Still open: per-request rate limits, the dev-side network
+allowlist, and the LibreOffice sandbox. Everything else is still open: the server remains fine for a single-user dev box on a
 trusted host and is not ready for a shared or network-reachable deployment.
 
 Each item states what was actually verified in the code (file reference) rather than what is assumed.
@@ -60,6 +61,25 @@ renderer at any `.pptx`/`.potx` on the machine and receive rendered PNGs of it b
 ~~Treatment~~ Done: `paths.resolve_deck()` allowlists the roots and resolves first, so a symlink inside
 the upload directory cannot point out of it. The asset route is separately restricted by
 `deck_asset_path()`.
+
+## Audit trail — **added 2026-10-26** (was missing entirely)
+
+`audit.py` appends one JSON object per line to `PPT_AUDIT_LOG` (default `<output>/audit.jsonl`):
+
+| Event | Fields |
+|---|---|
+| `tool.call` | `subject`, `tenant`, `auth`, `tool`, `deck_id`, `outcome` (ok/error), `ms`, `error` (class only) |
+| `asset.get` | `deck_id`, `name`, `outcome` (ok/denied) — never the resolved path |
+| `auth.reject` | `path`, `status`, `error` |
+
+Every registered tool is wrapped in one place (`audit.wrap_tool_fns`), so a new tool is audited without
+anyone remembering to add a line. The actor comes from `auth.current_identity()`, never from an argument.
+Values are redacted before writing: filesystem paths → `[path]`, credentials → `[redacted]`.
+
+Operational properties (pinned by `tests/test_audit.py`): append-only JSONL, UTC timestamps, rotation at
+`PPT_AUDIT_MAX_BYTES` (default 10 MiB, one previous file kept), and a failed write **never** breaks a
+request — it is reported via `audit.last_error()` and once to stderr. This is a local buffer, not the
+system of record: ship it to the SIEM with a retention schedule (AU-6/AU-9/AU-12).
 
 ## 3. Rendering shells out to LibreOffice on untrusted input — *verified (design), unmeasured risk*
 
