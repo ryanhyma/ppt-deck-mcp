@@ -115,6 +115,13 @@ def _apply_config() -> None:
         ("PPT_UPLOAD_DIR", "upload_dir"),
         ("SOFFICE_BIN", "soffice_bin"),
         ("ASPOSE_LICENSE_PATH", "aspose_license_path"),
+        ("PPT_PREVIEW_WIDTH", "preview_width"),
+        ("PPT_WARM_RENDER", "warm_render"),
+        ("PPT_RENDER_CACHE", "render_cache"),
+        ("PPT_RENDER_CACHE_MAX", "render_cache_max"),
+        ("PPT_RENDER_QUEUE_MAX", "render_queue_max"),
+        ("PPT_RENDER_TIMEOUT_S", "render_timeout_s"),
+        ("PPT_UNO_PYTHON", "uno_python"),
     )
     for env_key, cfg_key in pairs:
         value = cfg.get(cfg_key)

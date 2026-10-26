@@ -13,6 +13,8 @@ import re
 import shutil
 import sys
 import tempfile
+import threading
+import time
 import unittest
 from pathlib import Path
 
@@ -37,6 +39,9 @@ import server  # noqa: E402
 from pptx import Presentation  # noqa: E402
 from pptx.util import Inches, Pt  # noqa: E402
 
+import deck_preview  # noqa: E402
+import render_cache  # noqa: E402
+import render_warm  # noqa: E402
 from deck_tools import _outline, _pick_layouts  # noqa: E402
 
 TOOLS = {name: tool.fn for name, tool in server.app._tool_manager._tools.items()}
@@ -390,17 +395,22 @@ class PreviewRegressions(unittest.TestCase):
 
         original = deck_preview._render
         deck_preview._render = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("soffice not found"))
-        return deck_preview, original
+        # The warm renderer is a second path to a picture: breaking only the cold chain no longer
+        # means "no renderer at all", so it has to be taken out of the picture too.
+        original_warm = deck_preview.warm_enabled
+        deck_preview.warm_enabled = lambda: False
+        return deck_preview, (original, original_warm)
 
     def test_build_preview_reports_the_error_instead_of_raising(self):
         deck = build(slides=[{"title": "T", "bullets": bullets(1)}])["file"]
-        module, original = self._break_renderer()
+        module, (original, original_warm) = self._break_renderer()
         try:
             from deck_preview import build_preview
 
             data = build_preview(deck)
         finally:
             module._render = original
+            module.warm_enabled = original_warm
         self.assertEqual(data["slides"], [])
         self.assertIn("soffice not found", data["preview_error"])
         # The deck's size must not depend on whether a renderer exists.
@@ -410,11 +420,12 @@ class PreviewRegressions(unittest.TestCase):
 
     def test_style_slide_still_applies_without_a_renderer(self):
         out = build(slides=[{"title": "T", "bullets": bullets(1)}])
-        module, original = self._break_renderer()
+        module, (original, original_warm) = self._break_renderer()
         try:
             result = TOOLS["style_slide"](file=out["file"], slide_index=2, title_size=30)
         finally:
             module._render = original
+            module.warm_enabled = original_warm
         self.assertEqual(result["slides"], [])
         prs = Presentation(out["file"])
         title = next(ph for ph in prs.slides[1].placeholders if ph.placeholder_format.idx == 0)
@@ -720,6 +731,254 @@ class DeckStudioAppAccessibility(unittest.TestCase):
 
     def test_reduced_motion_is_honoured(self):
         self.assertIn('prefers-reduced-motion', self.html)
+
+
+# ----------------------------------------------------------------- warm renderer + slide cache
+class _FakeRenderer:
+    """Stand-in for render_warm.WarmRenderer: records what would have been rendered."""
+
+    def __init__(self, root: Path, fail: bool = False, width: int = 1600):
+        self.width = width
+        self.calls: list[tuple[str, list[int]]] = []
+        self.fail = fail
+        self._root = root
+
+    def render(self, src, wanted, root):
+        self.calls.append((Path(src).name, sorted(wanted)))
+        if self.fail:
+            raise RuntimeError("bridge died")
+        out = {}
+        for index, key in wanted.items():
+            png = root / f"fake-{key}.png"
+            png.parent.mkdir(parents=True, exist_ok=True)
+            png.write_bytes(b"\x89PNG-fake-" + key[:8].encode())
+            render_cache.store(root, key, png)
+            out[index] = render_cache.path_for(root, key)
+        return out
+
+    def live(self):
+        return True
+
+    def stats(self):
+        return {}
+
+
+class SlideCacheRegressions(unittest.TestCase):
+    """The cache exists so an unchanged slide is never rendered twice."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(dir=_TMP, prefix="cache-"))
+        # Isolate the preview root per test: a shared cache would make these assertions depend on
+        # which test ran first.
+        self._saved_out = os.environ.get("PPT_OUTPUT_DIR")
+        os.environ["PPT_OUTPUT_DIR"] = str(self.tmp / "out")
+        self.deck = self.tmp / "deck.pptx"
+        shutil.copyfile(_TEMPLATES / "corporate-2slide.pptx", self.deck)
+        out = TOOLS["build_deck"](template="corporate-2slide.pptx", title="Cache deck",
+                                  slides=[{"title": "One", "bullets": bullets(3)},
+                                          {"title": "Two", "bullets": bullets(3)},
+                                          {"title": "Three", "bullets": bullets(3)}])
+        shutil.copyfile(out["file"], self.deck)
+        self.prs = Presentation(str(self.deck))
+        self.slide_total = len(self.prs.slides)
+        self.root = render_cache.cache_root(deck_preview.preview_root())
+        self._saved = (deck_preview.render_warm.get_renderer, deck_preview.render_warm.engine_tag,
+                       deck_preview._render)
+        deck_preview.render_warm.engine_tag = lambda: "test-engine-1"
+
+    def tearDown(self):
+        deck_preview.render_warm.get_renderer, deck_preview.render_warm.engine_tag, \
+            deck_preview._render = self._saved
+        if self._saved_out is None:
+            os.environ.pop("PPT_OUTPUT_DIR", None)
+        else:
+            os.environ["PPT_OUTPUT_DIR"] = self._saved_out
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _keys(self, prs=None):
+        prs = prs or Presentation(str(self.deck))
+        return render_cache.slide_keys(self.deck, [str(s.part.partname) for s in prs.slides],
+                                       "test-engine-1", deck_preview.preview_width())
+
+    def test_only_the_edited_slide_changes_its_key(self):
+        """A per-slide key is the whole point; a deck-level key would re-render everything."""
+        before = self._keys()
+        TOOLS["style_slide"](file=str(self.deck), slide_index=2, title_size=44)
+        after = self._keys()
+        changed = [i for i, (a, b) in enumerate(zip(before, after), start=1) if a != b]
+        self.assertEqual(changed, [2])
+
+    def test_shared_parts_invalidate_every_slide(self):
+        """Theme/master/layout edits change how all slides look, so they must miss."""
+        before = self._keys()
+        prs = Presentation(str(self.deck))
+        for slide in prs.slides:  # touching the layout surface changes shared parts
+            slide.shapes
+        layout = prs.slides[0].slide_layout
+        for ph in layout.placeholders:
+            if ph.has_text_frame:
+                ph.text_frame.text = ""
+        prs.save(str(self.deck))
+        after = self._keys()
+        self.assertNotEqual(before, after)
+
+    def test_resolution_is_part_of_the_key(self):
+        shared = render_cache.shared_digest(self.deck)
+        a = render_cache.slide_key(shared, "e", 1600, b"<slide/>")
+        b = render_cache.slide_key(shared, "e", 1200, b"<slide/>")
+        self.assertNotEqual(a, b, "a 1200px render must not be served for a 1600px request")
+
+    def test_second_preview_renders_nothing(self):
+        fake = _FakeRenderer(self.root)
+        deck_preview.render_warm.get_renderer = lambda **kw: fake
+        first = deck_preview._prepare_previews(self.deck, self.tmp / "a", Presentation(str(self.deck)))
+        second = deck_preview._prepare_previews(self.deck, self.tmp / "b", Presentation(str(self.deck)))
+        deck_renders = [call for call in fake.calls if call[0] == self.deck.name]
+        self.assertEqual(len(deck_renders), 1, "the second preview must not reach the renderer")
+        self.assertEqual(first["misses"], self.slide_total)
+        self.assertEqual(second["misses"], 0)
+        self.assertEqual(second["renderer"], "cache")
+        self.assertEqual(second["hits"], self.slide_total)
+        self.assertTrue((self.tmp / "b" / "slide-3.png").is_file())
+        self.assertEqual((self.tmp / "a" / "slide-3.png").read_bytes(),
+                         (self.tmp / "b" / "slide-3.png").read_bytes())
+
+    def test_one_edited_slide_renders_one_slide(self):
+        fake = _FakeRenderer(self.root)
+        deck_preview.render_warm.get_renderer = lambda **kw: fake
+        deck_preview._prepare_previews(self.deck, self.tmp / "a", Presentation(str(self.deck)))
+        TOOLS["style_text"](file=str(self.deck), slide_index=3, phrase="Point", bold=True)
+        deck_calls = [call for call in fake.calls if call[0] == self.deck.name]
+        # The tool refreshes the preview itself, so the edit's render is already in the log.
+        self.assertEqual(deck_calls, [(self.deck.name, [1, 2, 3, 4]), (self.deck.name, [3])])
+        info = deck_preview._prepare_previews(self.deck, self.tmp / "c", Presentation(str(self.deck)))
+        self.assertEqual((info["hits"], info["misses"]), (4, 0))
+
+    def test_warm_failure_falls_back_to_the_cold_chain(self):
+        """A dead bridge must cost latency, never the preview."""
+        deck_preview.render_warm.get_renderer = lambda **kw: _FakeRenderer(self.root, fail=True)
+        rendered = []
+
+        def fake_cold(pptx, outdir, width=None):
+            rendered.append(width)
+            outdir.mkdir(parents=True, exist_ok=True)
+            for i in range(1, 4):
+                (outdir / f"slide-{i}.png").write_bytes(b"cold")
+            return 3
+
+        deck_preview._render = fake_cold
+        info = deck_preview._prepare_previews(self.deck, self.tmp / "d", Presentation(str(self.deck)))
+        self.assertEqual(info["renderer"], "cold")
+        self.assertEqual(rendered, [deck_preview.preview_width()])
+        self.assertTrue(any("warm render failed" in w for w in info["warnings"]))
+        self.assertEqual(len(list((self.tmp / "d").glob("slide-*.png"))), 3)
+        # The cold render is cached too, so the retry after a bridge crash is free.
+        cached = sum(1 for k in self._keys()[:3] if render_cache.has(self.root, k))
+        self.assertEqual(cached, 3)
+
+    def test_cache_off_uses_the_cold_chain_and_ignores_the_renderer(self):
+        fake = _FakeRenderer(self.root)
+        deck_preview.render_warm.get_renderer = lambda **kw: fake
+        deck_preview._render = lambda pptx, outdir, width=None: (outdir.mkdir(parents=True, exist_ok=True),
+                                                                 (outdir / "slide-1.png").write_bytes(b"c"))[1]
+        os.environ["PPT_RENDER_CACHE"] = "0"
+        try:
+            info = deck_preview._prepare_previews(self.deck, self.tmp / "e", Presentation(str(self.deck)))
+        finally:
+            os.environ.pop("PPT_RENDER_CACHE", None)
+        self.assertEqual(fake.calls, [])
+        self.assertEqual(info["renderer"], "cold")
+
+    def test_preview_width_is_configurable_and_defaults_high(self):
+        self.assertEqual(deck_preview.preview_width(), 1600)
+        os.environ["PPT_PREVIEW_WIDTH"] = "1200"
+        try:
+            self.assertEqual(deck_preview.preview_width(), 1200)
+        finally:
+            os.environ.pop("PPT_PREVIEW_WIDTH", None)
+
+    def test_prune_keeps_the_newest_renders(self):
+        now = time.time()
+        for i in range(4):
+            png = self.tmp / f"p{i}.png"
+            png.write_bytes(b"x")
+            key = f"prunetest{i}0" * 4
+            render_cache.store(self.root, key, png)
+            os.utime(render_cache.path_for(self.root, key), (now + i, now + i))
+        removed = render_cache.prune(self.root, limit=2)
+        self.assertGreaterEqual(removed, 2)
+        survivors = {k for k in (f"prunetest{i}0" * 4 for i in range(4))
+                     if render_cache.has(self.root, k)}
+        self.assertEqual(survivors, {f"prunetest{i}0" * 4 for i in (2, 3)})
+
+
+class WarmQueueRegressions(unittest.TestCase):
+    """The queue must coalesce duplicates and refuse work instead of growing unbounded."""
+
+    def _renderer(self, queue_max=1):
+        renderer = render_warm.WarmRenderer(python="unused", soffice_bin="unused",
+                                            width=1600, queue_max=queue_max, timeout=5)
+        self.addCleanup(renderer.close)
+        return renderer
+
+    def test_identical_requests_are_coalesced(self):
+        renderer = self._renderer(queue_max=8)
+        gate, calls = threading.Event(), []
+
+        def slow_job(src, wanted, root):
+            calls.append(sorted(wanted))
+            gate.wait(10)
+            return {i: root / f"x{i}.png" for i in wanted}
+        renderer._render_job = slow_job
+        deck = _TEMPLATES / "corporate-2slide.pptx"
+        results = []
+        threads = [threading.Thread(target=lambda: results.append(
+            renderer.render(deck, {1: "key1", 2: "key2"}, _TMP))) for _ in range(4)]
+        for t in threads:
+            t.start()
+        time.sleep(0.2)
+        gate.set()
+        for t in threads:
+            t.join(20)
+        self.assertEqual(len(calls), 1, "four identical previews must be one render")
+        self.assertEqual(len(results), 4)
+        self.assertGreaterEqual(renderer.stats()["coalesced"], 3)
+
+    def test_full_queue_raises_instead_of_blocking(self):
+        renderer = self._renderer(queue_max=1)
+        gate = threading.Event()
+
+        def stuck_job(src, wanted, root):
+            gate.wait(10)
+            return {}
+
+        renderer._render_job = stuck_job
+        deck = _TEMPLATES / "corporate-2slide.pptx"
+        threading.Thread(target=lambda: renderer.render(deck, {1: "a"}, _TMP), daemon=True).start()
+        deadline = time.time() + 5
+        while time.time() < deadline and renderer.stats()["inflight"] == 0:
+            time.sleep(0.02)  # wait until the worker is busy, so the queue is the only space
+        threading.Thread(target=lambda: renderer.render(deck, {2: "b"}, _TMP), daemon=True).start()
+        deadline = time.time() + 5
+        while time.time() < deadline and renderer.stats()["queued"] == 0:
+            time.sleep(0.02)
+        with self.assertRaises(render_warm.RenderBusy):
+            renderer.render(deck, {3: "c"}, _TMP)
+        gate.set()
+
+    def test_uno_python_detection_rejects_an_interpreter_without_pyuno(self):
+        self.assertIsNone(render_warm.uno_python("/nonexistent/python3"))
+
+    def test_engine_tag_records_the_libreoffice_version(self):
+        """A LibreOffice upgrade renders differently, so old cached PNGs must not be reused."""
+        render_warm._ENGINE_CACHE.clear()
+        original = render_warm.soffice_version
+        render_warm.soffice_version = lambda: "LibreOffice 99.1"
+        try:
+            self.assertIn("LibreOffice 99.1", render_warm.engine_tag())
+        finally:
+            render_warm.soffice_version = original
+            render_warm._ENGINE_CACHE.clear()
 
 
 def tearDownModule():

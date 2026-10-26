@@ -40,3 +40,27 @@ Short, dated, and reversible-with-reason. The long-form trail lives in the opera
 - **Concurrency is a product requirement.** Output names carry a random suffix, decks are written
   atomically (temp + rename), and rendering takes a per-deck lock so two users styling/rendering the
   same deck cannot interleave. LibreOffice gets a throwaway `UserInstallation` per call.
+
+## 2026-10-26 — Warm LibreOffice, direct PNG, per-slide cache
+
+- **No intermediate PDF on the normal path.** `preview_deck` now asks one warm LibreOffice process for
+  the slides it needs and gets PNGs straight from `impress_png_Export`. The PDF→PyMuPDF chain stays as
+  the fallback (no pyuno, `PPT_WARM_RENDER=0`, `PPT_RENDER_CACHE=0`, or any bridge failure) because it
+  is the path that works on a bare Windows box and it is what the corpus was validated against.
+- **A bridge process, not pyuno in the venv.** The server's venv has no `uno` bindings; LibreOffice's
+  bridge ships with the system Python (Linux) or LibreOffice's own `python.exe` (Windows). So
+  `render_bridge.py` runs under that interpreter and speaks one JSON object per line — the venv stays
+  clean and the same code works on both platforms.
+- **Cache per slide, not per deck.** The key is `sha256(engine tag, width, deck-wide parts (theme,
+  masters, layouts, media, charts, embeddings, presentation.xml), that slide's XML)`. Editing one slide
+  re-renders one slide; re-previewing an unchanged deck touches no renderer (measured: 0.95 s → 0.02 s).
+  The engine tag embeds the LibreOffice version so a LibreOffice upgrade invalidates old pixels.
+- **Quality over speed, but they agreed here.** Default render width went 1200 → **1600 px**, which is
+  the change the user actually sees (the enlarged viewer no longer upscales), and it costs ~0 because
+  direct export takes an explicit pixel width.
+- **Bounded, coalescing queue.** One worker thread (LibreOffice is not safe for parallel document work
+  through one connection); duplicate requests for the same deck/width/slide set share one render; a full
+  queue raises a visible "busy" `preview_error` instead of growing without limit; a timeout or a dead
+  bridge kills and restarts it rather than wedging the server.
+- **`PPT_RENDERER` still wins.** `none`/`powerpoint`/`aspose` disable the warm path entirely — the
+  warm renderer is only used when the chosen backend is `soffice`.

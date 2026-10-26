@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import tempfile
 import threading
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
@@ -20,6 +21,9 @@ from urllib.parse import urlsplit
 
 from mcp.types import ToolAnnotations
 from pptx import Presentation
+
+import render_cache
+import render_warm
 
 APP_URI = "ui://deck-studio/index.html"
 
@@ -128,6 +132,45 @@ def load_config() -> Dict[str, Any]:
         return {}
 
 
+def _setting(env_key: str, cfg_key: str, default: Any = None) -> Any:
+    value = os.environ.get(env_key)
+    if value not in (None, ""):
+        return value
+    value = load_config().get(cfg_key)
+    return default if value in (None, "") else value
+
+
+def _setting_bool(env_key: str, cfg_key: str, default: bool) -> bool:
+    value = _setting(env_key, cfg_key, None)
+    if value is None:
+        return default
+    return str(value).strip().lower() not in ("0", "false", "no", "off")
+
+
+def _setting_int(env_key: str, cfg_key: str, default: int) -> int:
+    try:
+        return int(_setting(env_key, cfg_key, default))
+    except (TypeError, ValueError):
+        return default
+
+
+PREVIEW_WIDTH_DEFAULT = 1600
+
+
+def preview_width() -> int:
+    """Pixel width of a rendered slide. 1600 keeps the enlarged view crisp; the grid scales it down."""
+    return max(320, _setting_int("PPT_PREVIEW_WIDTH", "preview_width", PREVIEW_WIDTH_DEFAULT))
+
+
+def cache_enabled() -> bool:
+    """PPT_RENDER_CACHE=0 turns off both the slide cache and warm LibreOffice (cold chain only)."""
+    return _setting_bool("PPT_RENDER_CACHE", "render_cache", True)
+
+
+def warm_enabled() -> bool:
+    return _setting_bool("PPT_WARM_RENDER", "warm_render", True)
+
+
 def _soffice_bin() -> str:
     """SOFFICE_BIN (env or config) -> portable/installed LibreOffice -> PATH."""
     explicit = os.environ.get("SOFFICE_BIN") or load_config().get("soffice_bin")
@@ -141,7 +184,7 @@ def _soffice_bin() -> str:
     return "soffice"
 
 
-def _render_soffice(pptx: Path, outdir: Path) -> int:
+def _render_soffice(pptx: Path, outdir: Path, width: int | None = None) -> int:
     binary = _soffice_bin()
     if not (Path(binary).is_file() or shutil.which(binary)):
         raise RendererUnavailable(
@@ -157,12 +200,17 @@ def _render_soffice(pptx: Path, outdir: Path) -> int:
         pdf = next((p for p in Path(tmp).glob("*.pdf") if p.is_file()), None)
         if pdf is None:
             raise RuntimeError("soffice produced no PDF")
-        _pdf_to_pngs(pdf, outdir, dpi=90)
+        _pdf_to_pngs(pdf, outdir, width=width or preview_width())
     return len(sorted(outdir.glob("slide-*.png")))
 
 
-def _pdf_to_pngs(pdf: Path, outdir: Path, dpi: int = 90) -> int:
-    """Rasterise a PDF with PyMuPDF (pure wheel — no poppler binary needed on Windows)."""
+def _pdf_to_pngs(pdf: Path, outdir: Path, dpi: float | None = None,
+                 width: int | None = None) -> int:
+    """Rasterise a PDF with PyMuPDF (pure wheel — no poppler binary needed on Windows).
+
+    ``dpi`` pins the resolution explicitly; ``width`` derives it per page so the output matches
+    the warm renderer's pixel width. Exactly one of them should be given.
+    """
     try:
         import pymupdf
     except ImportError:  # pragma: no cover
@@ -174,13 +222,17 @@ def _pdf_to_pngs(pdf: Path, outdir: Path, dpi: int = 90) -> int:
     doc = pymupdf.open(str(pdf))
     try:
         for index, page in enumerate(doc, start=1):
-            page.get_pixmap(dpi=dpi).save(str(outdir / f"slide-{index}.png"))
+            page_dpi = dpi
+            if page_dpi is None:
+                inches = (page.rect.width / 72.0) if page.rect.width else 0
+                page_dpi = max(24, int(round((width or preview_width()) / inches))) if inches else 96
+            page.get_pixmap(dpi=int(round(page_dpi))).save(str(outdir / f"slide-{index}.png"))
         return len(doc)
     finally:
         doc.close()
 
 
-def _render_powerpoint(pptx: Path, outdir: Path) -> int:
+def _render_powerpoint(pptx: Path, outdir: Path, width: int | None = None) -> int:
     """Windows: export through the installed PowerPoint (no extra install, exact rendering)."""
     try:
         import win32com.client  # noqa: F401  (pywin32)
@@ -189,11 +241,13 @@ def _render_powerpoint(pptx: Path, outdir: Path) -> int:
 
     import win32com.client as win32  # pragma: no cover - Windows only
 
+    target_width = int(width or preview_width())
     app = win32.Dispatch("PowerPoint.Application")
     deck = None
     try:  # pragma: no cover - Windows only
         deck = app.Presentations.Open(str(pptx.resolve()), WithWindow=False)
-        deck.Export(str(outdir.resolve()), "PNG", 1600, 900)
+        ratio = float(deck.PageSetup.SlideHeight) / float(deck.PageSetup.SlideWidth)
+        deck.Export(str(outdir.resolve()), "PNG", target_width, int(round(target_width * ratio)))
     finally:  # pragma: no cover
         try:
             if deck is not None:
@@ -204,7 +258,7 @@ def _render_powerpoint(pptx: Path, outdir: Path) -> int:
     return len(sorted(outdir.glob("*.PNG")) + sorted(outdir.glob("*.png")))
 
 
-def _render_aspose(pptx: Path, outdir: Path) -> int:
+def _render_aspose(pptx: Path, outdir: Path, width: int | None = None) -> int:
     """Aspose.Slides: no Office, no LibreOffice. Commercial licence; eval adds a watermark."""
     try:
         import aspose.slides as slides
@@ -217,25 +271,26 @@ def _render_aspose(pptx: Path, outdir: Path) -> int:
     if licence_path:  # pragma: no cover - licence path is deployment-specific
         slides.License().set_license(licence_path)
 
+    target_width = float(width or preview_width())
     with slides.Presentation(str(pptx)) as pres:  # pragma: no cover - optional dependency
-        width = pres.slide_size.size.width
-        scale = max(1.0, 1600.0 / float(width or 960))
+        page_width = pres.slide_size.size.width
+        scale = max(1.0, target_width / float(page_width or 960))
         for index, slide in enumerate(pres.slides, start=1):
             image = slide.get_image(scale, scale)
             image.save(str(outdir / f"slide-{index}.png"), slides.ImageFormat.PNG)
     return len(sorted(outdir.glob("slide-*.png")))
 
 
-def _render(pptx: Path, outdir: Path) -> int:
-    """pptx -> PNGs for the pane. Returns the number of images written."""
+def _render(pptx: Path, outdir: Path, width: int | None = None) -> int:
+    """pptx -> PNGs for the pane (cold chain: one soffice call, then PDF raster)."""
     renderer = _pick_renderer()
     if renderer == "none":
         raise RendererUnavailable("preview renderer disabled (PPT_RENDERER=none)")
     if renderer == "powerpoint":
-        return _render_powerpoint(pptx, outdir)
+        return _render_powerpoint(pptx, outdir, width)
     if renderer == "aspose":
-        return _render_aspose(pptx, outdir)
-    return _render_soffice(pptx, outdir)
+        return _render_aspose(pptx, outdir, width)
+    return _render_soffice(pptx, outdir, width)
 
 
 def _deck_id(path: Path) -> str:
@@ -268,15 +323,18 @@ def _build_preview_locked(src: Path, deck_id: str, outdir: Path, title: str) -> 
 
     # The slide count belongs to the deck, never to the renderer: with no LibreOffice the PNGs are
     # missing but the deck is still complete and must report its real size.
-    total = len(Presentation(str(src)).slides)
+    prs = Presentation(str(src))
+    total = len(prs.slides)
 
     # Rendering is a view, not data: a host without LibreOffice must still get a valid deck and a
     # clear error instead of a failed tool call.
-    rendered, preview_error = 0, None
+    render_info: Dict[str, Any] = {"renderer": "none", "hits": 0, "misses": 0}
+    preview_error = None
     try:
-        rendered = _render(src, outdir)
+        render_info = _prepare_previews(src, outdir, prs)
     except Exception as exc:  # noqa: BLE001 - surface, don't crash
         preview_error = f"{type(exc).__name__}: {str(exc)[:180]}"
+    rendered = len(sorted(outdir.glob("slide-*.png")))
     labels = _slide_labels(src)
     base = public_base()
 
@@ -297,10 +355,101 @@ def _build_preview_locked(src: Path, deck_id: str, outdir: Path, title: str) -> 
         "rendered_slides": rendered,
         "download": f"{base}/decks/{deck_id}/deck.pptx",
         "preview_error": preview_error,
+        "render": render_info,
         "slides": slides,
     }
     (outdir / "deck.json").write_text(json.dumps(data, indent=1), encoding="utf-8")
     return data
+
+
+def _prepare_previews(src: Path, outdir: Path, prs) -> Dict[str, Any]:
+    """Fill ``outdir/slide-N.png`` using the cache and the warm renderer.
+
+    Unchanged slides are hard-linked straight from the cache, so an edit that touches one slide
+    re-renders one slide. The cold chain (fresh soffice -> PDF -> PyMuPDF) stays as the fallback
+    for hosts without pyuno and for the PowerPoint/Aspose renderers.
+    """
+    width = preview_width()
+    info: Dict[str, Any] = {"renderer": "cold", "hits": 0, "misses": 0, "warnings": []}
+    started = time.perf_counter()
+    outdir.mkdir(parents=True, exist_ok=True)
+
+    if not cache_enabled() or not warm_enabled() or _pick_renderer() != "soffice":
+        info["renderer"] = "cold"
+        info["misses"] = _render(src, outdir, width)
+        info["ms"] = round((time.perf_counter() - started) * 1000)
+        return info
+
+    try:
+        renderer = render_warm.get_renderer(
+            width=width,
+            queue_max=_setting_int("PPT_RENDER_QUEUE_MAX", "render_queue_max", 256),
+            timeout=float(_setting_int("PPT_RENDER_TIMEOUT_S", "render_timeout_s", 180)),
+        )
+    except Exception as exc:  # noqa: BLE001 - warm is an optimisation, never a hard requirement
+        info["warnings"].append(f"warm renderer unavailable ({exc}); used cold soffice")
+        renderer = None
+
+    if renderer is None:
+        info["renderer"] = "cold"
+        info["misses"] = _render(src, outdir, width)
+        info["ms"] = round((time.perf_counter() - started) * 1000)
+        return info
+
+    cache_root = render_cache.cache_root(preview_root())
+    engine = render_warm.engine_tag()
+    keys = render_cache.slide_keys(src, [str(s.part.partname) for s in prs.slides], engine, width)
+
+    missing: List[int] = []
+    for index, key in enumerate(keys, start=1):
+        if render_cache.fetch(cache_root, key, outdir / f"slide-{index}.png"):
+            info["hits"] += 1
+        else:
+            missing.append(index)
+
+    if missing:
+        try:
+            paths = renderer.render(src, {i: keys[i - 1] for i in missing}, cache_root)
+            for index, path in paths.items():
+                if index not in missing:
+                    continue
+                shutil.copyfile(path, outdir / f"slide-{index}.png")
+            info["renderer"] = "libreoffice-warm"
+            info["misses"] = len(missing)
+        except Exception as exc:  # noqa: BLE001 - degrade to the cold chain, keep the deck
+            info["warnings"].append(f"warm render failed ({type(exc).__name__}: {exc}); used cold soffice")
+            info["renderer"] = "cold"
+            info["misses"] = _render(src, outdir, width)
+            for index, key in enumerate(keys, start=1):
+                png = outdir / f"slide-{index}.png"
+                if png.is_file():
+                    try:
+                        render_cache.store(cache_root, key, png)
+                    except OSError:
+                        pass
+    else:
+        info["renderer"] = "cache"
+    info["ms"] = round((time.perf_counter() - started) * 1000)
+    info["cache_size"] = render_cache.count(cache_root)
+    _maybe_prune(cache_root)
+    if not info["warnings"]:
+        info.pop("warnings")
+    return info
+
+
+_LAST_PRUNE = [0.0]
+
+
+def _maybe_prune(cache_root: Path) -> None:
+    """Trim old renders occasionally; never on a hot path and never blocking a request."""
+    now = time.time()
+    if now - _LAST_PRUNE[0] < 600:
+        return
+    _LAST_PRUNE[0] = now
+    try:
+        render_cache.prune(cache_root, limit=_setting_int("PPT_RENDER_CACHE_MAX", "render_cache_max", 5000))
+    except Exception:  # noqa: BLE001 - pruning is housekeeping, not correctness
+        pass
 
 
 def _template_gallery() -> List[Dict[str, Any]]:
@@ -401,7 +550,7 @@ def template_preview_urls(pptx_path: str | Path) -> List[str]:
         if not (outdir / "slide-1.png").is_file():
             outdir.mkdir(parents=True, exist_ok=True)
             try:
-                _render(src, outdir)
+                _prepare_previews(src, outdir, Presentation(str(src)))
             except Exception:
                 return []
     base = public_base()

@@ -6,7 +6,7 @@ interactive pane inside LibreChat for previewing, restyling and downloading them
 Designed for a **small local model** (Qwen3.6-27B in 3-bit) as the driver: the model emits structure,
 the server owns layout. It also works with any MCP client.
 
-**Status (2026-10-25):** 100-case corpus **97/100**, plus 8 regression cases **8/8** (all 3 former failures now pass) · 43 unit tests · 7 browser checks · concurrency probe **6/6 parallel renders** · CI green on Python 3.12 & 3.13.
+**Status (2026-10-26):** 100-case corpus **97/100**, plus 8 regression cases **8/8** (all 3 former failures now pass) · **73 unit tests** · 16 browser checks · concurrency probe **6/6 parallel renders** · previews render **warm** (one LibreOffice, direct PNG, per-slide cache) · CI green on Python 3.12 & 3.13.
 
 ```mermaid
 flowchart LR
@@ -248,6 +248,13 @@ Environment variables, or a `ppt-mcp.config.json` beside `server.py` (env wins):
 | `upload_dir` | `PPT_UPLOAD_DIR` | LibreChat uploads dir, for `import_deck` |
 | `public_base` | `PPT_PUBLIC_BASE` | origin the browser/container uses to reach this server |
 | `aspose_license_path` | `ASPOSE_LICENSE_PATH` | licence for the `aspose` renderer |
+| `preview_width` | `PPT_PREVIEW_WIDTH` | rendered slide width in px (default **1600**; height follows the page ratio) |
+| `warm_render` | `PPT_WARM_RENDER` | reuse one LibreOffice for PNG export (default on when pyuno is available) |
+| `render_cache` | `PPT_RENDER_CACHE` | per-slide image cache (default on; `0` = always re-render, cold chain only) |
+| `render_cache_max` | `PPT_RENDER_CACHE_MAX` | cached slide images kept before oldest are pruned (default 5000) |
+| `render_queue_max` | `PPT_RENDER_QUEUE_MAX` | pending render jobs before `preview_error` says busy (default 256) |
+| `render_timeout_s` | `PPT_RENDER_TIMEOUT_S` | per-deck render budget before the bridge is killed and restarted (default 180) |
+| `uno_python` | `PPT_UNO_PYTHON` | interpreter that can `import uno`; auto-detected (system `python3`, or LibreOffice's `python.exe`) |
 
 **`public_base` must be a hostname, not an IP address.** LibreChat's MCP App bridge refuses
 host-opened links to IP address literals, which silently disables the Deck Studio **Download .pptx**
@@ -257,6 +264,22 @@ button. Map a name to the host bridge IP in `/etc/hosts` (e.g. `172.17.0.1  deck
 **Rendering is a view dependency, never a data one.** Building and editing a `.pptx` needs no office
 suite; without a renderer the deck still builds, downloads and reports `preview_error`.
 Capacity: [`docs/renderers.md`](docs/renderers.md).
+
+### How a preview is produced
+
+```
+preview_deck
+  └─ per-slide cache key = sha256(engine, width, deck-wide parts, this slide's XML)
+       ├─ hit  → hard-link the cached PNG (no LibreOffice involved)
+       └─ miss → one warm LibreOffice (UNO) exports just those slides as PNG
+                  └─ on any failure: cold chain (fresh soffice -> PDF -> PyMuPDF)
+```
+
+The warm renderer is a single `soffice` process owned by a bridge child process (`render_bridge.py`,
+which runs under the interpreter that has pyuno). One worker thread talks to it, so concurrent
+previews queue; identical requests for the same deck are coalesced into one render; a timed-out or
+crashed bridge is killed and restarted. Unchanged slides are never re-rendered — editing one slide
+re-renders one slide.
 
 ## Tests
 

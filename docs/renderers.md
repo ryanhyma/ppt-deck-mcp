@@ -14,6 +14,32 @@ on a real 8-slide deck (charts, tables, SVG, styled text), not what the READMEs 
 | **`pptx2png`** | wraps COM/LibreOffice | needs them anyway | not an independent renderer |
 | **HTML/SVG preview from our own deck model** | yes, no dependencies | none | faithful for decks we generate, **approximate for imported decks**; browser paints it |
 
+### Direct page export (warm renderer, 2026-10-26)
+
+LibreOffice's `impress_png_Export` filter exports **one page at a time**, so a single warm `soffice`
+(UNO) can render exactly the slides that changed — no PDF, no second rasteriser. Measured on this box
+(5-slide deck, 1600 px wide):
+
+| Step | Cold PDF chain | Warm direct-PNG |
+|---|---|---|
+| process start / connect | 0.87 s | 0.01 s (once per server run) |
+| load deck | (inside the 0.87 s) | 0.15 s |
+| export | 0.08 s (PDF) + 0.05–0.08 s (raster) | 0.04 s per page |
+| **total, 5 slides** | **≈0.95 s** | **0.33 s** (0.35 s for 8 slides) |
+| **total, re-preview of an unchanged deck** | 0.95 s | **0.02 s** (cache only) |
+
+`soffice --convert-to png` looks like a shortcut but is not: it writes **only the first slide**
+(0.79 s, one file on this deck), so multi-slide needs the UNO filter, `PageRange`-style splitting, or
+the PDF step.
+
+Fidelity versus the PDF chain, same deck at the same 1600×900: mean absolute difference 0.2–1.1/255,
+0.4–2.0 % of pixels differ by more than 8, and the diff is confined to glyph/edge anti-aliasing —
+layout, positions and colours are identical. (PyMuPDF rasterises the distilled PDF; the warm path is
+LibreOffice's own output, which is arguably closer to what the user exports.)
+
+The cold chain stays in place as the fallback (`PPT_WARM_RENDER=0`, no pyuno, `PPT_RENDER_CACHE=0`, or
+any bridge failure), so a host without UNO bindings behaves exactly as before.
+
 ### PDF → PNG step
 
 `soffice` converts the deck to PDF, then **PyMuPDF** (a pip wheel) rasterises it. That matters on

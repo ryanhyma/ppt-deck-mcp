@@ -15,6 +15,11 @@ py -3.12 -m venv .venv
 `requirements.txt` pulls everything else as wheels — including PyMuPDF, which rasterises the PDF, so
 **no poppler / pdftoppm binary is needed** on Windows.
 
+> Previews normally use the **warm renderer** instead: one LibreOffice process exports changed slides
+directly to PNG (`import uno` from LibreOffice's `python.exe`, auto-detected), and unchanged slides come
+from the image cache. The PyMuPDF/PDF chain above is the fallback when pyuno is not available — nothing
+extra to install either way.
+
 ## 2. Portable LibreOffice (one unzip)
 
 1. Get a portable build (LibreOfficePortable) or the normal installer pointed at `C:\tools\LibreOfficePortable`.

@@ -4,5 +4,14 @@
   "soffice_bin": "C:\\tools\\LibreOfficePortable\\App\\libreoffice\\program\\soffice.exe",
   "template_path": "C:\\deck-mcp\\templates",
   "output_dir": "C:\\deck-mcp\\out",
-  "public_base": "http://decks.internal:8931"
+  "public_base": "http://decks.internal:8931",
+  "_rendering": "Previews: one warm LibreOffice exports only the slides that changed, at preview_width.",
+  "preview_width": 1600,
+  "warm_render": true,
+  "render_cache": true,
+  "render_cache_max": 5000,
+  "render_queue_max": 256,
+  "render_timeout_s": 180,
+  "uno_python": "",
+  "_uno_python": "Interpreter with `import uno`: blank = auto (system python3 / LibreOffice's python.exe). Blank on a host without pyuno simply falls back to the cold PDF chain."
 }
