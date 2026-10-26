@@ -45,6 +45,31 @@ PPT_ENTRA_JWKS_URL=http://localhost:8899/default/jwks \
 Then `curl -X POST http://127.0.0.1:8933/mcp -H "Authorization: Bearer $TOKEN"` must get past the gate,
 and the same request without a token must return 401 with a `resource_metadata` challenge.
 
+## Verified flows (2026-10-26)
+
+| Flow | Result |
+|---|---|
+| discovery + JWKS over HTTP | works (`tests/test_oidc_mock.py`) |
+| client credentials → token → `auth.EntraVerifier` | accepted; wrong audience rejected |
+| **authorization code + PKCE** (`/authorize` → login POST → code → `/token`) | works: token carries `iss`/`aud`/`tid`/`oid`/`scp`/`ver` |
+| that PKCE token against a live `entra`-mode server | gate passes, 48 tools, deck built + previewed, audit `subject=user-alice auth=entra` |
+
+**The host must be uniform.** The mock derives its issuer from the request host, so use one hostname
+everywhere (`host.docker.internal` works from the container *and*, with `127.0.0.1 host.docker.internal`
+in the host's `/etc/hosts`, from the browser). Mixing `localhost` and `host.docker.internal` gives tokens
+whose `iss` the resource server (correctly) rejects.
+
+### LibreChat's own OAuth client — known limitation
+
+LibreChat discovers the authorization server from our protected-resource metadata and then does RFC 8414
+discovery at the **issuer origin**. This mock serves issuer-per-path, so its origin-root metadata names a
+bogus issuer (`…/.well-known/oauth-authorization-server` becomes the issuer id) and LibreChat's flow fails
+with `OAuth handling failed`. That is the mock's discovery model, not our resource server:
+`authorizationState` correctly reports `reauth_required` and the client is pointed at the right AS.
+
+To exercise LibreChat's browser flow, use an AS with standard discovery — the real Entra tenant, or
+Keycloak in a container (same PRM wiring, no code change).
+
 ## Point LibreChat at it (the full browser flow)
 
 ```yaml
