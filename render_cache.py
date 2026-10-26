@@ -60,8 +60,10 @@ def shared_digest(pptx: Path) -> str:
     return h.hexdigest()
 
 
-def slide_key(shared: str, engine: str, width: int, slide_xml: bytes) -> str:
+def slide_key(shared: str, engine: str, width: int, slide_xml: bytes, scope: str = "") -> str:
     h = hashlib.sha256()
+    h.update(scope.encode())
+    h.update(b"|")
     h.update(engine.encode())
     h.update(b"|")
     h.update(str(int(width)).encode())
@@ -72,8 +74,13 @@ def slide_key(shared: str, engine: str, width: int, slide_xml: bytes) -> str:
     return h.hexdigest()
 
 
-def slide_keys(pptx: Path, part_names: Sequence[str], engine: str, width: int) -> list[str]:
-    """One cache key per slide, in deck order (``part_names`` from python-pptx)."""
+def slide_keys(pptx: Path, part_names: Sequence[str], engine: str, width: int,
+               scope: str = "") -> list[str]:
+    """One cache key per slide, in deck order (``part_names`` from python-pptx).
+
+    ``scope`` namespaces the cache per subject: two people who happen to hold decks with identical
+    content must not share rendered files (a shared cache is an access path, not just an optimisation).
+    """
     shared = shared_digest(pptx)
     keys: list[str] = []
     with zipfile.ZipFile(pptx) as zf:
@@ -83,7 +90,7 @@ def slide_keys(pptx: Path, part_names: Sequence[str], engine: str, width: int) -
                 xml = zf.read(name)
             except KeyError:  # a part we cannot read must never collide with another slide
                 xml = name.encode() + b"\0missing"
-            keys.append(slide_key(shared, engine, width, xml))
+            keys.append(slide_key(shared, engine, width, xml, scope))
     return keys
 
 

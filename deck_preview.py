@@ -19,11 +19,12 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 from mcp.types import ToolAnnotations
 from pptx import Presentation
 
+import auth
 import deck_registry
 import paths as deck_paths
 import render_cache
@@ -321,18 +322,21 @@ _FALLBACK_SECRET: bytes | None = None
 URL_TTL_S = 3600
 
 
-def sign_asset(deck_id: str, name: str, expires: int) -> str:
-    payload = f"{deck_id}/{name}/{int(expires)}".encode("utf-8")
+def sign_asset(deck_id: str, name: str, expires: int, subject: str = "") -> str:
+    payload = f"{deck_id}/{name}/{int(expires)}/{subject}".encode("utf-8")
     return _hmac.new(url_secret(), payload, hashlib.sha256).hexdigest()[:32]
 
 
 def signed_url(deck_id: str, name: str, ttl: int = URL_TTL_S) -> str:
+    """A short-lived link to a data file, bound to the subject that asked for it."""
     expires = int(time.time()) + int(ttl)
-    sig = sign_asset(deck_id, name, expires)
-    return f"{public_base()}/decks/{deck_id}/{name}?exp={expires}&sig={sig}"
+    subject = auth.current_identity().subject
+    sig = sign_asset(deck_id, name, expires, subject)
+    return f"{public_base()}/decks/{deck_id}/{name}?exp={expires}&sig={sig}&sub={quote(subject)}"
 
 
-def verify_signature(deck_id: str, name: str, expires: str | None, sig: str | None) -> bool:
+def verify_signature(deck_id: str, name: str, expires: str | None, sig: str | None,
+                     subject: str = "") -> bool:
     if not expires or not sig:
         return False
     try:
@@ -341,7 +345,14 @@ def verify_signature(deck_id: str, name: str, expires: str | None, sig: str | No
         return False
     if exp < int(time.time()):
         return False
-    return _hmac.compare_digest(sign_asset(deck_id, name, exp), sig)
+    if not _hmac.compare_digest(sign_asset(deck_id, name, exp, subject), sig):
+        return False
+    owner = deck_registry.owner_for(preview_root(), deck_id)
+    # A signed URL is a bearer within its lifetime; the owner in the index still has to match it, so a
+    # link minted for one deck id cannot be re-aimed at another.
+    if owner and owner != "anonymous" and subject and owner != auth.Identity(subject=subject).scope_hint:
+        return False
+    return True
 
 
 SLIDE_NAME_RE = re.compile(r"^slide-\d{1,3}\.png$")
@@ -349,7 +360,7 @@ DECK_NAME_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}\.(pptx|potx)$")
 
 
 def deck_asset_path(deck_id: str, name: str, expires: str | None = None,
-                    sig: str | None = None) -> Path | None:
+                    sig: str | None = None, subject: str = "") -> Path | None:
     """The one policy for `/decks/<deck_id>/<name>`.
 
     Slide images are served by name inside the deck's own directory; everything else — `deck.json`
@@ -364,9 +375,11 @@ def deck_asset_path(deck_id: str, name: str, expires: str | None = None,
     except OSError:
         return None
     if SLIDE_NAME_RE.match(name or ""):
+        if auth.auth_mode() != "none" and not verify_signature(deck_id, name, expires, sig, subject):
+            return None  # authenticated deployments serve images only through signed URLs
         candidate = base / name
     elif DECK_NAME_RE.match(name or "") or name == "deck.json":
-        if not verify_signature(deck_id, name, expires, sig):
+        if not verify_signature(deck_id, name, expires, sig, subject):
             return None
         candidate = base / name
     else:
@@ -385,8 +398,14 @@ def remember(path: str | Path) -> str:
     source = deck_paths.resolve_deck(str(path), suffixes=())
     deck_id = deck_registry.deck_id(source)
     (preview_root() / deck_id).mkdir(parents=True, exist_ok=True)
-    deck_registry.record(preview_root(), deck_id, source)
+    deck_registry.record(preview_root(), deck_id, source, owner=_owner())
     return deck_id
+
+
+def _owner() -> str:
+    """The current subject's ownership digest ("anonymous" when authentication is off)."""
+    identity = auth.current_identity()
+    return "anonymous" if identity.anonymous else identity.scope_hint
 
 
 def resolve_ref(ref: str | Path) -> Path:
@@ -397,10 +416,14 @@ def resolve_ref(ref: str | Path) -> Path:
     """
     text = str(ref or "").strip().strip('"')
     if deck_registry.DECK_ID_RE.match(text):
-        source = deck_registry.source_for(preview_root(), text)
-        if source is None:
+        entry = deck_registry.entry_for(preview_root(), text)
+        if entry is None:
             raise FileNotFoundError(f"unknown deck id {text!r} — list_decks or build_deck first")
-        return deck_paths.resolve_deck(source, suffixes=())
+        owner = entry["owner"]
+        if auth.ownership_enabled() and owner not in ("anonymous", _owner()):
+            # Someone else's deck: report it as missing rather than confirming that it exists.
+            raise FileNotFoundError(f"unknown deck id {text!r} — list_decks or build_deck first")
+        return deck_paths.resolve_deck(entry["source"], suffixes=())
     return _resolve_input(text)
 
 
@@ -422,7 +445,7 @@ def _build_preview_locked(src: Path, deck_id: str, outdir: Path, title: str) -> 
     outdir.mkdir(parents=True)
     # Re-record the id -> source mapping (the index lives outside this directory, so the wipe above
     # cannot lose it; re-recording keeps ids created before the index existed resolvable).
-    deck_registry.record(preview_root(), deck_id, src)
+    deck_registry.record(preview_root(), deck_id, src, owner=_owner())
 
     # Copy the deck next to its previews so the browser can download it from this server.
     shipped = outdir / "deck.pptx"
@@ -449,7 +472,8 @@ def _build_preview_locked(src: Path, deck_id: str, outdir: Path, title: str) -> 
         {
             "index": i,
             "label": labels[i - 1] if i - 1 < len(labels) else "",
-            "url": f"{base}/decks/{deck_id}/slide-{i}.png",
+            "url": (signed_url(deck_id, f"slide-{i}.png") if auth.auth_mode() != "none"
+                    else f"{base}/decks/{deck_id}/slide-{i}.png"),
         }
         for i in range(1, rendered + 1)
     ]
@@ -505,7 +529,8 @@ def _prepare_previews(src: Path, outdir: Path, prs) -> Dict[str, Any]:
 
     cache_root = render_cache.cache_root(preview_root())
     engine = render_warm.engine_tag()
-    keys = render_cache.slide_keys(src, [str(s.part.partname) for s in prs.slides], engine, width)
+    keys = render_cache.slide_keys(src, [str(s.part.partname) for s in prs.slides], engine, width,
+                                   scope="" if auth.current_identity().anonymous else auth.current_identity().scope_hint)
 
     missing: List[int] = []
     for index, key in enumerate(keys, start=1):

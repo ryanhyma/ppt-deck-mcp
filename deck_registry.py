@@ -7,7 +7,7 @@ is how `preview_deck` became a file-read primitive before 2026-10-26).
 So each deck gets an opaque id, and the mapping id -> source file lives on disk next to the previews, in
 a dotfile the asset route will not serve:
 
-    previews/.index/<deck_id>      one line: the resolved path of that deck
+    previews/.index/<deck_id>      JSON: {"source": <resolved path>, "owner": <subject digest>}
     previews/<deck_id>/deck.json   the metadata the tools return (no paths in it)
 
 The index lives *outside* the per-deck directory on purpose: a preview wipes and rebuilds its own
@@ -17,6 +17,7 @@ directory, and an id a caller is holding must never become unresolvable in the m
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 from pathlib import Path
@@ -46,22 +47,47 @@ def _index_file(previews: Path, deck_id: str) -> Path:
     return Path(previews) / INDEX_DIRNAME / deck_id
 
 
-def record(previews: Path, deck_id: str, source: Path) -> None:
-    """Remember which file a deck id refers to. Survives previews wiping their own directory."""
+def record(previews: Path, deck_id: str, source: Path, owner: str = "anonymous") -> None:
+    """Remember which file a deck id refers to, and who owns it.
+
+    Survives previews wiping their own directory (the index lives outside it). A plain-text record from
+    an older build is still readable, so upgrading does not orphan existing decks.
+    """
     target = _index_file(previews, deck_id)
+    payload = json.dumps({"source": str(Path(source).resolve()), "owner": owner or "anonymous"})
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
         tmp = target.with_suffix(".tmp")
-        tmp.write_text(str(Path(source).resolve()), encoding="utf-8")
+        tmp.write_text(payload, encoding="utf-8")
         os.replace(tmp, target)
     except OSError:  # pragma: no cover - read-only workspace: previews still work, edits by id may not
         pass
 
 
-def source_for(previews: Path, deck_id: str) -> Path | None:
-    """The source path recorded for a deck id, if the record is still there."""
+def entry_for(previews: Path, deck_id: str) -> dict | None:
+    """{"source": Path, "owner": str} for a deck id, or None."""
     try:
         raw = _index_file(previews, deck_id).read_text(encoding="utf-8").strip()
     except OSError:
         return None
-    return Path(raw) if raw else None
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+        if isinstance(data, dict):
+            source = data.get("source")
+            return {"source": Path(source), "owner": str(data.get("owner") or "anonymous")} if source else None
+    except json.JSONDecodeError:
+        return {"source": Path(raw), "owner": "anonymous"}  # pre-ownership record
+    return None
+
+
+def source_for(previews: Path, deck_id: str) -> Path | None:
+    """The source path recorded for a deck id, if the record is still there."""
+    entry = entry_for(previews, deck_id)
+    return entry["source"] if entry else None
+
+
+def owner_for(previews: Path, deck_id: str) -> str | None:
+    entry = entry_for(previews, deck_id)
+    return entry["owner"] if entry else None

@@ -16,5 +16,13 @@
   "_uno_python": "Interpreter with `import uno`: blank = auto (system python3 / LibreOffice's python.exe). Blank on a host without pyuno simply falls back to the cold PDF chain.",
   "_access": "Decks are only read from output_dir, upload_dir, template_path and allowed_roots.",
   "allowed_roots": [],
-  "url_secret": ""
+  "url_secret": "",
+  "_auth": "none (dev only, refused when env=prod) | token (shared bearer) | entra (Entra ID access tokens)",
+  "auth_mode": "entra",
+  "env": "prod",
+  "mcp_token": "",
+  "entra_tenant_id": "",
+  "entra_audience": "",
+  "entra_required_scopes": "Decks.Read",
+  "entra_required_roles": "Decks.Access"
 }

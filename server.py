@@ -24,7 +24,10 @@ import uvicorn  # noqa: E402
 from mcp.server.transport_security import TransportSecuritySettings  # noqa: E402
 from ppt_mcp_server import app, get_template_search_directories  # noqa: E402
 from starlette.applications import Starlette  # noqa: E402
-from starlette.responses import FileResponse, PlainTextResponse  # noqa: E402
+from starlette.responses import FileResponse, JSONResponse, PlainTextResponse  # noqa: E402
+from starlette.types import ASGIApp, Receive, Scope, Send  # noqa: E402
+
+import auth  # noqa: E402
 from starlette.routing import Mount, Route  # noqa: E402
 
 from deck_preview import (APP_URI, deck_asset_path, preview_root, public_base,  # noqa: E402
@@ -82,8 +85,10 @@ def build_http_app():
         """Slide images by name; data files (deck.json, the .pptx) only with a signed, expiring URL."""
         deck_id = request.path_params["deck_id"]
         name = request.path_params["name"]
-        p = deck_asset_path(deck_id, name,
-                            request.query_params.get("exp"), request.query_params.get("sig"))
+        p = deck_asset_path(deck_id, name, request.query_params.get("exp"),
+                            request.query_params.get("sig"),
+                            auth.current_identity().subject if not auth.current_identity().anonymous else
+                            request.query_params.get("sub", ""))
         if p is None:
             return PlainTextResponse("not found", status_code=404)
         headers = {"Cache-Control": "no-store"}
@@ -91,19 +96,105 @@ def build_http_app():
             headers["Content-Disposition"] = f'attachment; filename="{p.name}"'
         return FileResponse(p, headers=headers)
 
+    async def protected_resource_metadata(request):
+        """RFC 9728: where an MCP client learns which authorization server and scopes to use."""
+        base = public_base()
+        return JSONResponse({
+            "resource": f"{base}/mcp",
+            "authorization_servers": [auth.authorization_server()] if auth.authorization_server() else [],
+            "scopes_supported": auth.required_scopes(),
+            "bearer_methods_supported": ["header"],
+        })
+
     @asynccontextmanager
     async def lifespan(root_app):
         async with inner.router.lifespan_context(root_app):
             yield
 
-    return Starlette(
-        routes=[
-            Route("/apps/deck_studio/{path:path}", app_asset),
-            Route("/decks/{deck_id}/{name}", deck_asset),
-            Mount("/", app=inner),
-        ],
-        lifespan=lifespan,
-    )
+    routes = [
+        Route("/.well-known/oauth-protected-resource", protected_resource_metadata),
+        Route("/healthz", lambda request: PlainTextResponse("ok")),
+        Route("/apps/deck_studio/{path:path}", app_asset),
+        Route("/decks/{deck_id}/{name}", deck_asset),
+        Mount("/", app=inner),
+    ]
+    return AuthGate(Starlette(routes=routes, lifespan=lifespan))
+
+
+class AuthGate:
+    """Bearer authentication in front of everything, with signed URLs for browser-fetched images.
+
+    Two kinds of caller reach this server:
+
+    * **tool traffic** (``/mcp``) and app assets — programmatic, so they carry a bearer token;
+    * **slide images** — fetched by the *browser*, which has no bearer and belongs to the LibreChat
+      origin, so they are authorised by the signed URL minted in the tool result instead.
+
+    A valid signature is still checked against the deck's recorded owner, and every request that has a
+    bearer gets its identity bound to a context variable the tools read.
+    """
+
+    # `/apps/` stays public: it is the Deck Studio's static HTML/JS, fetched by the browser with no
+    # bearer available, and it contains no user data. Tool traffic and deck assets are protected.
+    PROTECTED_PREFIXES = ("/mcp", "/decks/")
+    IMAGE_SUFFIXES = (".png",)
+
+    def __init__(self, inner: ASGIApp):
+        self.inner = inner
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.inner(scope, receive, send)
+            return
+        path = scope["path"]
+        if not any(path == p or path.startswith(p) for p in self.PROTECTED_PREFIXES):
+            await self.inner(scope, receive, send)
+            return
+
+        headers = {k.decode().lower(): v.decode() for k, v in scope.get("headers", [])}
+        if os.environ.get("PPT_DEBUG") and path.startswith("/mcp"):
+            print(f"[auth] {scope.get('method')} {path} "
+                  f"authorization={'present' if headers.get('authorization') else 'MISSING'} "
+                  f"ua={headers.get('user-agent','')[:40]}", flush=True)
+        query = __import__("urllib.parse", fromlist=["parse_qs"]).parse_qs(scope.get("query_string", b"").decode())
+        try:
+            identity = self._identify(path, headers, query)
+        except auth.AuthError as exc:
+            body = {"error": exc.error, "error_description": exc.description}
+            # Only advertise protected-resource metadata when there really is an authorization server
+            # behind us: a 401 that points at one makes clients start an OAuth flow (LibreChat will
+            # report "OAuth Required" and never list the tools) — wrong for the shared-token mode.
+            challenge = exc.www_authenticate(
+                f"{public_base()}/.well-known/oauth-protected-resource"
+                if auth.auth_mode() == "entra" else "")
+            await send({"type": "http.response.start", "status": exc.status,
+                        "headers": [(b"content-type", b"application/json"),
+                                    (b"www-authenticate", challenge.encode())]})
+            await send({"type": "http.response.body", "body": __import__("json").dumps(body).encode()})
+            return
+
+        token = auth.set_current(identity)
+        try:
+            await self.inner(scope, receive, send)
+        finally:
+            auth.reset_current(token)
+
+    def _identify(self, path: str, headers: dict, query: dict) -> "auth.Identity":
+        mode = auth.auth_mode()
+        if mode == "none":
+            return auth.ANONYMOUS
+
+        bearer = headers.get("authorization")
+        if bearer:
+            return auth.verifier().verify(auth.bearer_from_header(bearer))
+
+        # No bearer: only a signed image URL may pass, and only for an image.
+        if path.startswith("/decks/") and path.endswith(self.IMAGE_SUFFIXES):
+            subject = (query.get("sub") or [""])[0]
+            if subject:
+                return auth.Identity(subject=subject, mode="signed-url")
+        raise auth.AuthError(401, "invalid_token",
+                             "this endpoint needs an Authorization: Bearer token")
 
 
 def _apply_config() -> None:

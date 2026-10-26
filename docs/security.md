@@ -19,7 +19,7 @@ Operational consequence: download URLs now expire after an hour (`URL_TTL_S`). S
 production — without it the signing key is random per process, so every restart invalidates outstanding
 links (correct, just annoying).
 
-## 1. The MCP HTTP endpoint has no authentication — *still open*
+## 1. The MCP HTTP endpoint has no authentication — **fixed 2026-10-26**
 
 `server.py` starts uvicorn on `--host` (dev: `172.17.0.1:8931`) with no auth layer, no API key, no
 per-request identity. `librechat.yaml` declares the server with no `headers`/`apiKey`. Anything that
@@ -27,9 +27,28 @@ can reach that address — every container on the docker bridge, every local pro
 tools.
 
 Consequences: build/render/style decks, read the preview directory, and (item 2) read arbitrary files.
-Treatment: bind to loopback only, put a shared-secret header in front, or front it with an
-authenticating reverse proxy that LibreChat also uses. The `--transport stdio` mode used on the
-Windows production box has no network surface at all, which is why it is the recommended prod shape.
+~~Treatment~~ Done: `auth.AuthGate` sits in front of `/mcp` and `/decks/` (`/apps/` stays public — it is
+static HTML/JS the browser fetches with no bearer, and it holds no user data). Three modes:
+
+| Mode | Use | What it enforces |
+|---|---|---|
+| `none` | dev only | nothing; **refused when `PPT_ENV=prod`** |
+| `token` | single-user / same-host hop | one shared bearer, constant-time compared |
+| `entra` | production | RS256 against the tenant JWKS (rotation-aware), exact `iss`, `aud` = this API, `tid` = our tenant, `ver` 2.0, plus `scp` **or** app role |
+
+Details that came out of implementing it: Entra ignores RFC 8707 `resource` (so `aud` is compared
+exactly), `tid` must be checked separately from `iss`, `preferred_username`/`upn`/`email` are never used
+for identity, and a 401 in `token` mode must **not** advertise protected-resource metadata — LibreChat
+reads that as "OAuth available", reports `OAuth Required: true` and stops listing tools (observed live).
+
+Identity is what makes ownership possible: decks record their owner in `previews/.index/<id>`, another
+subject gets "unknown deck id" (not "forbidden"), and the render cache key is namespaced per subject.
+Slide images are fetched by the browser, so they are authorised by a signed, expiring URL bound to the
+subject instead of a bearer.
+
+Verified: 37 tests in `tests/test_auth.py` + `tests/test_auth_http.py`; live on a scratch instance in
+token mode (401/401/200) and in `entra` mode against a stub IdP (Graph token → 401, missing scope →
+403, no token → 401 with a metadata challenge).
 
 ## 2. `preview_deck(file=…)` / `import_deck(file=…)` accept any absolute path — **fixed 2026-10-26**
 

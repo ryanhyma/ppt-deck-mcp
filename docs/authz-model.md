@@ -28,7 +28,7 @@ LibreChat is the *intended path*, not a boundary around the MCP server:
 - A model reading user-supplied content is an **attacker-controlled client** (prompt injection). If the
   server trusts "LibreChat asked me", a malicious deck can ask it for a file it was never meant to see.
 
-So the split has to be applied at the layer that can actually enforce it:
+Implemented 2026-10-26 in `auth.py` + `server.AuthGate` (see `docs/security.md`). 
 
 1. **Entra proves identity to the MCP server too** — not just to LibreChat. `PPT_AUTH_MODE=entra`
    validates signature, issuer, `tid`, `aud` and scope/role on **every** `/mcp` request, and the

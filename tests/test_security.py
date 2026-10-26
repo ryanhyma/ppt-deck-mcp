@@ -211,26 +211,34 @@ class AssetRouteRegressions(unittest.TestCase):
         """deck.json leaked absolute host paths."""
         self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.json"))
 
+    def _query(self, url):
+        query = parse_qs(urlsplit(url).query)
+        return query["exp"][0], query["sig"][0], query.get("sub", [""])[0]
+
     def test_deck_file_requires_a_signature_and_serves_with_one(self):
         self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx"))
-        url = urlsplit(self.data["download"])
-        query = parse_qs(url.query)
-        served = deck_preview.deck_asset_path(self.deck_id, "deck.pptx", query["exp"][0], query["sig"][0])
+        exp, sig, sub = self._query(self.data["download"])
+        served = deck_preview.deck_asset_path(self.deck_id, "deck.pptx", exp, sig, sub)
         self.assertIsNotNone(served)
         self.assertEqual(served.name, "deck.pptx")
+
+    def test_a_link_is_bound_to_the_subject_it_was_minted_for(self):
+        """A URL minted for one subject must not verify for another."""
+        exp, sig, sub = self._query(self.data["download"])
+        self.assertIsNotNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", exp, sig, sub))
+        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", exp, sig, "someone-else"))
 
     def test_expired_and_tampered_signatures_are_refused(self):
         import time as _time
 
+        exp, sig, sub = self._query(self.data["download"])
         past = int(_time.time()) - 10
-        sig = deck_preview.sign_asset(self.deck_id, "deck.pptx", past)
-        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", str(past), sig))
-        future = int(_time.time()) + 600
-        good = deck_preview.sign_asset(self.deck_id, "deck.pptx", future)
-        tampered = good[:-1] + ("1" if good[-1] != "1" else "2")  # never a no-op
-        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", str(future), tampered))
-        # A signature minted for one deck must not unlock another file.
-        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.json", str(future), good))
+        stale = deck_preview.sign_asset(self.deck_id, "deck.pptx", past, sub)
+        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", str(past), stale, sub))
+        tampered = sig[:-1] + ("1" if sig[-1] != "1" else "2")  # never a no-op
+        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", exp, tampered, sub))
+        # A signature minted for one file must not unlock another.
+        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.json", exp, sig, sub))
 
     def test_traversal_and_unknown_ids_are_refused(self):
         for deck_id, name in (("../../etc", "passwd"), (self.deck_id, "../../../etc/passwd"),
@@ -240,13 +248,11 @@ class AssetRouteRegressions(unittest.TestCase):
                 self.assertIsNone(deck_preview.deck_asset_path(deck_id, name))
 
     def test_the_signature_key_is_configurable(self):
-        url = urlsplit(self.data["download"])
-        query = parse_qs(url.query)
+        exp, sig, sub = self._query(self.data["download"])
         original = os.environ.get("PPT_URL_SECRET")
         try:
             os.environ["PPT_URL_SECRET"] = "a-different-key"
-            self.assertIsNone(deck_preview.deck_asset_path(
-                self.deck_id, "deck.pptx", query["exp"][0], query["sig"][0]))
+            self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", exp, sig, sub))
         finally:
             if original is None:
                 os.environ.pop("PPT_URL_SECRET", None)

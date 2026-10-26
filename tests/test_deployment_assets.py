@@ -167,7 +167,8 @@ class WindowsServiceAssets(unittest.TestCase):
     def test_env_template_carries_the_production_switches(self):
         for key in ("PPT_AUTH_MODE", "PPT_ENV", "PPT_ENTRA_TENANT_ID", "PPT_ENTRA_AUDIENCE",
                     "PPT_ENTRA_REQUIRED_SCOPES", "PPT_PUBLIC_BASE", "PPT_PREVIEW_WIDTH",
-                    "PPT_URL_SECRET", "PPT_ALLOWED_ROOTS"):
+                    "PPT_URL_SECRET", "PPT_ALLOWED_ROOTS", "PPT_MCP_TOKEN",
+                    "PPT_ENTRA_JWKS_JSON"):
             self.assertIn(key, self.env, f"env template is missing {key}")
         self.assertIn("hostname, not an IP literal", self.env,
                       "PPT_PUBLIC_BASE must be a hostname (LibreChat blocks IP literals)")

@@ -6,7 +6,7 @@ interactive pane inside LibreChat for previewing, restyling and downloading them
 Designed for a **small local model** (Qwen3.6-27B in 3-bit) as the driver: the model emits structure,
 the server owns layout. It also works with any MCP client.
 
-**Status (2026-10-26):** 100-case corpus **97/100**, plus 8 regression cases **8/8** (all 3 former failures now pass) · **111 unit tests** · 16 browser checks · concurrency probe **6/6 parallel renders** · previews render **warm** (one LibreOffice, direct PNG, per-slide cache) · CI green on Python 3.12 & 3.13.
+**Status (2026-10-26):** 100-case corpus **97/100**, plus 8 regression cases **8/8** (all 3 former failures now pass) · **150 unit tests** · 16 browser checks · concurrency probe **6/6 parallel renders** · previews render **warm** (one LibreOffice, direct PNG, per-slide cache) · CI green on Python 3.12 & 3.13.
 
 ```mermaid
 flowchart LR
@@ -284,6 +284,23 @@ previews queue; identical requests for the same deck are coalesced into one rend
 crashed bridge is killed and restarted. Unchanged slides are never re-rendered — editing one slide
 re-renders one slide.
 
+## Authentication
+
+`PPT_AUTH_MODE` decides who may call the server (`docs/security.md`, `docs/authz-model.md`):
+
+| Mode | For | Enforces |
+|---|---|---|
+| `none` | development | nothing — **refused when `PPT_ENV=prod`** |
+| `token` | single user / same-host hop | shared bearer (`PPT_MCP_TOKEN`) |
+| `entra` | production | Entra ID access tokens: RS256 + tenant JWKS (rotation-aware), exact `iss`, `aud`, `tid`, `ver` 2.0, `scp` or app role |
+
+Deck ids are owned by the subject that created them, the render cache is namespaced per subject, and
+slide images (fetched by the browser, which has no bearer) are authorised by signed, expiring URLs bound
+to that subject. `/.well-known/oauth-protected-resource` is served for MCP clients in `entra` mode.
+
+LibreChat side: `headers: { Authorization: 'Bearer ${PPT_MCP_TOKEN}' }` for token mode, or the `oauth:`
+block for Entra — see `deploy/librechat/mcpServers.ppt.yaml`.
+
 ## Deployment assets
 
 Everything a deployment needs is in the repo, not in somebody's home directory:
@@ -309,7 +326,7 @@ config, the instructions or a skill still call it by the old name, and the insta
 ## Tests
 
 ```sh
-.venv/bin/python -m unittest discover -s tests -v     # 111 unit tests, ~6 s, no services
+.venv/bin/python -m unittest discover -s tests -v     # 150 unit tests, ~8 s, no services
 RUN_E2E=1 CONVO=<id> tests/run_all.sh                 # + 7 browser checks (needs the stack)
 .venv/bin/python tests/run_suite.py --limit 10        # behaviour corpus, one chat per case
 ```
