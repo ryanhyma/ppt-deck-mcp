@@ -70,6 +70,35 @@ class PromptAssets(unittest.TestCase):
         self.assertEqual(self.agent["instructions"].strip(),
                          self.agent_prompt.split("```text\n", 1)[1].split("\n```", 1)[0].strip())
 
+    def test_main_prompt_keeps_the_core_rules_verbatim(self):
+        """The main prompt is the richer variant; its load-bearing block must not fork from the agent."""
+        main = (ROOT / "prompts/main-prompt.md").read_text("utf-8")
+        core = self.agent["instructions"].strip()
+        block = main.split("```text\n", 1)[1].split("\n```", 1)[0].strip()
+        self.assertEqual(block, core, "core rules drifted between main-prompt.md and the agent config")
+
+    def test_main_prompt_documents_workflows_and_example_asks(self):
+        """It has to guide a user, not just instruct a model: workflows + copy-paste asks."""
+        main = (ROOT / "prompts/main-prompt.md").read_text("utf-8")
+        self.assertIn("## Workflows", main)
+        self.assertIn("## Example asks", main)
+        self.assertIn("## Failure playbook", main)
+        for workflow in ("list_templates → build_deck(", "style_slide(", "get_deck_outline(", "import_deck(", "render_svg("):
+            self.assertIn(workflow, main)
+        # Every example ask should be a single line a person could type.
+        asks = [ln for ln in main.splitlines() if ln.startswith("- \"")]
+        self.assertGreaterEqual(len(asks), 6, "the example asks section looks empty")
+
+    def test_main_prompt_example_commands_use_real_apis(self):
+        """A workflow that passes a parameter the tool does not accept teaches the model to fail."""
+        main = (ROOT / "prompts/main-prompt.md").read_text("utf-8")
+        for call in ("style_slide(file, slide_index=", "verify_deck(file, expected_slides=",
+                     "build_deck(…full outline…, base=", 'import_deck(file="', "render_svg(svg="):
+            self.assertIn(call, main)
+        # Guard the vocabulary that has burned us: chart/table keys and the bullet limits.
+        for phrase in ("categories", "series", "headers", "rows", "90 characters", "TOTAL"):
+            self.assertIn(phrase, main)
+
     def test_server_instructions_name_every_curated_tool(self):
         """Instructions must stand alone: they reach the model even with Skills disabled."""
         for tool in sorted(CURATED):

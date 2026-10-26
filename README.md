@@ -6,7 +6,7 @@ interactive pane inside LibreChat for previewing, restyling and downloading them
 Designed for a **small local model** (Qwen3.6-27B in 3-bit) as the driver: the model emits structure,
 the server owns layout. It also works with any MCP client.
 
-**Status (2026-10-26):** 100-case corpus **97/100**, plus 8 regression cases **8/8** (all 3 former failures now pass) · **86 unit tests** · 16 browser checks · concurrency probe **6/6 parallel renders** · previews render **warm** (one LibreOffice, direct PNG, per-slide cache) · CI green on Python 3.12 & 3.13.
+**Status (2026-10-26):** 100-case corpus **97/100**, plus 8 regression cases **8/8** (all 3 former failures now pass) · **89 unit tests** · 16 browser checks · concurrency probe **6/6 parallel renders** · previews render **warm** (one LibreOffice, direct PNG, per-slide cache) · CI green on Python 3.12 & 3.13.
 
 ```mermaid
 flowchart LR
@@ -287,7 +287,8 @@ Everything a deployment needs is in the repo, not in somebody's home directory:
 
 | Path | What it is |
 |---|---|
-| `prompts/agent-deck-builder.md` | the LibreChat agent's system prompt, verbatim — with the defect each line prevents |
+| `prompts/main-prompt.md` | **start here**: the full prompt — core rules, model behaviour, 11 worked deck-building workflows, failure playbook, copy-paste example asks |
+| `prompts/agent-deck-builder.md` | the terse production agent prompt, verbatim — with the defect each line prevents |
 | `prompts/server-instructions.md` | the MCP `serverInstructions` that go into `librechat.yaml` |
 | `skills/ppt-deck-builder/SKILL.md` | how to build/style/verify a deck (the main skill) |
 | `skills/svg-graphics/SKILL.md` | SVG → PNG for icons and simple diagrams |
@@ -305,7 +306,7 @@ config, the instructions or a skill still call it by the old name, and the insta
 ## Tests
 
 ```sh
-.venv/bin/python -m unittest discover -s tests -v     # 86 unit tests, ~6 s, no services
+.venv/bin/python -m unittest discover -s tests -v     # 89 unit tests, ~6 s, no services
 RUN_E2E=1 CONVO=<id> tests/run_all.sh                 # + 7 browser checks (needs the stack)
 .venv/bin/python tests/run_suite.py --limit 10        # behaviour corpus, one chat per case
 ```
