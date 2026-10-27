@@ -170,6 +170,33 @@ class GatewayKeepAliveRegressions(unittest.TestCase):
         self.assertEqual(forwarded[0]["accept"], "application/json, text/event-stream")
 
 
+class GatewayCallerAllowlist(unittest.TestCase):
+    """The caller allowlist must never lock out the container's own health check."""
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, str(BROKER.parent))
+        import importlib
+
+        os.environ.setdefault("MCP_UPSTREAM", "127.0.0.1:1")
+        os.environ.setdefault("TOKEN_URL", "http://127.0.0.1:1/token")
+        os.environ.setdefault("CLIENT_ID", "x")
+        os.environ.setdefault("CLIENT_SECRET", "y")
+        os.environ.setdefault("ALLOW_HTTP_IDP", "1")
+        os.environ["ALLOWED_CLIENTS"] = "172.16.0.0/12"      # no loopback, like the packaged default
+        cls.broker = importlib.import_module("broker")
+
+    def test_loopback_is_always_allowed(self):
+        """Found live: the compose default excluded 127.0.0.1, so Docker's HEALTHCHECK got 403 and the
+        gateway reported 'unhealthy' while still serving traffic."""
+        self.assertTrue(self.broker._ip_allowed("127.0.0.1"))
+        self.assertTrue(self.broker._ip_allowed("::1"))
+
+    def test_a_foreign_network_is_still_refused(self):
+        self.assertFalse(self.broker._ip_allowed("203.0.113.7"))
+        self.assertTrue(self.broker._ip_allowed("172.18.0.7"))
+
+
 class GatewayHardeningRegressions(unittest.TestCase):
     """Findings from the 2026-10-27 security review: caller authorisation and smuggling vectors."""
 

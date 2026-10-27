@@ -148,6 +148,9 @@ class TokenBroker:
 BROKER = TokenBroker()
 
 
+LOOPBACK = ("127.0.0.0/8", "::1/128")
+
+
 def _ip_allowed(host: str) -> bool:
     import ipaddress
 
@@ -155,6 +158,11 @@ def _ip_allowed(host: str) -> bool:
         address = ipaddress.ip_address(host)
     except ValueError:
         return False
+    # Loopback is always allowed: that is where this container's own health check comes from. Adding it
+    # to the operator allowlist instead would make `docker ps` show "unhealthy" on a working gateway.
+    for entry in LOOPBACK:
+        if address in ipaddress.ip_network(entry):
+            return True
     for entry in ALLOWED_CLIENTS.split(","):
         entry = entry.strip()
         if not entry:
