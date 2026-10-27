@@ -1,5 +1,6 @@
 # Runtime + test dependencies for the deck MCP server.
 mcp[cli]>=1.30,<2      # upstream imports mcp.server.fastmcp, removed in SDK 2.x
+PyJWT[crypto]>=2.8     # Entra access-token validation (RS256 via `cryptography`)
 python-pptx>=1.0
 Pillow>=10
 fonttools>=4

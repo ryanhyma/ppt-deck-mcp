@@ -1,5 +1,9 @@
 # Mock Entra ID — a local OAuth 2.1 / OIDC authorization server
 
+> **Superseded for day-to-day use by [`keycloak/`](keycloak/)** (proper RFC 8414 discovery +
+> Entra-shaped claims). This page documents the `navikt/mock-oauth2-server` container, which is still
+> useful for scripted flows but whose issuer-per-path discovery breaks LibreChat's OAuth client.
+
 Purpose: exercise the **authorization-server side** of this deployment without a cloud tenant — the part
 the offline stub in `entra_stub.py` cannot cover, because the stub mints tokens in-process while this
 container serves real discovery, JWKS and token endpoints over HTTP.
