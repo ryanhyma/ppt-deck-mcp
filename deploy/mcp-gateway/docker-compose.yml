@@ -22,13 +22,20 @@ services:
       TLS_VERIFY: ${TLS_VERIFY:-1}
       LISTEN_PORT: "8931"
       PPT_DEBUG: ${PPT_DEBUG:-0}
+      # Only this network's members may use the gateway; keep it private to LibreChat + gateway.
+      ALLOWED_CLIENTS: ${ALLOWED_CLIENTS:-172.16.0.0/12}
+      GATEWAY_CLIENT_TOKEN: ${GATEWAY_CLIENT_TOKEN:-}
+      MAX_BODY_BYTES: ${MAX_BODY_BYTES:-8388608}
+      ALLOW_HTTP_IDP: ${ALLOW_HTTP_IDP:-0}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
-      - librechat
+      - mcp_gateway
     # no published ports on purpose: docker-network only
 
 networks:
-  librechat:
-    external: true
-    name: librechat_default
+  # A dedicated network with only LibreChat and this gateway on it: other containers in the stack
+  # (mongo, meilisearch, rag, vectordb) cannot reach the token-injecting proxy at all.
+  mcp_gateway:
+    name: mcp_gateway
+    driver: bridge

@@ -76,6 +76,13 @@ def _safe_file(base: Path, rel: str) -> Path | None:
 
 
 def build_http_app():
+    # Fail fast. The "none is refused in production" guard used to live only inside auth.verifier(),
+    # which `none` mode never calls — so a production deployment with the default mode served the whole
+    # surface unauthenticated.
+    if auth.is_production() and auth.auth_mode() == "none":
+        raise RuntimeError(
+            "refusing to serve HTTP with PPT_AUTH_MODE=none while PPT_ENV=prod: configure "
+            "PPT_AUTH_MODE=entra (or token) before exposing /mcp")
     inner = app.streamable_http_app()
 
     async def app_asset(request):
@@ -90,10 +97,15 @@ def build_http_app():
         """Slide images by name; data files (deck.json, the .pptx) only with a signed, expiring URL."""
         deck_id = request.path_params["deck_id"]
         name = request.path_params["name"]
-        p = deck_asset_path(deck_id, name, request.query_params.get("exp"),
-                            request.query_params.get("sig"),
-                            auth.current_identity().subject if not auth.current_identity().anonymous else
-                            request.query_params.get("sub", ""))
+        query = request.query_params
+        identity = auth.current_identity()
+        # With a bearer, the identity is authoritative. Without one (browser), the signed payload is —
+        # `sub` and `owner` are inside the HMAC, so using them cannot widen access; forging them fails
+        # verification in deck_asset_path.
+        authenticated = identity.mode not in ("none", "signed-url")
+        subject = identity.subject if authenticated else query.get("sub", "")
+        owner = identity.scope_hint if authenticated else query.get("owner", "")
+        p = deck_asset_path(deck_id, name, query.get("exp"), query.get("sig"), subject, owner)
         if p is None:
             audit.record_asset(deck_id=deck_id, name=name, outcome="denied")
             return PlainTextResponse("not found", status_code=404)
@@ -158,7 +170,9 @@ class AuthGate:
     # `/apps/` stays public: it is the Deck Studio's static HTML/JS, fetched by the browser with no
     # bearer available, and it contains no user data. Tool traffic and deck assets are protected.
     PROTECTED_PREFIXES = ("/mcp", "/decks/")
-    IMAGE_SUFFIXES = (".png",)
+    # Signed URLs are the browser's only credential: images *and* the .pptx download. The signature is
+    # checked downstream by deck_asset_path; this list only decides who may try without a bearer.
+    SIGNED_SUFFIXES = (".png", ".pptx", ".potx")
 
     def __init__(self, inner: ASGIApp):
         self.inner = inner
@@ -215,7 +229,7 @@ class AuthGate:
             return auth.verifier().verify(auth.bearer_from_header(bearer))
 
         # No bearer: only a signed image URL may pass, and only for an image.
-        if path.startswith("/decks/") and path.endswith(self.IMAGE_SUFFIXES):
+        if path.startswith("/decks/") and path.endswith(self.SIGNED_SUFFIXES):
             subject = (query.get("sub") or [""])[0]
             if subject:
                 return auth.Identity(subject=subject, mode="signed-url")

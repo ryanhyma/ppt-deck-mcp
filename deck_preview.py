@@ -323,37 +323,56 @@ _FALLBACK_SECRET: bytes | None = None
 URL_TTL_S = 3600
 
 
-def sign_asset(deck_id: str, name: str, expires: int, subject: str = "") -> str:
-    payload = f"{deck_id}/{name}/{int(expires)}/{subject}".encode("utf-8")
+def sign_asset(deck_id: str, name: str, expires: int, subject: str = "", owner: str = "") -> str:
+    """HMAC over the file *and* the identity it was minted for.
+
+    ``owner`` is the tenant-qualified digest (`Identity.scope_hint`), carried in the signed payload so a
+    link cannot be re-aimed at another subject or tenant — comparing a subject-only digest against a
+    tenant-qualified owner was a silent no-op in entra mode.
+    """
+    payload = f"{deck_id}/{name}/{int(expires)}/{subject}/{owner}".encode("utf-8")
     return _hmac.new(url_secret(), payload, hashlib.sha256).hexdigest()[:32]
 
 
 def signed_url(deck_id: str, name: str, ttl: int = URL_TTL_S) -> str:
-    """A short-lived link to a data file, bound to the subject that asked for it."""
+    """A short-lived link to a data file, bound to the identity that asked for it."""
     expires = int(time.time()) + int(ttl)
-    subject = auth.current_identity().subject
-    sig = sign_asset(deck_id, name, expires, subject)
-    return f"{public_base()}/decks/{deck_id}/{name}?exp={expires}&sig={sig}&sub={quote(subject)}"
+    identity = auth.current_identity()
+    subject = identity.subject
+    owner = "anonymous" if identity.anonymous else identity.scope_hint
+    sig = sign_asset(deck_id, name, expires, subject, owner)
+    return (f"{public_base()}/decks/{deck_id}/{name}?exp={expires}&sig={sig}"
+            f"&sub={quote(subject)}&owner={owner}")
 
 
 def verify_signature(deck_id: str, name: str, expires: str | None, sig: str | None,
-                     subject: str = "") -> bool:
+                     subject: str = "", owner: str = "") -> bool:
+    """Validate a signed URL. Returns True only when the HMAC, the expiry *and* the owner agree."""
+    return verify_url(deck_id, name, expires, sig, subject, owner) is not None
+
+
+def verify_url(deck_id: str, name: str, expires: str | None, sig: str | None,
+               subject: str = "", owner: str = "") -> Path | None:
+    """The asset path a signed URL refers to, or None.
+
+    Kept as one function so the route, the tests and any future caller share a single implementation.
+    """
     if not expires or not sig:
-        return False
+        return None
     try:
         exp = int(expires)
     except (TypeError, ValueError):
-        return False
+        return None
     if exp < int(time.time()):
-        return False
-    if not _hmac.compare_digest(sign_asset(deck_id, name, exp, subject), sig):
-        return False
-    owner = deck_registry.owner_for(preview_root(), deck_id)
-    # A signed URL is a bearer within its lifetime; the owner in the index still has to match it, so a
-    # link minted for one deck id cannot be re-aimed at another.
-    if owner and owner != "anonymous" and subject and owner != auth.Identity(subject=subject).scope_hint:
-        return False
-    return True
+        return None
+    if not _hmac.compare_digest(sign_asset(deck_id, name, exp, subject, owner), sig):
+        return None
+    recorded = deck_registry.owner_for(preview_root(), deck_id)
+    if recorded and recorded != "anonymous" and owner != recorded:
+        return None  # a link minted for one identity cannot be re-aimed at another
+    if recorded in (None, "anonymous") and owner not in ("", "anonymous"):
+        return None  # a shared asset (template gallery) is not reachable with a user-bound claim
+    return preview_root() / deck_id / name
 
 
 SLIDE_NAME_RE = re.compile(r"^slide-\d{1,3}\.png$")
@@ -361,7 +380,7 @@ DECK_NAME_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}\.(pptx|potx)$")
 
 
 def deck_asset_path(deck_id: str, name: str, expires: str | None = None,
-                    sig: str | None = None, subject: str = "") -> Path | None:
+                    sig: str | None = None, subject: str = "", owner: str = "") -> Path | None:
     """The one policy for `/decks/<deck_id>/<name>`.
 
     Slide images are served by name inside the deck's own directory; everything else — `deck.json`
@@ -378,11 +397,13 @@ def deck_asset_path(deck_id: str, name: str, expires: str | None = None,
     except OSError:
         return None
     if SLIDE_NAME_RE.match(name or ""):
-        if auth.auth_mode() != "none" and not verify_signature(deck_id, name, expires, sig, subject):
+        if auth.auth_mode() != "none" and not verify_signature(deck_id, name, expires, sig, subject, owner):
             return None  # authenticated deployments serve images only through signed URLs
         candidate = base / name
-    elif DECK_NAME_RE.match(name or "") or name == "deck.json":
-        if not verify_signature(deck_id, name, expires, sig, subject):
+    elif DECK_NAME_RE.match(name or ""):
+        # The .pptx is the user's content: signed link only. `deck.json` is not served at all — it
+        # duplicates the tool result and needs no browser URL.
+        if not verify_signature(deck_id, name, expires, sig, subject, owner):
             return None
         candidate = base / name
     else:
@@ -618,7 +639,16 @@ def _template_gallery() -> List[Dict[str, Any]]:
     return rows
 
 
+def _visible(deck_id: str) -> bool:
+    """False when ownership is on and the deck belongs to somebody else (or is legacy-anonymous)."""
+    if not auth.ownership_enabled():
+        return True
+    recorded = deck_registry.owner_for(preview_root(), deck_id)
+    return recorded == _owner()
+
+
 def last_preview() -> Dict[str, Any] | None:
+    """The newest deck *this caller may see*; ownership is enforced, not just the URL signature."""
     root = preview_root()
     candidates = sorted(
         (p for p in root.iterdir() if (p / "deck.json").is_file()),
@@ -626,6 +656,8 @@ def last_preview() -> Dict[str, Any] | None:
         reverse=True,
     )
     for c in candidates:
+        if not _visible(c.name):
+            continue
         try:
             return json.loads((c / "deck.json").read_text(encoding="utf-8"))
         except Exception:
@@ -667,7 +699,7 @@ def register_preview_tools(app, template_dirs_fn=None) -> None:
         rows = []
         for p in sorted(root.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True):
             meta_file = p / "deck.json"
-            if meta_file.is_file():
+            if meta_file.is_file() and _visible(p.name):
                 try:
                     d = json.loads(meta_file.read_text(encoding="utf-8"))
                     rows.append({"deck_id": d.get("deck_id"), "title": d.get("title"),

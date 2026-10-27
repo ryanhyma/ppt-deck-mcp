@@ -35,11 +35,12 @@ import entra_stub  # noqa: E402
 TOKEN = "test-bearer-0123456789"
 
 
-def _query(url: str) -> tuple[str, str, str]:
+def _query(url: str) -> tuple[str, str, str, str]:
+    """(exp, sig, subject, owner) from a signed URL."""
     from urllib.parse import parse_qs, urlsplit
 
     query = parse_qs(urlsplit(url).query)
-    return query["exp"][0], query["sig"][0], query.get("sub", [""])[0]
+    return (query["exp"][0], query["sig"][0], query.get("sub", [""])[0], query.get("owner", [""])[0])
 _SHARED_TOKEN = "shared-secret-for-tests"
 
 
@@ -126,13 +127,16 @@ class TokenModeRegressions(unittest.TestCase):
         response = self.client.get(signed.replace("http://test.local:8931", ""))
         self.assertEqual(response.status_code, 200)
 
-    def test_a_data_file_still_needs_a_bearer(self):
-        """The signed URL only authorises images; the .pptx needs a token even when signed."""
+    def test_a_signed_download_link_works_in_the_browser(self):
+        """The Download button runs in the browser, which has no bearer: the signature authorises it —
+        and a link without one is still refused."""
         import deck_preview
 
         signed = deck_preview.signed_url(self.deck_id, "deck.pptx")
         self.assertIsNotNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", *_query(signed)))
-        self.assertEqual(self.client.get(signed.replace("http://test.local:8931", "")).status_code, 401)
+        self.assertEqual(self.client.get(signed.replace("http://test.local:8931", "")).status_code, 200)
+        unsigned = f"/decks/{self.deck_id}/deck.pptx"
+        self.assertEqual(self.client.get(unsigned).status_code, 401)
 
     def test_health_stays_open_and_the_metadata_document_is_absent_by_default(self):
         """`/healthz` is liveness. The PRM document exists only when an AS is advertised: in token mode

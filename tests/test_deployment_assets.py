@@ -165,11 +165,22 @@ class GatewayAssets(unittest.TestCase):
     def test_the_gateway_publishes_no_host_port(self):
         self.assertIsNone(re.search(r"^\s+ports:\s*$", self.compose, re.MULTILINE),
                           "the gateway must not publish a host port")
-        self.assertIn("librechat_default", self.compose)
+        # a dedicated network with only LibreChat joined to it: unrelated containers cannot reach the
+        # token-injecting proxy at all (review finding H1)
+        self.assertIn("mcp_gateway", self.compose)
+        self.assertIn("ALLOWED_CLIENTS", self.compose)
 
     def test_the_gateway_runs_unprivileged_with_a_healthcheck(self):
         self.assertIn("USER 10001", self.dockerfile)
         self.assertIn("HEALTHCHECK", self.dockerfile)
+
+    def test_the_broker_authenticates_its_callers_and_refuses_smuggling(self):
+        """Review findings H1/M3/L5: source allowlist, chunked-body rejection, https-only IdP."""
+        self.assertIn("_ip_allowed", self.broker)
+        self.assertIn("caller not authorised", self.broker)
+        self.assertIn("chunked request bodies are not accepted", self.broker)
+        self.assertIn("conflicting Content-Length", self.broker)
+        self.assertIn("ALLOW_HTTP_IDP", self.broker)
 
     def test_the_credential_is_not_committed(self):
         gitignore = (ROOT / ".gitignore").read_text("utf-8")

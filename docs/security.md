@@ -62,6 +62,32 @@ renderer at any `.pptx`/`.potx` on the machine and receive rendered PNGs of it b
 the upload directory cannot point out of it. The asset route is separately restricted by
 `deck_asset_path()`.
 
+## Review 2026-10-27 (subagent-led): findings and dispositions
+
+Reviewed: the gateway proxy, `AuthGate`, token validation, signed URLs, ownership, cache namespacing.
+
+| # | Finding | Disposition |
+|---|---|---|
+| H1 | The gateway authenticated **nobody**: any container on its network could call it and receive an injected token. Also, a client-credentials token collapses every LibreChat user onto one app identity, so per-user ownership was unenforceable. | **Fixed (partial).** The gateway now runs on a **dedicated network** with only LibreChat joined, and refuses callers outside `ALLOWED_CLIENTS` (plus an optional `GATEWAY_CLIENT_TOKEN`). The identity collapse remains — it needs delegated (per-user) tokens, which is a product decision, documented in `docs/authz-model.md`. |
+| H2 | `PPT_AUTH_MODE=none` was **not** refused in production: the guard lived in `auth.verifier()`, which `none` mode never calls, so `PPT_ENV=prod` served everything open. | **Fixed.** `build_http_app()` raises at construction. Pinned by a test. |
+| H3 | `list_decks` returned every deck in the workspace and `get_last_deck` returned the newest deck's title and per-slide labels to any caller. | **Fixed.** Both are owner-filtered; `last_preview()` skips decks the caller cannot see. |
+| M1 | The browser's `Download .pptx` was refused (401) because only `.png` was admitted to the signed-URL branch; `deck.json` was minted but unreachable. | **Fixed.** `.pptx`/`.potx` are admitted with a signature; `deck.json` is no longer served or minted. |
+| M2 | The signed-URL owner check compared a tenant-qualified owner against a tenant-less subject, so it never matched in entra mode (a no-op that a naive fix could flip fail-open). | **Fixed.** The owner digest is now inside the HMAC payload and carried in the URL, so it cannot be re-aimed at another identity. |
+| M3 | `Transfer-Encoding` was ignored (chunked bodies dropped, framing desynced) and `Content-Length` had no cap. | **Fixed.** Chunked bodies, conflicting lengths and bodies over `MAX_BODY_BYTES` are refused with 400 and the connection closed. |
+| M4 | On any upstream 401 the token cache was zeroed, so every later request fetched a token serially (thundering herd, no backoff). | **Open** — bounded by the 20 s fetch timeout; needs single-flight + cooldown. |
+| L2 | `X-Forwarded-*` / `Expect` were forwarded verbatim. | **Fixed.** Stripped at the edge. |
+| L5 | A `http://` token endpoint would send the client secret in cleartext. | **Fixed.** The gateway refuses to start unless `ALLOW_HTTP_IDP=1` (local test IdP only). |
+| L6 | Dead `self._proxy(retry=False) if False else None` line. | **Removed.** |
+
+Explicitly **not** changed, because the review showed they are safe: 128-bit HMAC truncation; signature
+reuse across slides/decks (the payload binds deck id + name); SSRF via absolute-URI or `//host` (the token
+can only ever reach the fixed upstream); CRLF/obs-fold header injection (`http.client` rejects it); a
+client overriding the injected `Authorization` (stripped case-insensitively).
+
+Still open for Protected B: **M4** (token refresh backoff), **rate limiting**, the LibreOffice sandbox, and
+the **per-user identity** gap in H1 — that last one cannot be closed while the credential is a
+client-credentials token, and should be decided before multi-user rollout.
+
 ## Audit trail — **added 2026-10-26** (was missing entirely)
 
 `audit.py` appends one JSON object per line to `PPT_AUDIT_LOG` (default `<output>/audit.jsonl`):

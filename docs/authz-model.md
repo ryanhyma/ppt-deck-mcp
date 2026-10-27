@@ -71,3 +71,12 @@ Implemented 2026-10-26 in `auth.py` + `server.AuthGate` (see `docs/security.md`)
 | "One service token for all users" | No per-user ownership, no meaningful audit, one token = everyone. Acceptable only on a single-user dev box. |
 | "Validate `resource` (RFC 8707) and call it audience binding" | Entra does not support the `resource` parameter; validate the `aud` claim against the API's client id (v2) or app ID URI (v1). |
 | "Check `preferred_username` / `email`" | Not unique, mutable, and Microsoft explicitly says not to use them for authorisation. Use `oid`/`sub`. |
+
+## Known limit of the current gateway (2026-10-27)
+
+The gateway obtains its token with a **client-credentials** grant, so every LibreChat user is the same
+principal (one `oid`) and per-user ownership cannot separate them. That is acceptable for a single-operator
+deployment and **not** acceptable for multi-user Protected B. Closing it needs a **delegated** token:
+LibreChat would have to forward the signed-in user's access token (its own OIDC session) instead of the
+gateway minting an app token — which also removes the gateway's need to hold a secret. Until then:
+ownership, signed URLs and audit are enforced, but they all see one subject.

@@ -53,11 +53,25 @@ DEBUG = bool(os.environ.get("PPT_DEBUG"))
 HOP_BY_HOP = {
     "connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailers",
     "transfer-encoding", "upgrade", "host", "authorization", "content-length",
+    # spoofable edge headers: nothing downstream may be allowed to trust them
+    "x-forwarded-for", "x-forwarded-host", "x-forwarded-proto", "x-real-ip", "expect",
 }
+MAX_BODY_BYTES = int(os.environ.get("MAX_BODY_BYTES", str(8 * 1024 * 1024)))
+# Only these callers may use the gateway. Default: the whole private docker network it lives on.
+ALLOWED_CLIENTS = os.environ.get("ALLOWED_CLIENTS", "172.16.0.0/12,10.0.0.0/8,127.0.0.1/32")
+CLIENT_TOKEN = os.environ.get("GATEWAY_CLIENT_TOKEN", "")
 
 
 def log(message: str) -> None:
     print(f"[gateway] {message}", file=sys.stderr, flush=True)
+
+
+# A client secret over cleartext is worse than an outage: require TLS unless an operator explicitly
+# opts into a local test IdP (ALLOW_HTTP_IDP=1).
+if TOKEN_URL.startswith("http://") and os.environ.get("ALLOW_HTTP_IDP") != "1":
+    log(f"refusing to send the client secret to {TOKEN_URL} over http:// "
+        f"(set ALLOW_HTTP_IDP=1 only for a local test IdP)")
+    raise SystemExit(2)
 
 
 class TokenBroker:
@@ -134,6 +148,25 @@ class TokenBroker:
 BROKER = TokenBroker()
 
 
+def _ip_allowed(host: str) -> bool:
+    import ipaddress
+
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    for entry in ALLOWED_CLIENTS.split(","):
+        entry = entry.strip()
+        if not entry:
+            continue
+        try:
+            if address in ipaddress.ip_network(entry, strict=False):
+                return True
+        except ValueError:
+            continue
+    return False
+
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     server_version = "deck-mcp-gateway/1"
@@ -152,7 +185,14 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _body(self) -> bytes:
+        if self.headers.get("transfer-encoding"):
+            raise ValueError("chunked request bodies are not accepted (request smuggling)")
+        lengths = {v for k, v in self.headers.items() if k.lower() == "content-length"}
+        if len(lengths) > 1:
+            raise ValueError("conflicting Content-Length headers")
         length = self.headers.get("content-length")
+        if length and int(length) > MAX_BODY_BYTES:
+            raise ValueError(f"body too large (>{MAX_BODY_BYTES} bytes)")
         if not length:
             return b""
         remaining = int(length)
@@ -201,7 +241,6 @@ class Handler(BaseHTTPRequestHandler):
                 BROKER.invalidate()
                 connection.close()
                 log("upstream rejected the token; refreshing once and retrying")
-                self._proxy(retry=False) if False else None
                 connection = http.client.HTTPConnection(host, int(port or 80), timeout=300)
                 headers["Authorization"] = f"Bearer {BROKER.get()}"
                 connection.request(self.command, self.path, body=body, headers=headers)
@@ -255,6 +294,21 @@ class Handler(BaseHTTPRequestHandler):
 
     def _new_request(self) -> None:
         self._body_cache = None
+        self._authorised = _ip_allowed(self.client_address[0]) and (
+            not CLIENT_TOKEN or self.headers.get("x-gateway-client") == CLIENT_TOKEN)
+
+    def _authorised_or_reject(self) -> bool:
+        """The gateway injects a real token, so its callers must be authenticated too.
+
+        Two layers, both cheap: the source address must be in `ALLOWED_CLIENTS` (default: the private
+        docker network the gateway is attached to, where only LibreChat lives), and when
+        `GATEWAY_CLIENT_TOKEN` is set the caller must present it.
+        """
+        if getattr(self, "_authorised", False):
+            return True
+        log(f"refused {self.command} {self.path} from {self.client_address[0]}")
+        self._send_json(403, {"error": "caller not authorised for this gateway"})
+        return False
 
     def _reply_invalid_request(self) -> None:
         self._send_json(200, {"jsonrpc": "2.0", "id": None,
@@ -262,13 +316,21 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         self._new_request()
-        if self.path.startswith("/gateway-health"):
-            self._send_json(200, {"ok": True, "upstream": UPSTREAM, **BROKER.status()})
+        if not self._authorised_or_reject():
             return
-        if self._is_empty_probe():
-            self._reply_invalid_request()
-            return
-        self._proxy()
+        try:
+            if self.path.startswith("/gateway-health"):
+                self._send_json(200, {"ok": True, "upstream": UPSTREAM, **BROKER.status()})
+                return
+            if self._is_empty_probe():
+                self._reply_invalid_request()
+                return
+            self._proxy()
+        except ValueError as exc:
+            # Refuse the framing we cannot trust (chunked, conflicting lengths, oversized body) and
+            # close: after a rejected framing the keep-alive stream is not safe to reuse.
+            self.close_connection = True
+            self._send_json(400, {"error": str(exc)})
 
     do_POST = do_GET
     do_DELETE = do_GET

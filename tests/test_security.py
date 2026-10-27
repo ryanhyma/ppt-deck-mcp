@@ -29,6 +29,7 @@ from _env import TMP as _TMP  # noqa: E402
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "upstream"))
 
+import auth  # noqa: E402
 import deck_preview  # noqa: E402
 import paths  # noqa: E402
 import server  # noqa: E402
@@ -98,6 +99,121 @@ class PathScopeRegressions(unittest.TestCase):
         with self.assertRaises(paths.PathNotAllowed):
             TOOLS["build_deck"](template="corporate-2slide.pptx", title="t",
                                 slides=[{"title": "a", "image": str(outside_png)}])
+
+
+def signed_query(url):
+    """(exp, sig, subject, owner) from a signed URL."""
+    query = parse_qs(urlsplit(url).query)
+    return (query["exp"][0], query["sig"][0], query.get("sub", [""])[0], query.get("owner", [""])[0])
+
+
+class StartupAndOwnershipRegressions(unittest.TestCase):
+    """Findings from the security review of 2026-10-27 (subagent-led)."""
+
+    def test_none_mode_is_refused_at_startup_in_production(self):
+        """The guard lived only inside verifier(), which `none` mode never calls — so a production
+        deployment with the default mode ran wide open. It has to fail when the app is built."""
+        from starlette.testclient import TestClient
+
+        os.environ["PPT_ENV"] = "prod"
+        os.environ["PPT_AUTH_MODE"] = "none"
+        try:
+            with self.assertRaises(RuntimeError):
+                TestClient(server.build_http_app())
+        finally:
+            os.environ.pop("PPT_ENV", None)
+            os.environ.pop("PPT_AUTH_MODE", None)
+            auth.reset_verifier()
+
+    def test_list_decks_and_get_last_deck_are_owner_scoped(self):
+        """Both used to return every deck in the workspace — titles, slide counts and, for the newest
+        deck, per-slide labels — to any authenticated caller."""
+        alice = auth.Identity(subject="alice", tenant="t1", mode="entra")
+        bob = auth.Identity(subject="bob", tenant="t1", mode="entra")
+        os.environ["PPT_AUTH_MODE"] = "token"
+        os.environ["PPT_MCP_TOKEN"] = "tok"
+        auth.reset_verifier()
+        try:
+            token = auth.set_current(alice)
+            try:
+                built = TOOLS["build_deck"](template="corporate-2slide.pptx", title="Alice secret",
+                                            slides=[{"title": "Revealing title", "bullets": ["x"]}])
+                TOOLS["preview_deck"](file=built["deck_id"])
+            finally:
+                auth.reset_current(token)
+
+            token = auth.set_current(bob)
+            try:
+                listed = {row["deck_id"] for row in TOOLS["list_decks"]()["decks"]}
+                last = TOOLS["get_last_deck"]()
+            finally:
+                auth.reset_current(token)
+            self.assertNotIn(built["deck_id"], listed, "bob must not see alice's deck in the list")
+            self.assertNotEqual(last.get("deck_id"), built["deck_id"],
+                                "bob must not receive alice's deck content via get_last_deck")
+            self.assertNotIn("Revealing title", json.dumps(last))
+
+            token = auth.set_current(alice)
+            try:
+                self.assertIn(built["deck_id"], {row["deck_id"] for row in TOOLS["list_decks"]()["decks"]})
+            finally:
+                auth.reset_current(token)
+        finally:
+            os.environ.pop("PPT_AUTH_MODE", None)
+            os.environ.pop("PPT_MCP_TOKEN", None)
+            auth.reset_verifier()
+
+    def test_the_download_url_is_usable_without_a_bearer_but_needs_its_signature(self):
+        """The pane's Download button runs in the browser, which has no bearer — the .pptx has to be
+        authorised by its signature, and an unsigned request must still be refused."""
+        os.environ["PPT_AUTH_MODE"] = "token"
+        os.environ["PPT_MCP_TOKEN"] = "tok"
+        auth.reset_verifier()
+        try:
+            deck = _TMP / "out" / "download.pptx"
+            shutil.copyfile(TEMPLATE, deck)
+            data = TOOLS["preview_deck"](file=str(deck))
+            url = urlsplit(data["download"])
+            exp, sig, sub, owner = signed_query(data["download"])
+            name = url.path.rsplit("/", 1)[-1]
+            served = deck_preview.deck_asset_path(data["deck_id"], name, exp, sig, sub, owner)
+            self.assertIsNotNone(served)
+            self.assertIsNone(deck_preview.deck_asset_path(data["deck_id"], name))
+            # deck.json is not offered at all any more: it duplicates the tool result
+            self.assertIsNone(deck_preview.deck_asset_path(data["deck_id"], "deck.json", exp, sig,
+                                                           sub, owner))
+        finally:
+            os.environ.pop("PPT_AUTH_MODE", None)
+            os.environ.pop("PPT_MCP_TOKEN", None)
+            auth.reset_verifier()
+
+    def test_a_signed_url_is_bound_to_the_full_identity_not_just_the_subject(self):
+        """The owner digest (tenant + subject) is signed, so a link cannot be re-aimed at another
+        identity — and it is no longer a no-op comparison against a tenant-less subject."""
+        os.environ["PPT_AUTH_MODE"] = "token"
+        os.environ["PPT_MCP_TOKEN"] = "tok"
+        auth.reset_verifier()
+        alice = auth.Identity(subject="alice", tenant="t1", mode="entra")
+        try:
+            token = auth.set_current(alice)
+            try:
+                deck = _TMP / "out" / "bound.pptx"
+                shutil.copyfile(TEMPLATE, deck)
+                data = TOOLS["preview_deck"](file=str(deck))
+            finally:
+                auth.reset_current(token)
+            exp, sig, sub, owner = signed_query(data["download"])
+            self.assertEqual(owner, alice.scope_hint)
+            self.assertIsNotNone(deck_preview.verify_url(data["deck_id"], "deck.pptx", exp, sig, sub, owner))
+            # the same subject in another tenant has a different digest, and cannot use this link
+            other = auth.Identity(subject="alice", tenant="t2", mode="entra")
+            self.assertNotEqual(other.scope_hint, owner)
+            self.assertIsNone(deck_preview.verify_url(data["deck_id"], "deck.pptx", exp, sig, sub,
+                                                      other.scope_hint))
+        finally:
+            os.environ.pop("PPT_AUTH_MODE", None)
+            os.environ.pop("PPT_MCP_TOKEN", None)
+            auth.reset_verifier()
 
 
 class NoPathLeakRegressions(unittest.TestCase):
@@ -212,7 +328,7 @@ class TemplateGalleryRegressions(unittest.TestCase):
                 served = deck_preview.deck_asset_path(
                     f"tpl-{deck_preview._deck_id(TEMPLATE)}", name,
                     query.get("exp", [None])[0], query.get("sig", [None])[0],
-                    query.get("sub", [""])[0])
+                    query.get("sub", [""])[0], query.get("owner", [""])[0])
                 self.assertIsNotNone(served, f"unsigned gallery URL under auth: {url}")
         finally:
             if original is None:
@@ -280,32 +396,34 @@ class AssetRouteRegressions(unittest.TestCase):
 
     def _query(self, url):
         query = parse_qs(urlsplit(url).query)
-        return query["exp"][0], query["sig"][0], query.get("sub", [""])[0]
+        return query["exp"][0], query["sig"][0], query.get("sub", [""])[0], query.get("owner", [""])[0]
 
     def test_deck_file_requires_a_signature_and_serves_with_one(self):
         self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx"))
-        exp, sig, sub = self._query(self.data["download"])
-        served = deck_preview.deck_asset_path(self.deck_id, "deck.pptx", exp, sig, sub)
+        exp, sig, sub, owner = self._query(self.data["download"])
+        served = deck_preview.deck_asset_path(self.deck_id, "deck.pptx", exp, sig, sub, owner)
         self.assertIsNotNone(served)
         self.assertEqual(served.name, "deck.pptx")
 
-    def test_a_link_is_bound_to_the_subject_it_was_minted_for(self):
-        """A URL minted for one subject must not verify for another."""
-        exp, sig, sub = self._query(self.data["download"])
-        self.assertIsNotNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", exp, sig, sub))
-        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", exp, sig, "someone-else"))
+    def test_a_link_is_bound_to_the_identity_it_was_minted_for(self):
+        """The owner digest is inside the HMAC: swapping it (or the subject) breaks the signature."""
+        exp, sig, sub, owner = self._query(self.data["download"])
+        self.assertIsNotNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", exp, sig, sub, owner))
+        # a different owner claim no longer matches the HMAC
+        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", exp, sig, sub, "deadbeef"))
+        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", exp, sig, "someone-else", owner))
 
     def test_expired_and_tampered_signatures_are_refused(self):
         import time as _time
 
-        exp, sig, sub = self._query(self.data["download"])
+        exp, sig, sub, owner = self._query(self.data["download"])
         past = int(_time.time()) - 10
-        stale = deck_preview.sign_asset(self.deck_id, "deck.pptx", past, sub)
-        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", str(past), stale, sub))
+        stale = deck_preview.sign_asset(self.deck_id, "deck.pptx", past, sub, owner)
+        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", str(past), stale, sub, owner))
         tampered = sig[:-1] + ("1" if sig[-1] != "1" else "2")  # never a no-op
-        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", exp, tampered, sub))
+        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", exp, tampered, sub, owner))
         # A signature minted for one file must not unlock another.
-        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.json", exp, sig, sub))
+        self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.json", exp, sig, sub, owner))
 
     def test_traversal_and_unknown_ids_are_refused(self):
         for deck_id, name in (("../../etc", "passwd"), (self.deck_id, "../../../etc/passwd"),
@@ -315,11 +433,11 @@ class AssetRouteRegressions(unittest.TestCase):
                 self.assertIsNone(deck_preview.deck_asset_path(deck_id, name))
 
     def test_the_signature_key_is_configurable(self):
-        exp, sig, sub = self._query(self.data["download"])
+        exp, sig, sub, owner = self._query(self.data["download"])
         original = os.environ.get("PPT_URL_SECRET")
         try:
             os.environ["PPT_URL_SECRET"] = "a-different-key"
-            self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", exp, sig, sub))
+            self.assertIsNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", exp, sig, sub, owner))
         finally:
             if original is None:
                 os.environ.pop("PPT_URL_SECRET", None)

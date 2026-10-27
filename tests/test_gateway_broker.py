@@ -66,40 +66,46 @@ class StubUpstream(http.server.BaseHTTPRequestHandler):
     do_GET = do_POST
 
 
-class GatewayKeepAliveRegressions(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.upstream_port = _free_port()
-        cls.upstream = http.server.ThreadingHTTPServer(("127.0.0.1", cls.upstream_port), StubUpstream)
-        threading.Thread(target=cls.upstream.serve_forever, daemon=True).start()
+def _start_gateway(cls) -> None:
+    """Shared fixture: a stub upstream plus the real broker, for both test classes."""
+    cls.upstream_port = _free_port()
+    cls.upstream = http.server.ThreadingHTTPServer(("127.0.0.1", cls.upstream_port), StubUpstream)
+    threading.Thread(target=cls.upstream.serve_forever, daemon=True).start()
 
-        cls.port = _free_port()
-        env = dict(
-            os.environ,
-            MCP_UPSTREAM=f"127.0.0.1:{cls.upstream_port}",
-            TOKEN_URL=f"http://127.0.0.1:{cls.upstream_port}/token",
-            CLIENT_ID="test-client", CLIENT_SECRET="test-secret", SCOPE="openid",
-            LISTEN_PORT=str(cls.port), TLS_VERIFY="0",
-        )
-        cls.proc = subprocess.Popen([sys.executable, str(BROKER)], env=env,
-                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        deadline = time.time() + 15
-        while time.time() < deadline:
-            try:
-                with socket.create_connection(("127.0.0.1", cls.port), timeout=0.5):
-                    return
-            except OSError:
-                time.sleep(0.1)
-        raise RuntimeError("broker did not start")
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.proc.terminate()
+    cls.port = _free_port()
+    env = dict(
+        os.environ,
+        MCP_UPSTREAM=f"127.0.0.1:{cls.upstream_port}",
+        TOKEN_URL=f"http://127.0.0.1:{cls.upstream_port}/token",
+        CLIENT_ID="test-client", CLIENT_SECRET="test-secret", SCOPE="openid",
+        LISTEN_PORT=str(cls.port), TLS_VERIFY="0",
+        ALLOW_HTTP_IDP="1",          # loopback stub IdP: no TLS to speak of
+        ALLOWED_CLIENTS="127.0.0.1/32,::1/128",
+    )
+    cls.proc = subprocess.Popen([sys.executable, str(BROKER)], env=env,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    deadline = time.time() + 15
+    while time.time() < deadline:
         try:
-            cls.proc.wait(timeout=10)
-        except subprocess.TimeoutExpired:  # pragma: no cover
-            cls.proc.kill()
-        cls.upstream.shutdown()
+            with socket.create_connection(("127.0.0.1", cls.port), timeout=0.5):
+                return
+        except OSError:
+            time.sleep(0.1)
+    raise RuntimeError("broker did not start")
+
+
+def _stop_gateway(cls) -> None:
+    cls.proc.terminate()
+    try:
+        cls.proc.wait(timeout=10)
+    except subprocess.TimeoutExpired:  # pragma: no cover
+        cls.proc.kill()
+    cls.upstream.shutdown()
+
+
+class GatewayKeepAliveRegressions(unittest.TestCase):
+    setUpClass = classmethod(_start_gateway)
+    tearDownClass = classmethod(_stop_gateway)
 
     def setUp(self):
         StubUpstream.received.clear()
@@ -162,6 +168,63 @@ class GatewayKeepAliveRegressions(unittest.TestCase):
             conn.close()
         forwarded = [r for r in StubUpstream.received if not r["path"].endswith("/token")]
         self.assertEqual(forwarded[0]["accept"], "application/json, text/event-stream")
+
+
+class GatewayHardeningRegressions(unittest.TestCase):
+    """Findings from the 2026-10-27 security review: caller authorisation and smuggling vectors."""
+
+    setUpClass = classmethod(_start_gateway)
+    tearDownClass = classmethod(_stop_gateway)
+
+    def setUp(self):
+        StubUpstream.received.clear()
+
+    def test_chunked_request_bodies_are_refused(self):
+        """`Transfer-Encoding` was ignored entirely: the body was dropped and the framing desynced."""
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+        try:
+            conn.putrequest("POST", "/mcp")
+            conn.putheader("content-type", "application/json")
+            conn.putheader("transfer-encoding", "chunked")
+            conn.endheaders()
+            conn.send(b"2\r\n{}\r\n0\r\n\r\n")
+            response = conn.getresponse()
+            self.assertIn(response.status, (400, 403, 501))
+            response.read()
+        finally:
+            conn.close()
+
+    def test_an_oversized_body_is_refused(self):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+        try:
+            big = "x" * 1024
+            conn.request("POST", "/mcp", body=big,
+                         headers={"content-type": "application/json", "content-length": str(9 * 1024 * 1024)})
+            response = conn.getresponse()
+            response.read()
+        except (BrokenPipeError, ConnectionResetError):
+            return  # refusing mid-body is fine
+        finally:
+            conn.close()
+        self.assertGreaterEqual(response.status, 400)
+
+    def test_spoofable_edge_headers_are_not_forwarded(self):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+        try:
+            self._post(conn, json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize"}),
+                       {"x-forwarded-for": "10.9.9.9", "x-real-ip": "10.9.9.9", "expect": "100-continue"})
+        finally:
+            conn.close()
+        forwarded = [r for r in StubUpstream.received if not r["path"].endswith("/token")]
+        self.assertTrue(forwarded)
+        # the stub records only what it received; assert via a fresh stub field
+        self.assertNotIn("10.9.9.9", json.dumps(StubUpstream.received))
+
+    def _post(self, conn, body, extra=None):
+        headers = {"content-type": "application/json", "accept": "application/json"}
+        headers.update(extra or {})
+        conn.request("POST", "/mcp", body=body, headers=headers)
+        return json.loads(conn.getresponse().read().decode() or "{}")
 
 
 if __name__ == "__main__":
