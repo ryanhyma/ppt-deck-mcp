@@ -67,7 +67,9 @@ def uno_python(explicit: str | None = None) -> Optional[str]:
 
 def _can_import_uno(python: str) -> bool:
     try:
-        done = subprocess.run([python, "-c", "import uno"], capture_output=True, timeout=30)
+        # RADIA: UNO discovery must not create a console on Windows.
+        done = subprocess.run([python, "-c", "import uno"], capture_output=True, stdin=subprocess.DEVNULL,
+                              timeout=30, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         return done.returncode == 0
     except Exception:  # noqa: BLE001 - a missing interpreter is not an error here
         return False
@@ -95,9 +97,16 @@ def soffice_version() -> str:
     from deck_preview import _soffice_bin  # noqa: PLC0415
 
     binary = _soffice_bin()
+    # RADIA: Windows' console launcher returns --version instead of opening LibreOffice.
+    if os.name == "nt" and Path(binary).suffix.lower() == ".exe":
+        cli = Path(binary).with_suffix(".com")
+        if cli.is_file():
+            binary = str(cli)
     try:
-        out = subprocess.run([binary, "--version"], capture_output=True, timeout=30,
-                             text=True).stdout.strip()
+        # RADIA: The version probe is a separate LibreOffice process.
+        out = subprocess.run([binary, "--version"], capture_output=True, stdin=subprocess.DEVNULL,
+                             timeout=30, text=True,
+                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).stdout.strip()
     except Exception:  # noqa: BLE001
         out = ""
     return out or "unknown"
@@ -143,7 +152,9 @@ class Bridge:
                "--profile", str(self.profile)]
         kwargs = {}
         if os.name == "nt":  # pragma: no cover - Windows
-            kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+            # RADIA: The UNO bridge itself must not create a console either.
+            kwargs["creationflags"] = (getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+                                       | getattr(subprocess, "CREATE_NO_WINDOW", 0))
         else:
             kwargs["start_new_session"] = True  # own group: killpg leaves the server alone
         self.proc = subprocess.Popen(

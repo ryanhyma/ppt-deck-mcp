@@ -36,6 +36,7 @@ from pptx import Presentation  # noqa: E402
 from pptx.util import Inches, Pt  # noqa: E402
 
 import deck_preview  # noqa: E402
+import deck_registry  # noqa: E402
 import render_cache  # noqa: E402
 import render_warm  # noqa: E402
 from deck_tools import _outline, _pick_layouts  # noqa: E402
@@ -169,7 +170,7 @@ class StyleRegressions(unittest.TestCase):
         """Was: one `bold` flag hit every placeholder, so "bold the title" bolded the bullets too."""
         out = build(slides=[{"title": "T", "bullets": bullets(2)}])
         deck = file_of(out)
-        TOOLS["style_slide"](file=deck, slide_index=2, title_bold=True)
+        TOOLS["style_slide"](file=out["deck_id"], slide_index=2, title_bold=True)
         prs = Presentation(deck)
         slide = prs.slides[1]
         title = next(ph for ph in slide.placeholders if ph.placeholder_format.idx == 0)
@@ -181,12 +182,12 @@ class StyleRegressions(unittest.TestCase):
         """Was: a content edit rebuilt from the outline and wiped the pane's per-slide styling."""
         out = build(slides=[{"title": "One", "bullets": bullets(2)}, {"title": "Two", "bullets": bullets(2)}])
         deck = file_of(out)
-        TOOLS["style_slide"](file=deck, slide_index=2, title_size=40, title_color="#C4703C", font="Georgia")
+        TOOLS["style_slide"](file=out["deck_id"], slide_index=2, title_size=40, title_color="#C4703C", font="Georgia")
 
         rebuilt = build(
             title="Regression deck",
             slides=[{"title": "One", "bullets": bullets(2)}, {"title": "Two edited", "bullets": bullets(3)}],
-            base=deck,
+            base=out["deck_id"],
             output_name="rebuilt",
         )
         prs = Presentation(file_of(rebuilt))
@@ -200,7 +201,7 @@ class StyleRegressions(unittest.TestCase):
     def test_style_text_emphasises_only_the_matching_run(self):
         out = build(slides=[{"title": "T", "bullets": ["Bundling raises retention", "Other point"]}])
         deck = file_of(out)
-        result = TOOLS["style_text"](file=deck, slide_index=2, phrase="retention", bold=True, color="#C4703C")
+        result = TOOLS["style_text"](file=out["deck_id"], slide_index=2, phrase="retention", bold=True, color="#C4703C")
         self.assertEqual(result["runs_changed"], 1)
         prs = Presentation(deck)
         runs = [r for p in body_of(prs, 1).text_frame.paragraphs for r in p.runs]
@@ -214,7 +215,7 @@ class StyleRegressions(unittest.TestCase):
         """A missing phrase must not be a silent no-op."""
         out = build(slides=[{"title": "T", "bullets": ["Something else"]}])
         with self.assertRaises(ValueError) as ctx:
-            TOOLS["style_text"](file=file_of(out), slide_index=2, phrase="nonexistent", bold=True)
+            TOOLS["style_text"](file=out["deck_id"], slide_index=2, phrase="nonexistent", bold=True)
         self.assertIn("not found", str(ctx.exception))
 
     def test_dense_slides_shrink_bullets_and_warn(self):
@@ -258,13 +259,13 @@ class ImportRegressions(unittest.TestCase):
         """Was: pathlib raised 'Non-relative patterns are unsupported' for absolute paths."""
         with self.assertRaises(FileNotFoundError) as ctx:
             TOOLS["import_deck"](file="/home/nobody/nope.pptx")
-        self.assertIn("no file at", str(ctx.exception))
+        self.assertIn("not found", str(ctx.exception).lower())
 
     def test_bare_filename_resolves_inside_uploads(self):
         src = _TMP / "uploads" / "user" / "Q3 Review.pptx"
         shutil.copyfile(_TEMPLATES / "corporate-2slide.pptx", src)
         result = TOOLS["import_deck"](file="Q3 Review.pptx")
-        self.assertEqual(result["imported_name"], src.name)
+        self.assertNotIn("imported_name", result)
         self.assertEqual(result["slide_count"], 2)
 
     def test_legacy_pot_is_rejected(self):
@@ -386,18 +387,18 @@ class RendererBackendRegressions(unittest.TestCase):
     def test_disabled_renderer_degrades_instead_of_failing(self):
         from deck_preview import build_preview
 
-        deck = file_of(build(slides=[{"title": "T", "bullets": bullets(1)}]))
+        result = build(slides=[{"title": "T", "bullets": bullets(1)}])
         original = os.environ.get("PPT_RENDERER")
         os.environ["PPT_RENDERER"] = "none"
         try:
-            data = build_preview(deck)
+            data = build_preview(result["deck_id"])
         finally:
             if original is None:
                 os.environ.pop("PPT_RENDERER", None)
             else:
                 os.environ["PPT_RENDERER"] = original
         self.assertEqual(data["slides"], [])
-        self.assertIn("renderer", data["preview_error"].lower())
+        self.assertIn("unavailable", data["preview_error"].lower())
         self.assertEqual(data["slide_count"], 2)
         assert_signed_download(self, data["download"])
 
@@ -422,12 +423,12 @@ class PreviewRegressions(unittest.TestCase):
         try:
             from deck_preview import build_preview
 
-            data = build_preview(deck)
+            data = build_preview(deck_registry.deck_id(deck))
         finally:
             module._render = original
             module.warm_enabled = original_warm
         self.assertEqual(data["slides"], [])
-        self.assertIn("soffice not found", data["preview_error"])
+        self.assertIn("rendering failed", data["preview_error"].lower())
         # The deck's size must not depend on whether a renderer exists.
         self.assertEqual(data["slide_count"], 2)
         self.assertEqual(data["rendered_slides"], 0)
@@ -437,7 +438,7 @@ class PreviewRegressions(unittest.TestCase):
         out = build(slides=[{"title": "T", "bullets": bullets(1)}])
         module, (original, original_warm) = self._break_renderer()
         try:
-            result = TOOLS["style_slide"](file=file_of(out), slide_index=2, title_size=30)
+            result = TOOLS["style_slide"](file=out["deck_id"], slide_index=2, title_size=30)
         finally:
             module._render = original
             module.warm_enabled = original_warm
@@ -451,8 +452,8 @@ class VerifyRegressions(unittest.TestCase):
     """verify_deck is the safety net for the failure class the model keeps repeating."""
 
     def test_flags_missing_table_and_wrong_slide_count(self):
-        deck = file_of(build(slides=[{"title": "One", "bullets": bullets(2)}]))
-        result = TOOLS["verify_deck"](file=deck, expected_slides=3, table=True, chart=False, image=False)
+        built = build(slides=[{"title": "One", "bullets": bullets(2)}])
+        result = TOOLS["verify_deck"](file=built["deck_id"], expected_slides=3, table=True, chart=False, image=False)
         self.assertFalse(result["ok"])
         self.assertTrue(any("slide count" in p for p in result["problems"]))
         self.assertTrue(any("no table" in p for p in result["problems"]))
@@ -464,8 +465,7 @@ class VerifyRegressions(unittest.TestCase):
             {"title": "Two", "chart": {"type": "column", "categories": ["A"],
                                        "series": [{"name": "S", "values": [1]}]}},
         ])
-        deck = file_of(built)
-        result = TOOLS["verify_deck"](file=deck, expected_slides=3, table=True, chart=True)
+        result = TOOLS["verify_deck"](file=built["deck_id"], expected_slides=3, table=True, chart=True)
         self.assertTrue(result["ok"], result["problems"])
         self.assertEqual((result["tables"], result["charts"]), (1, 1))
 
@@ -492,7 +492,7 @@ class OneVisualPerSlideRegressions(unittest.TestCase):
             {"title": "Chart slide", "chart": {"type": "pie", "categories": ["A", "B"],
                                                "series": [{"name": "S", "values": [1, 2]}]}},
         ])
-        check = TOOLS["verify_deck"](file=file_of(out), expected_slides=3, table=True, chart=True)
+        check = TOOLS["verify_deck"](file=out["deck_id"], expected_slides=3, table=True, chart=True)
         self.assertTrue(check["ok"], check["problems"])
 
 
@@ -800,12 +800,12 @@ class SlideCacheRegressions(unittest.TestCase):
         self._saved_out = os.environ.get("PPT_OUTPUT_DIR")
         os.environ["PPT_OUTPUT_DIR"] = str(self.tmp / "out")
         self.deck = self.tmp / "deck.pptx"
-        shutil.copyfile(_TEMPLATES / "corporate-2slide.pptx", self.deck)
         out = TOOLS["build_deck"](template="corporate-2slide.pptx", title="Cache deck",
                                   slides=[{"title": "One", "bullets": bullets(3)},
                                           {"title": "Two", "bullets": bullets(3)},
                                           {"title": "Three", "bullets": bullets(3)}])
-        shutil.copyfile(file_of(out), self.deck)
+        self.deck_id = out["deck_id"]
+        self.deck = Path(file_of(out))
         self.prs = Presentation(str(self.deck))
         self.slide_total = len(self.prs.slides)
         self.root = render_cache.cache_root(deck_preview.preview_root())
@@ -830,7 +830,7 @@ class SlideCacheRegressions(unittest.TestCase):
     def test_only_the_edited_slide_changes_its_key(self):
         """A per-slide key is the whole point; a deck-level key would re-render everything."""
         before = self._keys()
-        TOOLS["style_slide"](file=str(self.deck), slide_index=2, title_size=44)
+        TOOLS["style_slide"](file=self.deck_id, slide_index=2, title_size=44)
         after = self._keys()
         changed = [i for i, (a, b) in enumerate(zip(before, after), start=1) if a != b]
         self.assertEqual(changed, [2])
@@ -874,7 +874,7 @@ class SlideCacheRegressions(unittest.TestCase):
         fake = _FakeRenderer(self.root)
         deck_preview.render_warm.get_renderer = lambda **kw: fake
         deck_preview._prepare_previews(self.deck, self.tmp / "a", Presentation(str(self.deck)))
-        TOOLS["style_text"](file=str(self.deck), slide_index=3, phrase="Point", bold=True)
+        TOOLS["style_text"](file=self.deck_id, slide_index=3, phrase="Point", bold=True)
         deck_calls = [call for call in fake.calls if call[0] == self.deck.name]
         # The tool refreshes the preview itself, so the edit's render is already in the log.
         self.assertEqual(deck_calls, [(self.deck.name, [1, 2, 3, 4]), (self.deck.name, [3])])

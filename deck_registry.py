@@ -54,6 +54,9 @@ def record(previews: Path, deck_id: str, source: Path, owner: str = "anonymous")
     an older build is still readable, so upgrading does not orphan existing decks.
     """
     target = _index_file(previews, deck_id)
+    existing = entry_for(previews, deck_id)
+    if existing is not None:
+        return
     payload = json.dumps({"source": str(Path(source).resolve()), "owner": owner or "anonymous"})
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -91,3 +94,17 @@ def source_for(previews: Path, deck_id: str) -> Path | None:
 def owner_for(previews: Path, deck_id: str) -> str | None:
     entry = entry_for(previews, deck_id)
     return entry["owner"] if entry else None
+
+
+def remember_image(previews: Path, image_id: str, path: Path, owner: str) -> None:
+    target = Path(previews) / ".image-index" / image_id
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps({"source": str(Path(path).resolve()), "owner": owner}), encoding="utf-8")
+
+
+def image_entry(previews: Path, image_id: str) -> dict | None:
+    try:
+        data = json.loads((Path(previews) / ".image-index" / image_id).read_text(encoding="utf-8"))
+        return {"source": Path(data["source"]), "owner": str(data["owner"])}
+    except (OSError, ValueError, KeyError, TypeError):
+        return None

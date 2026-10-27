@@ -17,6 +17,7 @@ import sys
 import tempfile
 import threading
 import time
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
@@ -198,10 +199,15 @@ def _render_soffice(pptx: Path, outdir: Path, width: int | None = None) -> int:
     with tempfile.TemporaryDirectory() as tmp:
         # A throwaway user profile avoids "another instance is running" locks on Windows.
         profile = Path(tmp) / "lo-profile"
+        # RADIA: Fresh profiles must suppress startup UI and never read from the MCP server's stdin.
+        kwargs = {}
+        if os.name == "nt":
+            kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
         subprocess.run(
-            [binary, f"-env:UserInstallation=file://{profile}", "--headless",
+            [binary, f"-env:UserInstallation={profile.as_uri()}", "--headless", "--invisible",
+             "--nologo", "--nodefault", "--nofirststartwizard", "--norestore", "--nolockcheck",
              "--convert-to", "pdf", "--outdir", tmp, str(pptx)],
-            check=True, capture_output=True, timeout=180,
+            check=True, capture_output=True, stdin=subprocess.DEVNULL, timeout=180, **kwargs,
         )
         pdf = next((p for p in Path(tmp).glob("*.pdf") if p.is_file()), None)
         if pdf is None:
@@ -432,11 +438,11 @@ def _owner() -> str:
     return "anonymous" if identity.anonymous else identity.scope_hint
 
 
-def resolve_ref(ref: str | Path) -> Path:
-    """Resolve a caller's deck reference: an opaque id from a previous result, or a path/filename.
+def resolve_ref(ref: str | Path, *, allow_path: bool = False) -> Path:
+    """Resolve a deck ID, or a path from the chat upload directory for import only.
 
-    Tools accept either, and only ever return the id. The id -> file mapping is the ``.source`` record
-    written next to each preview, so the model never has to see (or be trusted with) a filesystem path.
+    The id -> file mapping is the ``.source`` record written next to each preview. Other tools never
+    accept filesystem paths, so callers cannot bypass per-deck ownership.
     """
     text = str(ref or "").strip().strip('"')
     if deck_registry.DECK_ID_RE.match(text):
@@ -444,11 +450,18 @@ def resolve_ref(ref: str | Path) -> Path:
         if entry is None:
             raise FileNotFoundError(f"unknown deck id {text!r} — list_decks or build_deck first")
         owner = entry["owner"]
-        if auth.ownership_enabled() and owner not in ("anonymous", _owner()):
+        if auth.ownership_enabled() and owner != _owner():
             # Someone else's deck: report it as missing rather than confirming that it exists.
             raise FileNotFoundError(f"unknown deck id {text!r} — list_decks or build_deck first")
         return deck_paths.resolve_deck(entry["source"], suffixes=())
-    return _resolve_input(text)
+    if not allow_path:
+        raise FileNotFoundError("unknown deck id — import the uploaded deck first")
+    try:
+        source = _resolve_input(text)
+        source.relative_to(upload_dir().resolve())
+    except (FileNotFoundError, deck_paths.PathNotAllowed, ValueError) as exc:
+        raise FileNotFoundError("Deck not found. Import a deck provided in this chat.") from exc
+    return source
 
 
 def build_preview(pptx_path: str | Path, title: str = "") -> Dict[str, Any]:
@@ -469,7 +482,8 @@ def _build_preview_locked(src: Path, deck_id: str, outdir: Path, title: str) -> 
     outdir.mkdir(parents=True)
     # Re-record the id -> source mapping (the index lives outside this directory, so the wipe above
     # cannot lose it; re-recording keeps ids created before the index existed resolvable).
-    deck_registry.record(preview_root(), deck_id, src, owner=_owner())
+    if deck_registry.entry_for(preview_root(), deck_id) is None:
+        deck_registry.record(preview_root(), deck_id, src, owner=_owner())
 
     # Copy the deck next to its previews so the browser can download it from this server.
     shipped = outdir / "deck.pptx"
@@ -487,8 +501,11 @@ def _build_preview_locked(src: Path, deck_id: str, outdir: Path, title: str) -> 
     try:
         render_info = _prepare_previews(src, outdir, prs)
     except Exception as exc:  # noqa: BLE001 - surface, don't crash
-        preview_error = f"{type(exc).__name__}: {str(exc)[:180]}"
+        print(f"[preview] render failed: {type(exc).__name__}: {exc}", file=sys.stderr, flush=True)
+        preview_error = "Preview rendering failed. The deck is available to download."
     rendered = len(sorted(outdir.glob("slide-*.png")))
+    if total and rendered == 0 and preview_error is None:
+        preview_error = "Slide images are unavailable. The deck is available to download."
     labels = _slide_labels(src)
     base = public_base()
 
@@ -505,7 +522,6 @@ def _build_preview_locked(src: Path, deck_id: str, outdir: Path, title: str) -> 
         "templates": _template_gallery(),
         "deck_id": deck_id,
         "title": title or labels[0] if labels else (title or src.stem),
-        "source_name": src.name,
         "slide_count": total,
         "rendered_slides": rendered,
         "download": signed_url(deck_id, "deck.pptx"),
@@ -659,7 +675,10 @@ def last_preview() -> Dict[str, Any] | None:
         if not _visible(c.name):
             continue
         try:
-            return json.loads((c / "deck.json").read_text(encoding="utf-8"))
+            data = json.loads((c / "deck.json").read_text(encoding="utf-8"))
+            data.pop("source_name", None)
+            data.pop("imported_name", None)
+            return data
         except Exception:
             continue
     return None
@@ -680,7 +699,7 @@ def register_preview_tools(app, template_dirs_fn=None) -> None:
         result. Returns the same data the view renders.
 
         Args:
-            file: deck id from build_deck/preview_deck (preferred) or a path
+            file: deck id returned by a deck tool
         """
         return build_preview(file)
 
@@ -779,9 +798,7 @@ def _resolve_input(name: str) -> Path:
                 return deck_paths.resolve_deck(candidate, suffixes=())
             except (FileNotFoundError, deck_paths.PathNotAllowed):
                 continue
-    raise FileNotFoundError(
-        f"'{wanted}' not found. Pass an absolute path, or the filename of a file uploaded to the chat."
-    )
+    raise FileNotFoundError("Deck not found. Import a deck provided in this chat, then use its returned deck_id.")
 
 
 def register_import_tools(app) -> None:
@@ -791,14 +808,13 @@ def register_import_tools(app) -> None:
     def import_deck(file: str) -> Dict[str, Any]:
         """Open a .pptx the user uploaded to the chat, so it can be edited or restyled.
 
-        Accepts the uploaded filename (e.g. "Q3 review.pptx"), a deck id from another tool, a
-        container path ("/app/uploads/...") or a path. Copies it into the deck workspace, renders
-        previews, and returns the outline as well, so a follow-up edit can preserve content.
+        Accepts a deck provided in this chat or a deck id returned by another tool. Copies it into
+        the deck workspace, renders previews, and returns the outline for follow-up edits.
 
         Args:
-            file: uploaded filename, deck id, or path to a .pptx
+            file: uploaded deck or deck id returned by a deck tool
         """
-        src = resolve_ref(file)
+        src = resolve_ref(file, allow_path=True)
         if src.suffix.lower() not in (".pptx", ".potx"):
             raise ValueError("only .pptx files can be imported (legacy .pot/.ppt is not supported)")
 
@@ -807,10 +823,9 @@ def register_import_tools(app) -> None:
         root = Path(os.environ.get("PPT_OUTPUT_DIR", Path(__file__).resolve().parent / "out"))
         root.mkdir(parents=True, exist_ok=True)
         stem = _deck_id(src)
-        dest = root / f"{stem}-imported-{datetime.now().strftime('%H%M%S')}{src.suffix.lower()}"
+        dest = root / f"{stem}-imported-{uuid.uuid4().hex[:8]}{src.suffix.lower()}"
         shutil.copyfile(src, dest)
 
-        data = build_preview(dest, title="")
-        data["imported_name"] = src.name
+        data = build_preview(remember(dest), title="")
         data["outline"] = _outline(dest)
         return data

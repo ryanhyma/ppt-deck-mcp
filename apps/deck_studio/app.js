@@ -35,7 +35,6 @@ const STRINGS = {
     viewerHint: "Arrow keys move between slides · Home / End jump to the ends · Esc closes.",
     download: "Download .pptx",
     downloadAria: "Download the PowerPoint file",
-    deckRef: "Deck",
     stylepanelHead: "Slide formatting",
     siTitle: "Title size (pt)",
     siBody: "Body size (pt)",
@@ -69,6 +68,7 @@ const STRINGS = {
     phraseDone: 'Emphasised "{phrase}" on slide {n} ({runs} run(s)).',
     styleDone: "Slide {n} restyled ({applied}).",
     noSlideData: "The tool returned no slide data.",
+    previewUnavailable: "Slide images could not be rendered. You can still download the deck.",
     pickStyle: "Pick at least one style change.",
     phraseFailed: "Phrase styling failed: {err}",
     styleFailed: "Style change failed: {err}",
@@ -100,7 +100,6 @@ const STRINGS = {
     viewerHint: "Les flèches changent de diapositive · Début et Fin vont aux extrémités · Échap ferme.",
     download: "Télécharger le .pptx",
     downloadAria: "Télécharger le fichier PowerPoint",
-    deckRef: "Diaporama",
     stylepanelHead: "Mise en forme de la diapositive",
     siTitle: "Taille du titre (pt)",
     siBody: "Taille du texte (pt)",
@@ -134,6 +133,7 @@ const STRINGS = {
     phraseDone: "« {phrase} » mis en évidence à la diapositive {n} ({runs} segment(s)).",
     styleDone: "Diapositive {n} remise en forme ({applied}).",
     noSlideData: "L'outil n'a renvoyé aucune diapositive.",
+    previewUnavailable: "Apercu impossible. Le telechargement reste disponible.",
     pickStyle: "Choisissez au moins une modification de style.",
     phraseFailed: "Échec de la mise en évidence : {err}",
     styleFailed: "Échec de la modification de style : {err}",
@@ -154,7 +154,6 @@ const stage = $("stage");
 const stylesSection = $("styles");
 const stylesRow = $("styles-row");
 const toolbar = $("toolbar");
-const foot = $("foot");
 const statusEl = $("status");
 
 const editor = $("editor");
@@ -473,7 +472,7 @@ on("edit-send", "click", async () => {
   const text = editorInput.value.trim();
   if (!text) { setStatus("typeChange"); editorInput.focus(); return; }
   const message = editTarget
-    ? `Edit deck ${currentDeck}: slide ${editTarget.index} — ${text}. Keep every other slide exactly as it is.`
+    ? `Edit slide ${editTarget.index}: ${text}. Keep every other slide exactly as it is.`
     : text;
   try {
     await app.sendMessage({ role: "user", content: [{ type: "text", text: message }] });
@@ -513,7 +512,7 @@ function renderStyles(templates) {
       editor.classList.add("open");
       editOpener = event.currentTarget;
       editTarget = null;
-      editorInput.value = `Use template ${tpl.file} for a 5-slide deck about `;
+      editorInput.value = `Use the ${tpl.label} template for a 5-slide deck about `;
       editorInput.focus();
       editorInput.setSelectionRange(editorInput.value.length, editorInput.value.length);
       setStatus("pickTemplate", { label: tpl.label });
@@ -588,11 +587,11 @@ function renderToolbar(data) {
 }
 
 function render(data) {
-  if (!data || !Array.isArray(data.slides) || data.slides.length === 0) return;
+  if (!data || !Array.isArray(data.slides)) return;
   lastDeck = data;
   renderStyles(data.templates);
   titleEl.textContent = data.title || t("untitledDeck");
-  const n = data.slides.length;
+  const n = data.slide_count ?? data.slides.length;
   countEl.textContent = n === 1 ? t("slides_one") : t("slides_many", { n });
 
   deckSlides = data.slides;
@@ -600,11 +599,19 @@ function render(data) {
   const grid = document.createElement("div");
   grid.className = "grid";
   for (const slide of deckSlides) grid.append(slideCard(slide, data.deck_id));
-  stage.append(grid);
+  if (deckSlides.length) stage.append(grid);
+  else {
+    const empty = document.createElement("p");
+    empty.className = "empty";
+    const message = document.createElement("span");
+    message.textContent = data.preview_error ? t("previewUnavailable") : t("emptyBody");
+    empty.append(message);
+    stage.append(empty);
+  }
 
-  currentDeck = data.deck_id || currentDeck;
+  currentDeck = data.deck_id || "";
   renderToolbar(data);
-  foot.innerHTML = data.deck_id ? `${t("deckRef")} <code>${data.deck_id}</code>` : "";
+  setStatus(data.preview_error ? "previewUnavailable" : null);
 }
 
 app.ontoolresult = (params) => render(payload(params));

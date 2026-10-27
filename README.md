@@ -19,7 +19,7 @@ flowchart LR
   pane -->|Download .pptx| user
 ```
 
-## Tools (10 own + 37 vendored)
+## Tools
 
 | Tool | Purpose |
 |---|---|
@@ -37,10 +37,16 @@ flowchart LR
 **Concurrency:** builds write unique names atomically, renders serialise per deck id, and each
 LibreOffice run uses a throwaway profile — several users can render at once (`tests/concurrency_check.py`).
 
-Vendored from [GongRzhe/Office-PowerPoint-MCP-Server](https://github.com/GongRzhe/Office-PowerPoint-MCP-Server)
-(MIT, archived) in `upstream/`, unmodified: low-level slide tools (`add_slide`, `manage_text`,
-`add_chart`, `apply_professional_design`, …) available for repair work. `build_deck` is the
-small-model path; the low-level tools require coordinates a 3-bit model gets wrong.
+The editing tools include slide inspection, text, shapes, charts, tables, images, hyperlinks,
+connectors, slide masters, and presentation properties. They accept a deck ID and return a new deck
+ID for each edit. Apply edits sequentially and preview the final ID. The source deck stays intact.
+Their underlying operations come from the vendored MIT PowerPoint server; its original presentation
+handles and unrestricted file operations are not exposed.
+
+`style_slide` and `style_text` update the selected deck in place. Font-file analysis and subsetting
+are not exposed. Applying a new PowerPoint theme to an existing deck and slide transitions were
+placeholders in the original tools; picture effects currently support rotation only. Some template
+decorations are simplified.
 
 ## Deck Studio pane (LibreChat, no fork)
 
@@ -351,7 +357,7 @@ mcpSettings:
   allowedAddresses: ['host.docker.internal:8931', 'mcp-gateway:8931']
 ```
 
-Verify: `[MCP] Initialized with … and 48 tools` in the LibreChat log, and a new chat that builds a deck.
+Verify that LibreChat refreshes the PPT tool list, then build and preview a deck in a new chat.
 
 ### 2. The prompts (paste into two places)
 

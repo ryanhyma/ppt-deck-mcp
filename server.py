@@ -36,6 +36,12 @@ from deck_tools import (register_deck_tools, register_readback_tools,  # noqa: E
                         register_style_tools, register_text_tools, register_verify_tools)
 
 import audit  # noqa: E402
+from deck_edit_tools import register_edit_tools  # noqa: E402
+
+# RADIA: Remove legacy presentation_N tools; their in-memory handles cannot resolve deck_id values.
+_upstream_tools = {tool.name: tool for tool in app._tool_manager.list_tools()}
+for _tool in app._tool_manager.list_tools():
+    app.remove_tool(_tool.name)
 
 register_deck_tools(app, get_template_search_directories)
 register_readback_tools(app, None)
@@ -44,11 +50,42 @@ register_import_tools(app)
 register_text_tools(app)
 register_verify_tools(app)
 register_preview_tools(app, get_template_search_directories)
+register_edit_tools(app, _upstream_tools)
 
 # One wrapper records every tool call (ours and the vendored ones) with the request identity.
 AUDITED_TOOLS = audit.wrap_tool_fns(app)
 
 APP_DIR = HERE / "apps" / "deck_studio"
+
+
+def _apply_config() -> None:
+    """ppt-mcp.config.json supplies defaults on Windows, where env vars are awkward to set."""
+    from deck_preview import load_config
+
+    cfg = load_config()
+    pairs = (
+        ("PPT_OUTPUT_DIR", "output_dir"),
+        ("PPT_TEMPLATE_PATH", "template_path"),
+        ("PPT_PUBLIC_BASE", "public_base"),
+        ("PPT_RENDERER", "renderer"),
+        ("PPT_UPLOAD_DIR", "upload_dir"),
+        ("SOFFICE_BIN", "soffice_bin"),
+        ("ASPOSE_LICENSE_PATH", "aspose_license_path"),
+        ("PPT_PREVIEW_WIDTH", "preview_width"),
+        ("PPT_WARM_RENDER", "warm_render"),
+        ("PPT_RENDER_CACHE", "render_cache"),
+        ("PPT_RENDER_CACHE_MAX", "render_cache_max"),
+        ("PPT_RENDER_QUEUE_MAX", "render_queue_max"),
+        ("PPT_RENDER_TIMEOUT_S", "render_timeout_s"),
+        ("PPT_UNO_PYTHON", "uno_python"),
+    )
+    for env_key, cfg_key in pairs:
+        value = cfg.get(cfg_key)
+        if value and not os.environ.get(env_key):
+            os.environ[env_key] = str(value)
+
+
+_apply_config()
 
 
 # ---------------------------------------------------------------- MCP App resources
@@ -237,35 +274,7 @@ class AuthGate:
                              "this endpoint needs an Authorization: Bearer token")
 
 
-def _apply_config() -> None:
-    """ppt-mcp.config.json supplies defaults on Windows, where env vars are awkward to set."""
-    from deck_preview import load_config
-
-    cfg = load_config()
-    pairs = (
-        ("PPT_OUTPUT_DIR", "output_dir"),
-        ("PPT_TEMPLATE_PATH", "template_path"),
-        ("PPT_PUBLIC_BASE", "public_base"),
-        ("PPT_RENDERER", "renderer"),
-        ("PPT_UPLOAD_DIR", "upload_dir"),
-        ("SOFFICE_BIN", "soffice_bin"),
-        ("ASPOSE_LICENSE_PATH", "aspose_license_path"),
-        ("PPT_PREVIEW_WIDTH", "preview_width"),
-        ("PPT_WARM_RENDER", "warm_render"),
-        ("PPT_RENDER_CACHE", "render_cache"),
-        ("PPT_RENDER_CACHE_MAX", "render_cache_max"),
-        ("PPT_RENDER_QUEUE_MAX", "render_queue_max"),
-        ("PPT_RENDER_TIMEOUT_S", "render_timeout_s"),
-        ("PPT_UNO_PYTHON", "uno_python"),
-    )
-    for env_key, cfg_key in pairs:
-        value = cfg.get(cfg_key)
-        if value and not os.environ.get(env_key):
-            os.environ[env_key] = str(value)
-
-
 def main() -> None:
-    _apply_config()
     parser = argparse.ArgumentParser(description="PPT deck MCP server (upstream + build_deck + Deck Studio app)")
     parser.add_argument("--transport", default="http", choices=["stdio", "http", "sse"])
     parser.add_argument("--host", default="127.0.0.1")
