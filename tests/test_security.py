@@ -285,6 +285,15 @@ class NoPathLeakRegressions(unittest.TestCase):
         self.assertTrue((deck_preview.preview_root() / ".index" / self.deck_id).is_file())
 
 
+def _seed_template_preview(template: Path, _request=None) -> None:
+    """Write the preview PNGs a renderer would produce, so gallery tests need no renderer."""
+    directory = deck_preview.preview_root() / f"tpl-{deck_preview._deck_id(template)}"
+    directory.mkdir(parents=True, exist_ok=True)
+    total = len(deck_preview.Presentation(str(template)).slides)
+    for index in range(1, total + 1):
+        (directory / f"slide-{index}.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+
+
 class TemplateGalleryRegressions(unittest.TestCase):
     """The gallery renders templates lazily; a partial render must not be served as complete.
 
@@ -299,15 +308,38 @@ class TemplateGalleryRegressions(unittest.TestCase):
             shutil.rmtree(self.out)
 
     def test_a_partial_preview_is_re_rendered(self):
+        """One slide present, two expected: the gallery must notice and render again.
+
+        The renderer is stubbed, so this pins the *detection* logic (which broke live) on any host, with
+        or without LibreOffice: the old code saw `slide-1.png` and considered the preview complete.
+        """
         self.out.mkdir(parents=True, exist_ok=True)
         (self.out / "slide-1.png").write_bytes(b"\x89PNG\r\n\x1a\n")  # pretend the render died early
-        urls = deck_preview.template_preview_urls(TEMPLATE)
-        self.assertEqual(len(urls), 2, "the gallery must notice slide 2 is missing and re-render")
+        rendered: list[int] = []
+        original = deck_preview._render
+
+        def fake_render(pptx, outdir, width=None):
+            rendered.append(1)
+            for index in (1, 2):
+                (Path(outdir) / f"slide-{index}.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+            return 2
+
+        deck_preview._render = fake_render
+        try:
+            urls = deck_preview.template_preview_urls(TEMPLATE)
+        finally:
+            deck_preview._render = original
+        self.assertTrue(rendered, "a partial preview must trigger a re-render")
+        self.assertEqual(len(urls), 2, "the gallery must advertise the full set")
         for url in urls:
             name = url.rsplit("/", 1)[-1]
             self.assertTrue((self.out / name).is_file(), f"{name} advertised but absent")
 
+    def _seed(self):
+        _seed_template_preview(TEMPLATE, None)
+
     def test_gallery_urls_are_usable_when_authentication_is_on(self):
+        self._seed()
         """With auth enabled, only signed URLs are served — the template gallery must mint them too.
 
         Found live: the pane showed broken thumbnails because template URLs stayed unsigned while
@@ -339,6 +371,7 @@ class TemplateGalleryRegressions(unittest.TestCase):
             auth.reset_verifier()
 
     def test_gallery_ids_are_reachable_through_the_asset_route(self):
+        self._seed()
         """Template previews live under `tpl-<id>`; the route's id rule must accept that shape."""
         deck_preview.template_preview_urls(TEMPLATE)
         deck_id = f"tpl-{deck_preview._deck_id(TEMPLATE)}"
@@ -346,6 +379,7 @@ class TemplateGalleryRegressions(unittest.TestCase):
         self.assertIsNotNone(served, f"route refuses the gallery id {deck_id!r}")
 
     def test_every_advertised_url_exists(self):
+        self._seed()
         urls = deck_preview.template_preview_urls(TEMPLATE)
         for url in urls:
             name = url.rsplit("/", 1)[-1]

@@ -25,6 +25,9 @@ os.environ["PPT_PUBLIC_BASE"] = "http://test.local:8931"
 # Decks built by tests live in per-test temp dirs under TMP; anything outside is refused by design.
 os.environ["PPT_ALLOWED_ROOTS"] = str(TMP)
 os.environ.setdefault("PPT_RENDER_CACHE", "1")
+# Tests inject their own renderer (fake or a patched cold chain). Pin the *kind* so the code takes the
+# warm path deterministically: a CI runner has no LibreOffice, and `auto` would resolve to "none".
+os.environ["PPT_RENDERER"] = "soffice"
 
 (TMP / "out").mkdir(parents=True, exist_ok=True)
 (TMP / "uploads" / "user").mkdir(parents=True, exist_ok=True)

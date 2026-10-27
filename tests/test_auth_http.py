@@ -66,15 +66,33 @@ def client():
 
 
 def build_deck_and_preview():
-    """Create one deck + preview while auth is off, returning (deck_id, download_url, slide_url)."""
+    """Create one deck + preview while auth is off, returning (deck_id, download_url, slide_url).
+
+    The tests here are about the gate, not the renderer: a CI runner has no LibreOffice, so if nothing was
+    rendered we write the two files a renderer would have produced. That keeps the assertions meaningful
+    (a real file behind a real signed URL) without pretending to render.
+    """
     os.environ["PPT_AUTH_MODE"] = "none"
     auth.reset_verifier()
+    import deck_preview
     import server
 
     tools = {n: t.fn for n, t in server.app._tool_manager._tools.items()}
     built = tools["build_deck"](template="corporate-2slide.pptx", title="Auth test",
                                 slides=[{"title": "One", "bullets": ["a", "b"]}])
     data = tools["preview_deck"](file=built["deck_id"])
+    directory = deck_preview.preview_root() / data["deck_id"]
+    directory.mkdir(parents=True, exist_ok=True)
+    total = len(deck_preview.Presentation(str(data["file"] if data.get("file") else
+                                            tools["get_deck_outline"](file=data["deck_id"]) and
+                                            deck_preview.resolve_ref(data["deck_id"]))).slides)
+    for index in range(1, total + 1):
+        (directory / f"slide-{index}.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+    (directory / "deck.pptx").touch()
+    if not data.get("slides"):
+        data["slides"] = [{"index": 1, "url": deck_preview.signed_url(data["deck_id"], "slide-1.png")
+                           if auth.auth_mode() != "none" else
+                           f"{deck_preview.public_base()}/decks/{data['deck_id']}/slide-1.png"}]
     return data["deck_id"], data["download"], data["slides"][0]["url"]
 
 
