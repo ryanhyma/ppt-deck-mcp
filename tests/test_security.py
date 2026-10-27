@@ -324,11 +324,17 @@ class TemplateGalleryRegressions(unittest.TestCase):
                 (Path(outdir) / f"slide-{index}.png").write_bytes(b"\x89PNG\r\n\x1a\n")
             return 2
 
+        original_getter = deck_preview.render_warm.get_renderer
         deck_preview._render = fake_render
+        # Force the cold chain so the stub is the only renderer on every host: on a box with
+        # LibreOffice the warm renderer would succeed and never call `_render`, making this
+        # assertion pass or fail depending on the machine.
+        deck_preview.render_warm.get_renderer = lambda **kwargs: None
         try:
             urls = deck_preview.template_preview_urls(TEMPLATE)
         finally:
             deck_preview._render = original
+            deck_preview.render_warm.get_renderer = original_getter
         self.assertTrue(rendered, "a partial preview must trigger a re-render")
         self.assertEqual(len(urls), 2, "the gallery must advertise the full set")
         for url in urls:
