@@ -138,29 +138,38 @@ class SkillAssets(unittest.TestCase):
 
 
 class GatewayAssets(unittest.TestCase):
-    """LibreChat ignores `headers:` on the MCP transport, so the bearer is injected by a gateway.
-
-    These assertions keep that proxy honest: the header must be injected, the container must publish
-    no port, and the credential must not be committed.
+    """LibreChat v0.8.9 does not send `headers:` and misreads a 401/probe failure as "needs OAuth",
+    so the credential is delivered by a token-broker gateway. These assertions keep the broker honest.
     """
 
     def setUp(self):
         self.dir = ROOT / "deploy/mcp-gateway"
-        self.template = (self.dir / "nginx.conf.template").read_text("utf-8")
+        self.broker = (self.dir / "broker.py").read_text("utf-8")
         self.compose = (self.dir / "docker-compose.yml").read_text("utf-8")
-        self.entry = (self.dir / "entrypoint.sh").read_text("utf-8")
+        self.dockerfile = (self.dir / "Dockerfile").read_text("utf-8")
 
-    def test_the_gateway_injects_the_bearer_and_streams(self):
-        self.assertIn('proxy_set_header Authorization "Bearer ${MCP_TOKEN}"', self.template)
-        self.assertIn("proxy_buffering off", self.template)
-        self.assertIn("chunked_transfer_encoding on", self.template)
-        self.assertIn("envsubst", self.entry)
+    def test_the_broker_obtains_and_refreshes_a_real_token(self):
+        """A static bearer would expire; production tokens are short-lived, so it must fetch."""
+        self.assertIn("client_credentials", self.broker)
+        self.assertIn("expires_in", self.broker)
+        self.assertIn('f"Bearer {BROKER.get()}"', self.broker)
+        self.assertIn("invalidate", self.broker)          # 401 -> refresh once and retry
+
+    def test_the_broker_speaks_mcp_over_http(self):
+        """Streaming plus header normalisation are what make LibreChat's client work at all."""
+        self.assertIn("chunked", self.broker)             # SSE responses are not buffered
+        self.assertIn("text/event-stream", self.broker)    # Accept: */* must be normalised
+        self.assertIn('"*/*" in accept', self.broker)
+        self.assertIn("-32600", self.broker)              # empty probe answered as JSON-RPC error
 
     def test_the_gateway_publishes_no_host_port(self):
-        # a real mapping looks like `    - "8931:8931"` under a `ports:` key, not a mention in a comment
         self.assertIsNone(re.search(r"^\s+ports:\s*$", self.compose, re.MULTILINE),
                           "the gateway must not publish a host port")
         self.assertIn("librechat_default", self.compose)
+
+    def test_the_gateway_runs_unprivileged_with_a_healthcheck(self):
+        self.assertIn("USER 10001", self.dockerfile)
+        self.assertIn("HEALTHCHECK", self.dockerfile)
 
     def test_the_credential_is_not_committed(self):
         gitignore = (ROOT / ".gitignore").read_text("utf-8")

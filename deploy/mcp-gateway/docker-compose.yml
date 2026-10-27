@@ -1,23 +1,32 @@
-# LibreChat -> this gateway -> ppt-mcp (token mode). The gateway is the only holder of the credential
-# and is reachable only from the LibreChat docker network.
+# LibreChat -> mcp-gateway (token broker) -> ppt-mcp.
+#
+# The gateway obtains a short-lived OAuth access token (client credentials) from the identity provider,
+# injects it, refreshes it, and publishes no host port: reachable only from the LibreChat network. The
+# MCP server runs with PPT_AUTH_MODE=entra (or token), so every request is validated.
+#
+# Same file works for the local Keycloak rehearsal and for Entra ID in production — only the four
+# identity values change (TOKEN_URL, CLIENT_ID, CLIENT_SECRET, SCOPE/AUDIENCE).
 services:
   mcp-gateway:
-    image: nginx:1.27-alpine
+    build: .
+    image: deck-mcp-gateway:1
     container_name: mcp-gateway
     restart: unless-stopped
-    entrypoint: ["/bin/sh", "/gateway/entrypoint.sh"]
     environment:
-      MCP_UPSTREAM: host.docker.internal:8931
-      # Read from .env next to this file (or the shell); never commit a real token.
-      MCP_TOKEN: ${MCP_TOKEN:?set MCP_TOKEN}
+      MCP_UPSTREAM: ${MCP_UPSTREAM:-host.docker.internal:8931}
+      TOKEN_URL: ${TOKEN_URL:?set TOKEN_URL (e.g. http://host.docker.internal:8898/realms/deck/protocol/openid-connect/token)}
+      CLIENT_ID: ${CLIENT_ID:?set CLIENT_ID}
+      CLIENT_SECRET: ${CLIENT_SECRET:?set CLIENT_SECRET}
+      SCOPE: ${SCOPE:-}
+      AUDIENCE: ${AUDIENCE:-}
+      TLS_VERIFY: ${TLS_VERIFY:-1}
+      LISTEN_PORT: "8931"
+      PPT_DEBUG: ${PPT_DEBUG:-0}
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    volumes:
-      - ./nginx.conf.template:/etc/nginx/nginx.conf.template:ro
-      - ./entrypoint.sh:/gateway/entrypoint.sh:ro
     networks:
       - librechat
-    # no ports: published only inside the docker network, never on the host or the LAN
+    # no published ports on purpose: docker-network only
 
 networks:
   librechat:

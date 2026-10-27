@@ -1,83 +1,81 @@
-# Authenticating gateway (LibreChat → deck MCP)
+# Authenticating gateway — OAuth token broker for the deck MCP server
 
-A ~30-line nginx container that sits on the LibreChat docker network and injects the bearer token the
-MCP client should have sent itself.
+A ~300-line Python proxy that sits on the LibreChat network, obtains a **short-lived OAuth access token**
+(client credentials), injects it, refreshes it before expiry, and forwards MCP traffic.
 
-## Why this exists
+## Why it exists
 
-LibreChat v0.8.9-rc1 does **not** apply `headers:` to the MCP transport: with `Authorization: 'Bearer
-${PPT_MCP_TOKEN}'` in `librechat.yaml` it still sends `POST /mcp` with no header, gets a 401, and then
-concludes "OAuth required" — so token-mode tool calls fail. Verified live (server logs: `401` on every
-`HEAD`/`POST /mcp`), with the variable present in both the container environment and the resolved config.
+LibreChat v0.8.9-rc1 cannot be trusted to deliver the credential itself, for two documented reasons:
 
-Rather than weaken the server, the credential moved **in front of** it:
+1. **It ignores `headers:` on the MCP transport.** With `Authorization: 'Bearer ${…}'` configured it still
+   sent `POST /mcp` with no header (verified server-side: bare 401s from the container IP).
+2. **It probes every MCP server unauthenticated at startup** (`detectOAuthRequirement`: HEAD + an empty
+   `POST`). A `401` whose `WWW-Authenticate` mentions `Bearer` — even with no OAuth metadata — marks the
+   server `requiresOAuth: true` for the life of the process, and every later tool call runs an OAuth flow
+   instead of using the configured URL. That is upstream behaviour, reported in
+   [LibreChat discussion #9178](https://github.com/LibreChat-AI/LibreChat/discussions/9178); the fix on the
+   client side is `requiresOAuth: false` in `librechat.yaml`, which we also set.
+
+So the credential moved in front of the server, where it can be obtained properly and rotated:
 
 ```
-browser ──signed URLs──► ppt-mcp :8931            (slide images, HMAC + expiry + subject)
-LibreChat container ──plain HTTP──► mcp-gateway:8931 ──Bearer──► ppt-mcp :8931/mcp
-                                     (docker network only, no host port)
+browser ──signed URLs──► ppt-mcp :8931               (slide images: HMAC + expiry + subject)
+LibreChat ──plain HTTP──► mcp-gateway:8931 ──Bearer──► ppt-mcp :8931/mcp
+                            (docker network only, no host port, holds the only credential)
 ```
-
-The MCP server stays in `PPT_AUTH_MODE=token` and validates every request. The gateway is the only
-holder of the token: it never enters the model's context, the browser, or LibreChat's config, and it is
-not reachable from the host or the LAN — only from containers on `librechat_default`.
 
 ## Run it
 
 ```sh
 cd deploy/mcp-gateway
-printf 'MCP_TOKEN=%s\n' "$(openssl rand -hex 24)" > .env    # same value as the server's PPT_MCP_TOKEN
-chmod 600 .env                                              # gitignored
-docker compose up -d
+cat > .env <<'ENV'
+MCP_UPSTREAM=host.docker.internal:8931
+TOKEN_URL=http://host.docker.internal:8898/realms/deck/protocol/openid-connect/token
+CLIENT_ID=deck-service
+CLIENT_SECRET=<secret>
+SCOPE=openid
+ENV
+chmod 600 .env && docker compose up -d --build
 ```
 
-Point LibreChat at it (`librechat.yaml`):
+For **Entra ID in production** only the identity values change:
 
-```yaml
-mcpServers:
-  ppt:
-    type: streamable-http
-    url: http://mcp-gateway:8931/mcp
+```
+TOKEN_URL=https://login.microsoftonline.com/<tenant>/oauth2/v2.0/token
+CLIENT_ID=<api-app-client-id>   CLIENT_SECRET=<secret>   SCOPE=api://<api-app-client-id>/.default
 ```
 
-and allow the name in `mcpSettings` (LibreChat's SSRF guard):
+## What it does to the protocol (all of it necessary, none of it auth-weakening)
 
-```yaml
-mcpSettings:
-  allowedDomains: ['mcp-gateway', 'http://mcp-gateway:8931']
-  allowedAddresses: ['mcp-gateway:8931']
-```
+| Behaviour | Why |
+|---|---|
+| `Accept: */*` → `application/json, text/event-stream` | the MCP server answers 406 to a wildcard Accept, and LibreChat then misreads it as auth failure |
+| empty-body `POST /mcp` **without** a session id → local `200 {-32600 Invalid Request}` | LibreChat's liveness probe; JSON-RPC-over-HTTP says an invalid request is a 200 error object. Probes never reach the MCP server |
+| `HEAD /mcp` → `200` | same probe, same reason |
+| body cache reset per request | `BaseHTTPRequestHandler` reuses one handler per keep-alive connection; caching the body sent `notifications/initialized` upstream with the *initialize* body, desyncing the session and making LibreChat's ping fail (this was a real 30 s-timeout bug) |
+| 401 from upstream → refresh the token, retry once | normal token rotation |
+| `Connection: close` from the client is honoured | no cross-request state |
 
-Then restart the api container. Success looks like `[MCP] Initialized with 2 configured servers and 48
-tools` and `[MCP][ppt] Tool list changed; refreshed 48 tools`.
+Real JSON-RPC requests (`initialize`, `notifications/*`, `tools/list`, `tools/call`) are always proxied
+with a fresh token; the MCP server still validates every one of them.
 
 ## Security properties
 
-| Property | How |
-|---|---|
-| Every MCP request is authenticated | server runs `PPT_AUTH_MODE=token`; a wrong or missing bearer is 401 |
-| Credential exposure is minimal | only the gateway env holds it; LibreChat's config has no token |
-| No new network surface | container publishes **no** host port; reachable only on `librechat_default` |
-| Streaming works | `proxy_buffering off` + `chunked_transfer_encoding on` (MCP's SSE responses) |
-| Images stay end-to-end signed | `PPT_PUBLIC_BASE` points at the server, and slide/template URLs are HMAC-signed |
-| Audit keeps the actor | the server records `subject` from the verified token (`service-token` in token mode) |
+- The client secret and access token live only in this container; LibreChat's config, the browser and the
+  model never see them.
+- No published host port: reachable only from containers on `librechat_default`.
+- Runs as UID 10001, with a healthcheck; the token is never logged.
+- `TLS_VERIFY=0` exists for a local test IdP only and logs a warning when used.
 
-## Limits worth stating
-
-- **Token mode is a single-identity mode.** Every call is the same subject, so per-user ownership is not
-  meaningful; use `PPT_AUTH_MODE=entra` (Keycloak rehearsal in `../oidc/keycloak/`) when you need real
-  per-user identity inside LibreChat.
-- The gateway is a *credential injector*, not a policy engine: it does not decide who may use the tools —
-  LibreChat's agent/tool configuration does, and the server enforces object access.
-- Rotate by changing the `.env` value here **and** `PPT_MCP_TOKEN` on the server, then
-  `docker compose up -d` here and restart the server.
-
-## Verified (2026-10-26)
+## Verified end to end (2026-10-27)
 
 ```
-LibreChat -> mcp-gateway -> ppt-mcp   [MCP] 48 tools discovered
-chat turn: list_templates -> build_deck -> preview_deck, 3-slide deck, PASS
-audit.jsonl: tool.call subject=service-token auth=token outcome=ok
-direct http://172.17.0.1:8931/mcp without a token -> 401
-docker port mcp-gateway -> (none)
+[MCP][ppt] Initialized in: 151ms · Tool list changed; refreshed 48 tools
+chat: "Make a 2-slide deck about green tea" → PASS (2 slides)
+audit.jsonl: tool.call subject=306b86ac-… tenant=1111… auth=entra → list_templates, build_deck, preview_deck
+direct http://172.17.0.1:8931/mcp without a token → 401
+docker port mcp-gateway → (none)
 ```
+
+Regression tests: `tests/test_gateway_broker.py` (real broker subprocess + stub upstream over one
+keep-alive connection: per-request bodies, bearer on every proxied call, probe answered locally).

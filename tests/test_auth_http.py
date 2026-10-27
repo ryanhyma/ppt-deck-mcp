@@ -134,11 +134,11 @@ class TokenModeRegressions(unittest.TestCase):
         self.assertIsNotNone(deck_preview.deck_asset_path(self.deck_id, "deck.pptx", *_query(signed)))
         self.assertEqual(self.client.get(signed.replace("http://test.local:8931", "")).status_code, 401)
 
-    def test_health_and_metadata_stay_open(self):
+    def test_health_stays_open_and_the_metadata_document_is_absent_by_default(self):
+        """`/healthz` is liveness. The PRM document exists only when an AS is advertised: in token mode
+        there is no browser OAuth, and its mere presence makes LibreChat 0.8.9 fail every tool call."""
         self.assertEqual(self.client.get("/healthz").status_code, 200)
-        metadata = self.client.get("/.well-known/oauth-protected-resource")
-        self.assertEqual(metadata.status_code, 200)
-        self.assertIn("resource", metadata.json())
+        self.assertEqual(self.client.get("/.well-known/oauth-protected-resource").status_code, 404)
 
     def test_app_assets_stay_public_by_design(self):
         """The pane is HTML/JS the browser fetches with no bearer; it holds no user data."""
@@ -171,10 +171,42 @@ class EntraModeRegressions(unittest.TestCase):
             os.environ.pop(key, None)
         auth.reset_verifier()
 
+    def test_prm_advertisement_can_be_disabled_for_legacy_clients(self):
+        """LibreChat v0.8.9 treats any 401 with a PRM pointer as "start OAuth" and then fails.
+
+        `PPT_ADVERTISE_PRM=0` keeps Entra-mode validation but stops advertising the authorization
+        server, so a client that cannot complete the flow (and does not need to, because a gateway
+        supplies the token) keeps working.
+        """
+        os.environ["PPT_ADVERTISE_PRM"] = "0"
+        try:
+            response = self.client.post("/mcp", json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
+            self.assertEqual(response.status_code, 401)
+            self.assertNotIn("resource_metadata=", response.headers.get("www-authenticate", ""))
+        finally:
+            os.environ.pop("PPT_ADVERTISE_PRM", None)
+
     def test_the_challenge_points_at_protected_resource_metadata_in_entra_mode(self):
         response = self.client.post("/mcp", json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
         self.assertEqual(response.status_code, 401)
         self.assertIn("resource_metadata=", response.headers.get("www-authenticate", ""))
+
+    def test_the_metadata_document_only_advertises_an_authorization_server_on_request(self):
+        """A client that discovers an AS will try to run an OAuth flow it may be unable to finish.
+
+        LibreChat v0.8.9-rc1 does exactly that and then reports "OAuth authentication failed", so the
+        AS is published only when the deployment wants browser-based OAuth clients (PPT_ADVERTISE_AS=1).
+        """
+        os.environ["PPT_ENTRA_ISSUER"] = "http://idp.example/realms/deck"
+        try:
+            self.assertEqual(self.client.get("/.well-known/oauth-protected-resource").status_code, 404,
+                             "no metadata document when no authorization server is advertised")
+            os.environ["PPT_ADVERTISE_AS"] = "1"
+            advertised = self.client.get("/.well-known/oauth-protected-resource").json()
+            self.assertEqual(advertised.get("authorization_servers"), ["http://idp.example/realms/deck"])
+        finally:
+            os.environ.pop("PPT_ADVERTISE_AS", None)
+            os.environ.pop("PPT_ENTRA_ISSUER", None)
 
     def test_a_graph_token_cannot_open_the_mcp_endpoint(self):
         response = self.client.post("/mcp", headers={"Authorization": f"Bearer {self.idp.for_graph()}"},

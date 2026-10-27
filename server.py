@@ -104,11 +104,23 @@ def build_http_app():
         return FileResponse(p, headers=headers)
 
     async def protected_resource_metadata(request):
-        """RFC 9728: where an MCP client learns which authorization server and scopes to use."""
+        """RFC 9728: where an MCP client learns which authorization server and scopes to use.
+
+        Served only when the deployment advertises an authorization server (`PPT_ADVERTISE_AS=1`).
+        Returning the document with an empty `authorization_servers` is not enough for every client:
+        LibreChat v0.8.9-rc1 treats the document's presence as "OAuth is available" and then fails the
+        tool call, so the honest answer for that deployment is 404 — there is no browser OAuth here.
+        """
+        if not auth.advertises_authorization_server():
+            return PlainTextResponse("not found", status_code=404)
         base = public_base()
         return JSONResponse({
             "resource": f"{base}/mcp",
-            "authorization_servers": [auth.authorization_server()] if auth.authorization_server() else [],
+            # A client that discovers an authorization server will try to run an OAuth flow. Publish it
+            # only when the deployment wants browser-based OAuth clients (PPT_ADVERTISE_AS=1); otherwise
+            # a client that cannot complete the flow (LibreChat 0.8.9) fails every tool call.
+            "authorization_servers": ([auth.authorization_server()]
+                                      if auth.advertises_authorization_server() else []),
             "scopes_supported": auth.required_scopes(),
             "bearer_methods_supported": ["header"],
         })
@@ -120,6 +132,8 @@ def build_http_app():
 
     routes = [
         Route("/.well-known/oauth-protected-resource", protected_resource_metadata),
+        # RFC 9728 §3.1 also allows the document under the resource's path; MCP clients probe this form.
+        Route("/.well-known/oauth-protected-resource/mcp", protected_resource_metadata),
         Route("/healthz", lambda request: PlainTextResponse("ok")),
         Route("/apps/deck_studio/{path:path}", app_asset),
         Route("/decks/{deck_id}/{name}", deck_asset),
@@ -172,9 +186,13 @@ class AuthGate:
             # Only advertise protected-resource metadata when there really is an authorization server
             # behind us: a 401 that points at one makes clients start an OAuth flow (LibreChat will
             # report "OAuth Required" and never list the tools) — wrong for the shared-token mode.
+            advertises_oauth = (
+                auth.auth_mode() == "entra"
+                and str(auth.setting("PPT_ADVERTISE_PRM", "advertise_prm", "1")).strip().lower()
+                not in ("0", "false", "no", "off")
+            )
             challenge = exc.www_authenticate(
-                f"{public_base()}/.well-known/oauth-protected-resource"
-                if auth.auth_mode() == "entra" else "")
+                f"{public_base()}/.well-known/oauth-protected-resource" if advertises_oauth else "")
             await send({"type": "http.response.start", "status": exc.status,
                         "headers": [(b"content-type", b"application/json"),
                                     (b"www-authenticate", challenge.encode())]})

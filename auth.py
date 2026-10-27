@@ -127,6 +127,13 @@ def authorization_server() -> str:
     return f"https://login.microsoftonline.com/{tenant}/v2.0" if tenant else ""
 
 
+def advertises_authorization_server() -> bool:
+    """Whether protected-resource metadata should name an authorization server."""
+    if str(_setting("PPT_ADVERTISE_AS", "advertise_as", "0")).strip().lower() in ("0", "false", "no", "off"):
+        return False
+    return bool(authorization_server())
+
+
 def required_scopes() -> list[str]:
     return str(_setting("PPT_ENTRA_REQUIRED_SCOPES", "entra_required_scopes", "") or "").replace(",", " ").split()
 

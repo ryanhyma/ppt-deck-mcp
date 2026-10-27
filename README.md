@@ -219,21 +219,32 @@ Entra does not support the RFC 8707 `resource` parameter, so audience binding is
 `aud` claim; `tid` is checked separately from `iss`; identity is `oid`/`sub` (never
 `preferred_username`/`upn`/`email`).
 
-#### LibreChat does not send `headers:` on this transport
+#### LibreChat needs two things from us (both documented, both required)
 
-Verified on v0.8.9-rc1: with `headers: { Authorization: 'Bearer ${PPT_MCP_TOKEN}' }` LibreChat still sends
-`POST /mcp` with no Authorization header, gets 401, and reports "OAuth required" — token mode then fails
-even though the server is correct. The supported shape is a small **authenticating gateway**
-([`deploy/mcp-gateway/`](deploy/mcp-gateway/)) on the LibreChat network:
+Verified on v0.8.9-rc1:
 
+1. **It ignores `headers:` on the MCP transport** — with a bearer configured it still sent `POST /mcp`
+   with no Authorization header.
+2. **It probes every server unauthenticated at startup**, and a 401 whose `WWW-Authenticate` mentions
+   `Bearer` marks the server `requiresOAuth: true` for the process lifetime, after which every tool call
+   runs an OAuth flow instead of using the URL
+   ([upstream discussion #9178](https://github.com/LibreChat-AI/LibreChat/discussions/9178)).
+
+So the deployment shape is:
+
+```yaml
+mcpServers:
+  ppt:
+    type: streamable-http
+    url: http://mcp-gateway:8931/mcp
+    requiresOAuth: false        # skip the unauth probe entirely
 ```
-LibreChat ──plain HTTP──► mcp-gateway:8931 ──Bearer──► ppt-mcp :8931/mcp
-                                (no host port, docker network only)
-```
 
-The server stays in `token` mode and validates every request; the credential lives only in the gateway's
-`.env`. LibreChat config then needs just the URL plus `mcpSettings.allowedDomains`/`allowedAddresses`
-entries for `mcp-gateway`.
+plus the **token-broker gateway** in [`deploy/mcp-gateway/`](deploy/mcp-gateway/): it obtains a real OAuth
+access token (client credentials) from Entra/Keycloak, injects it, refreshes it, publishes no host port,
+and normalises the two protocol quirks that would otherwise surface as "auth failed" (wildcard `Accept`,
+empty liveness probes). The MCP server stays in `entra` (or `token`) mode and validates every request; the
+credential lives only in the gateway.
 
 LibreChat side — `deploy/librechat/mcpServers.ppt.yaml`:
 
