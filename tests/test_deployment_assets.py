@@ -182,6 +182,19 @@ class GatewayAssets(unittest.TestCase):
         self.assertIn("conflicting Content-Length", self.broker)
         self.assertIn("ALLOW_HTTP_IDP", self.broker)
 
+    def test_the_readme_documents_install_prompts_and_skills(self):
+        """A README that lists assets but never says how to install them is not an install guide."""
+        readme = (ROOT / "README.md").read_text("utf-8")
+        self.assertIn("## Install", readme)
+        for section in ("### 1. The server", "### 2. The prompts", "### 3. The skills", "### 4. Check the install"):
+            self.assertIn(section, readme, f"README lost the {section!r} step")
+        # the three things a fresh deployment gets wrong
+        self.assertIn("requiresOAuth: false", readme)
+        self.assertIn("[deploymentSkills] Loaded", readme)
+        self.assertIn("ObjectIds", readme)
+        for guide in ("deploy/README.md", "skills/README.md", "prompts/README.md"):
+            self.assertIn(guide, readme)
+
     def test_the_credential_is_not_committed(self):
         gitignore = (ROOT / ".gitignore").read_text("utf-8")
         self.assertIn("deploy/mcp-gateway/.env", gitignore)

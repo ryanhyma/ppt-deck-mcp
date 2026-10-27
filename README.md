@@ -308,34 +308,89 @@ Entra tenant is still required before go-live.
 curl -si -X POST http://host:8931/mcp | head -3  # 401 + WWW-Authenticate when auth is on
 ```
 
-## Quick start
+## Install
+
+Three parts: the server, the prompts, the skills. Each is a few commands; the details live in
+[`deploy/README.md`](deploy/README.md) (production checklist), [`skills/README.md`](skills/README.md) and
+[`prompts/README.md`](prompts/README.md).
+
+### 1. The server
 
 ```sh
 git clone https://github.com/ryanhyma/ppt-deck-mcp && cd ppt-deck-mcp
 python -m venv .venv && .venv/bin/pip install -r requirements.txt
 
-# Linux: previews via LibreOffice Impress (optional — decks build without any office suite)
-sudo apt-get install --no-install-recommends libreoffice-impress
+# Previews need a renderer. Without one decks still build — thumbnails report preview_error.
+sudo apt-get install --no-install-recommends libreoffice-impress     # Linux
+# Windows: portable LibreOffice, one unzip — docs/windows-setup.md
 
-# run (stdio for a native LibreChat, http for the containerised dev stack)
-.venv/bin/python server.py --transport stdio                        # no network surface at all
+# Run: stdio has no network surface at all; http needs authentication (next block).
+.venv/bin/python server.py --transport stdio
 PPT_AUTH_MODE=token PPT_MCP_TOKEN=$(openssl rand -hex 24) \
   PPT_PUBLIC_BASE=http://decks.local:8931 \
   .venv/bin/python server.py --transport http --host 127.0.0.1 --port 8931
 ```
 
-Windows (portable LibreOffice, one unzip): [`docs/windows-setup.md`](docs/windows-setup.md).
+Production (Entra, gateway, Windows service): [`deploy/README.md`](deploy/README.md) and
+[`docs/windows-service.md`](docs/windows-service.md). Never expose `http` with `PPT_AUTH_MODE=none` —
+the server refuses to start that way when `PPT_ENV=prod`.
 
-Register with LibreChat:
+Register the server with LibreChat (`librechat.yaml`), then restart it:
 
 ```yaml
 mcpServers:
   ppt:
-    type: streamable-http          # or `stdio` with command/args
-    url: http://host.docker.internal:8931/mcp
+    type: streamable-http
+    url: http://host.docker.internal:8931/mcp   # or http://mcp-gateway:8931/mcp behind the gateway
     timeout: 180000
+    requiresOAuth: false        # REQUIRED: see "Locking it down" — an unauthenticated probe otherwise
+                                # marks the server as OAuth-protected and every tool call fails
 mcpSettings:
-  apps: true                       # required for the Deck Studio pane
+  apps: true                    # required for the Deck Studio pane
+  allowedDomains: ['host.docker.internal', 'mcp-gateway']
+  allowedAddresses: ['host.docker.internal:8931', 'mcp-gateway:8931']
+```
+
+Verify: `[MCP] Initialized with … and 48 tools` in the LibreChat log, and a new chat that builds a deck.
+
+### 2. The prompts (paste into two places)
+
+| Where | What to paste | Why |
+|---|---|---|
+| LibreChat agent → **Instructions** | [`prompts/agent-deck-builder.md`](prompts/agent-deck-builder.md) (tested default), or [`prompts/main-prompt.md`](prompts/main-prompt.md) on a stronger model | the terse prompt is what the corpus was validated with; the main prompt adds user guidance and 11 workflows |
+| `librechat.yaml` → `mcpServers.ppt.serverInstructions` | the YAML block in [`prompts/server-instructions.md`](prompts/server-instructions.md) | reaches the model even when Skills are disabled |
+
+A ready-made agent config (tools, instructions, skill placeholders) is
+[`deploy/librechat/agent-deck-builder.json`](deploy/librechat/agent-deck-builder.json).
+
+### 3. The skills (copy, restart, then bind ids)
+
+```sh
+# 1. put the skill files where LibreChat reads them and restart it
+cp -r skills/* /path/to/librechat/skill/        # container: /app/skill ; native: <deploy>\skill
+docker restart LibreChat
+# 2. the startup log must say:
+#    [deploymentSkills] Loaded 2 deployment skill(s) from /app/skill
+```
+
+Then, and this is the part that silently fails: **skills are loaded read-only and are not Skill documents
+in MongoDB.** An agent only uses them if it carries the MongoDB **ObjectIds** of the `Skill` documents
+created from them, with `skills_enabled: true`. Names are dropped silently — a skill list that looks right
+but holds stale ids leaves the agent with **no** skills (one agent on this box failed exactly that way,
+reporting `missing_model`). Fill `{{SKILL_ID_PPT_DECK_BUILDER}}` / `{{SKILL_ID_SVG_GRAPHICS}}` in
+[`deploy/librechat/agent-deck-builder.json`](deploy/librechat/agent-deck-builder.json) with real ids, or
+re-create the skills in the UI and copy the ids from the agent document.
+
+Deliberate redundancy: the prompts also carry the workflow, so a deployment with Skills switched off still
+behaves. The skill file holds the detail (chart/table shapes, styling vocabulary, import caveats).
+
+### 4. Check the install
+
+```sh
+tests/preflight.sh                                   # clean venv + CI interpreters + secret scan
+curl -s -o /dev/null -w '%{http_code}\n' -X POST http://127.0.0.1:8931/mcp \
+  -H 'Content-Type: application/json' -d '{}'        # 401 when auth is on
+tail -3 <PPT_OUTPUT_DIR>/audit.jsonl                 # tool.call … outcome=ok after a chat
 ```
 
 ## Configuration
@@ -427,6 +482,10 @@ Everything a deployment needs is in the repo, not in somebody's home directory:
 | `deploy/windows/ppt-mcp.env.example` | production environment switches incl. `PPT_AUTH_MODE=entra` |
 | `docs/windows-service.md` | Windows runbook + the acceptance test list |
 | `docs/authz-model.md` | Entra proves identity; LibreChat holds entitlements; this server enforces per-deck access |
+
+Installation steps for all of it: [Install](#install). The per-area guides are
+[`deploy/README.md`](deploy/README.md), [`skills/README.md`](skills/README.md) and
+[`prompts/README.md`](prompts/README.md).
 
 `tests/test_deployment_assets.py` keeps those assets honest: a renamed tool fails CI if the agent
 config, the instructions or a skill still call it by the old name, and the installer's hardening flags
