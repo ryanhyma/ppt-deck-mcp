@@ -56,6 +56,12 @@ class PromptAssets(unittest.TestCase):
             self.assertTrue(key.endswith("_mcp_ppt"), f"{key} does not use the 'ppt' server name")
             self.assertIn(key[: -len("_mcp_ppt")], REGISTERED, f"{key} names a tool that does not exist")
 
+    def test_agent_exposes_all_deck_id_tools_without_legacy_file_operations(self):
+        configured = {key.removesuffix("_mcp_ppt") for key in self.agent["tools"]}
+        self.assertEqual(configured, REGISTERED)
+        self.assertTrue({"add_shape", "add_image", "manage_hyperlinks", "update_chart_data"} <= configured)
+        self.assertFalse({"open_presentation", "save_presentation", "switch_presentation"} & configured)
+
     def test_agent_skills_are_enabled_and_use_placeholders(self):
         """LibreChat silently drops skill NAMES; ids are deployment-specific, so they cannot be committed."""
         self.assertTrue(self.agent["skills_enabled"])
@@ -91,7 +97,7 @@ class PromptAssets(unittest.TestCase):
         """A workflow that passes a parameter the tool does not accept teaches the model to fail."""
         main = (ROOT / "prompts/main-prompt.md").read_text("utf-8")
         for call in ("style_slide(file, slide_index=", "verify_deck(file=<deck_id>, expected_slides=",
-                     "build_deck(…full outline…, base=<deck_id>)", 'import_deck(file="', "render_svg(svg="):
+                     "populate_placeholder(file=<deck_id>", "import_deck(file=<user-provided deck>)", "render_svg(svg="):
             self.assertIn(call, main)
         # Guard the vocabulary that has burned us: chart/table keys and the bullet limits.
         for phrase in ("categories", "series", "headers", "rows", "90 characters", "TOTAL"):
@@ -110,7 +116,7 @@ class PromptAssets(unittest.TestCase):
 
     def test_instructions_carry_the_rules_that_fixed_real_defects(self):
         lowered = self.instructions.lower()
-        for phrase in ("total", "one visual per slide", "base=", "rebuild once"):
+        for phrase in ("total", "one visual per slide", "sequentially", "rebuild once"):
             self.assertIn(phrase, lowered)
 
 

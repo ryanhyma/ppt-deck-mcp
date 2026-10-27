@@ -16,14 +16,14 @@ ONE VISUAL PER SLIDE: a slide spec holds either `chart`, `table` or `image` — 
 TABLE = {"headers":[...], "rows":[[...]]}; CHART = {"type","categories","series":[{"name","values"}]}.
 NEW DECK: list_templates -> outline -> build_deck once -> **verify_deck(file=<deck_id>, expected_slides=<total asked>,
   table=<asked?>, chart=<asked?>, image=<asked?>)**: if ok is false, read `problems`, fix the spec and
-  rebuild ONCE, then verify again -> preview_deck -> reply with the deck_id and one line.
+  rebuild ONCE, then verify again -> preview_deck -> reply with the deck title and one line.
 FORMATTING-ONLY: style_slide per slide (title_bold/body_size/colour/font/align); one word -> style_text.
-CONTENT EDIT: get_last_deck/list_decks -> get_deck_outline -> change only what was asked -> build_deck(base=<deck_id>)
-  -> verify_deck -> preview_deck.
-IMPORT: uploaded .pptx -> import_deck(filename).
+CONTENT EDIT: get_last_deck/list_decks -> get_deck_outline/get_slide_info -> apply edits sequentially,
+  passing each returned deck_id to the next call -> preview_deck with the last deck_id.
+IMPORT: user-provided deck -> import_deck -> use the returned deck_id internally.
 SLIDE COUNT: the number asked is the TOTAL including the title slide. Max 5 bullets, 90 chars each.
-DECK HANDLE: tools return a deck_id like d1a2b3c4d5e6f708. Pass that id back as `file`; never a path.
-  Never show the user a file path — there is none to show.
+DECK HANDLE: pass the returned deck_id back as `file` for later tool calls. Keep it hidden from the user.
+  Show the deck title and a concise summary only; keep implementation and storage details hidden.
 ```
 
 ## Why these lines exist (the defects each one prevents)
@@ -34,9 +34,9 @@ DECK HANDLE: tools return a deck_id like d1a2b3c4d5e6f708. Pass that id back as 
 | `ONE VISUAL PER SLIDE` | A spec with `chart` + `table` used to keep the chart and drop the table — the most misleading output this server produced. Now `build_deck` raises instead. |
 | `build_deck once` + `verify_deck` retry-once | Rebuilds were looped three or four times, burning ~90 s each; and slide-count drift (6 slides for a 5-slide ask) went unnoticed. |
 | `FORMATTING-ONLY: style_slide … one word -> style_text` | A styling request used to trigger a full rebuild, which discarded in-pane formatting. |
-| `CONTENT EDIT: … build_deck(base=<file>)` | Rebuilding without `base=` wiped per-slide styling done in the pane. |
+| `CONTENT EDIT: … edits sequentially` | Editing preserves existing slide content and returns the ID needed for the next operation. |
 | `SLIDE COUNT: … TOTAL including the title slide` | The remaining top failure mode in the 108-case corpus. |
-| `DECK HANDLE: … never a path` | Tools used to return absolute paths, which leaked the host layout and invited follow-up calls with a path (how `preview_deck` became a file-read primitive). The surface now returns an opaque `deck_id`. |
+| `DECK HANDLE: … keep it hidden` | Keep internal tool handles and storage details out of user-facing replies. |
 
 ## Deliberately absent from this prompt
 

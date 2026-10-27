@@ -68,6 +68,9 @@ class Soffice:
 
     # -- lifecycle
     def start(self):
+        kwargs = {}
+        if os.name == "nt":  # RADIA: keep LibreOffice attached to the headless service, not its console.
+            kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
         self.proc = subprocess.Popen(
             [
                 self.binary,
@@ -80,6 +83,7 @@ class Soffice:
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
             # No new session: soffice joins the bridge's process group, so one killpg by the parent
             # reaps both if the bridge is killed abruptly.
+            **kwargs,
         )
         self._connect_when_ready()
         return self

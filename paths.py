@@ -79,6 +79,16 @@ def resolve_image(ref: str | os.PathLike[str]) -> Path:
     """Resolve an image reference: an id returned by render_svg, or a path inside the allowed roots."""
     text = str(ref or "").strip().strip('"')
     if text.startswith("i") and len(text) == 17 and all(c in "0123456789abcdef" for c in text[1:]):
+        import auth
+        import deck_registry
+        entry = deck_registry.image_entry(Path(os.environ.get("PPT_OUTPUT_DIR", Path(__file__).resolve().parent / "out")) / "previews", text)
+        if entry:
+            owner = auth.current_identity().scope_hint if not auth.current_identity().anonymous else "anonymous"
+            if auth.ownership_enabled() and entry["owner"] != owner:
+                raise FileNotFoundError(f"unknown image id {text!r}")
+            return resolve_deck(entry["source"], suffixes=(".png",))
+        if auth.ownership_enabled():
+            raise FileNotFoundError(f"unknown image id {text!r}")
         for root in allowed_roots():
             if not root.is_dir():
                 continue
@@ -86,7 +96,7 @@ def resolve_image(ref: str | os.PathLike[str]) -> Path:
                 if candidate.is_file():
                     return resolve_deck(candidate, suffixes=(".png",))
         raise FileNotFoundError(f"unknown image id {text!r} — call render_svg first")
-    return resolve_deck(text, suffixes=IMAGE_SUFFIXES)
+    raise ValueError("Use an image ID returned by render_svg or enhance_image.")
 
 
 def resolve_deck(name: str | os.PathLike[str], *, suffixes: tuple[str, ...] | None = None) -> Path:

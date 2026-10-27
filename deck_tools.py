@@ -633,6 +633,11 @@ def register_deck_tools(app, template_dirs_fn) -> None:
 
         with Image.open(dest) as im:
             w, h = im.size
+        import auth
+        from deck_preview import preview_root
+        identity = auth.current_identity()
+        deck_registry.remember_image(preview_root(), image_id, dest,
+                                     identity.scope_hint if not identity.anonymous else "anonymous")
         return {
             "image_id": image_id,
             "width_px": w,
@@ -660,7 +665,7 @@ def register_deck_tools(app, template_dirs_fn) -> None:
                       "title": str (optional), "show_values": bool (default true)}
                      Native, editable PowerPoint chart, styled with the deck palette.
             table:   {"headers": [str], "rows": [[str]]}   (max 8 body rows)
-            image:   absolute path to a .png/.jpg (from render_svg() or disk)
+            image:   image_id returned by render_svg()
             notes:   str            (speaker notes)
 
         Args:
@@ -744,6 +749,7 @@ def register_deck_tools(app, template_dirs_fn) -> None:
         dest = _output_dir() / f"{stem}-{stamp}-{uuid.uuid4().hex[:4]}.pptx"
         _save_atomic(prs, dest)
 
+        # RADIA: Deck Studio tools exchange the opaque deck_id, never the saved filesystem path.
         return {
             "deck_id": _remember(dest),
             "slide_count": len(prs.slides._sldIdLst),
@@ -754,7 +760,7 @@ def register_deck_tools(app, template_dirs_fn) -> None:
             "visuals": visuals,
             "styled_slides": styled,
             "warnings": warnings,
-            "hint": "The deck is saved. Reply with the file path and a one-line summary.",
+            "hint": "Use deck_id internally with verify_deck and preview_deck. Reply with the deck title and a concise summary; keep the ID hidden.",
         }
 
 
@@ -841,7 +847,7 @@ def register_verify_tools(app) -> None:
         `problems` list, so the fix is obvious: correct the slide spec and rebuild **once**.
 
         Args:
-            file: deck id returned by build_deck (or a path)
+            file: deck id returned by a deck tool
             expected_slides: total slides the user asked for, including the title slide
             table / chart / image: True if the user asked for that visual in the deck
         """
@@ -897,7 +903,7 @@ def register_readback_tools(app, output_dir_getter) -> None:
         current content.
 
         Args:
-            file: deck id (from build_deck / list_decks) or a path
+            file: deck id returned by a deck tool
         """
         from deck_preview import resolve_ref  # noqa: PLC0415
 
@@ -938,7 +944,7 @@ def register_style_tools(app) -> None:
         slide, so styling never depends on a model interpreting words like "bigger".
 
         Args:
-            file: deck id (from build_deck / list_decks) or a path
+            file: deck id returned by a deck tool
             slide_index: 1-based slide number
             title_size / body_size: points, 8..72
             title_color / body_color: hex like "#1F3864"
@@ -1008,7 +1014,7 @@ def register_style_tools(app) -> None:
 
         from deck_preview import build_preview
 
-        preview = build_preview(path)
+        preview = build_preview(_remember(path))
         return {
             "deck_id": deck_registry.deck_id(path),
             "slide_index": int(slide_index),
@@ -1040,7 +1046,7 @@ def register_text_tools(app) -> None:
         placeholder).
 
         Args:
-            file: absolute path of the .pptx
+            file: deck id returned by a deck tool
             slide_index: 1-based slide number
             phrase: text to match, case-insensitive substring (e.g. "retention"). Keep it short.
             placeholder: "any" (default), "title" or "body"
@@ -1105,7 +1111,7 @@ def register_text_tools(app) -> None:
 
         from deck_preview import build_preview
 
-        preview = build_preview(path)
+        preview = build_preview(_remember(path))
         return {
             "deck_id": deck_registry.deck_id(path),
             "slide_index": int(slide_index),

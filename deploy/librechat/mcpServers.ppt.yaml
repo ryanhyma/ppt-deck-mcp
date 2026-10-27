@@ -34,8 +34,11 @@ mcpServers:
     serverInstructions: |
       PowerPoint deck builder — build, restyle and preview .pptx on this machine.
       NEW DECK: list_templates -> build_deck ONCE -> verify_deck(expected_slides=...) -> preview_deck.
-      STYLE ONLY: style_slide / style_text (no rebuild). CONTENT EDIT: get_deck_outline ->
-      build_deck(base=<file>) -> verify_deck -> preview_deck. IMPORT: import_deck(filename).
+      STYLE ONLY: style_slide / style_text (no rebuild). CONTENT EDIT: inspect, then apply edits
+      sequentially using the latest returned deck_id -> preview_deck. IMPORT: import_deck(user-provided deck).
+      Reply with the deck title and a concise summary only. Keep IDs and storage details hidden.
+      Slide indexes are 1-based; shape indexes are 0-based. Transitions, applying a PowerPoint theme
+      to an existing deck, font-file processing and picture effects other than rotation are unavailable.
       The requested slide count is the TOTAL including the title slide.
     # Authentication. Pick ONE of the following, matching PPT_AUTH_MODE on the server:
     #

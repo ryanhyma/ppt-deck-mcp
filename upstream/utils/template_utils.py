@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Any, Tuple
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_ALIGN, MSO_VERTICAL_ANCHOR
+from pptx.enum.text import PP_ALIGN, MSO_VERTICAL_ANCHOR, MSO_AUTO_SIZE
 from pptx.enum.shapes import MSO_SHAPE
 import utils.content_utils as content_utils
 import utils.design_utils as design_utils
@@ -349,7 +349,8 @@ class EnhancedTemplateManager:
         
         # Apply auto-fit if enabled
         if styling.get('auto_fit', False):
-            textbox.text_frame.auto_size = True
+            # RADIA: python-pptx requires MSO_AUTO_SIZE here, not a boolean.
+            textbox.text_frame.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
         
         return textbox
     

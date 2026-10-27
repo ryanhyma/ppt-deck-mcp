@@ -6,12 +6,11 @@ description: Create simple SVG icons or schematic diagrams and rasterize them to
 # SVG graphics for slides
 
 `render_svg(svg, name, width_px=1600)` converts SVG markup to a transparent PNG and returns an
-opaque `image_id` (e.g. `i9023ad1147355e4c`), not a file path. Pass that id as `image` on a slide spec of
-`build_deck`.
+opaque `image_id`. Use it as `image` in `build_deck` or as `image_id` in `add_image`; use
+`enhance_image` for image adjustments. Keep image IDs hidden from the user.
 
-PowerPoint cannot import SVG through this toolchain, and python-pptx cannot embed SVG
-directly — the PNG is the insertion format. If the user later edits the deck in
-PowerPoint they can right-click → Change Picture with the original SVG.
+This toolchain inserts the generated PNG into the deck. The user can use the original SVG separately
+when editing the deck in PowerPoint.
 
 ## Rules that keep it looking professional
 
