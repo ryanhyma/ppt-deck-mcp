@@ -30,6 +30,22 @@ supposed to retain) that would otherwise have shipped as someone's guess.
 - **Behaviour suites are separate.** `tests/run_suite.py` measures the model against 108 cases — that is a
   measurement, not a unit test, and it never gates a commit.
 
+## Before every push: `tests/preflight.sh`
+
+CI cannot be trusted as your first signal. A commit that was green here once went red on GitHub because the
+suite assumed a binary that is installed on this box and not on a runner, and a missing dependency was
+invisible until a clean install. The gate now reproduces that reality in ~2 minutes:
+
+```sh
+tests/preflight.sh          # clean venv from requirements.txt + python 3.12 and 3.13 in containers
+tests/preflight.sh --fast   # clean venv only (no docker)
+```
+
+It fails on: an undeclared dependency, a test that needs the host, a committed env/key file, a
+token-shaped hex string in source, or any suite failure on a CI interpreter. Exit status is the signal —
+the script never scrapes the tail of the output (ResourceWarnings print *after* the summary line, which is
+exactly how a shell check can report success while the suite failed).
+
 ## Where the tests live
 
 | File | Covers | Needs services |
