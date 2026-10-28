@@ -1,6 +1,7 @@
 """RADIA: Editing uses authorized deck IDs and preserves the source deck."""
 import asyncio
 import os
+import uuid
 import sys
 import unittest
 from pathlib import Path
@@ -117,6 +118,43 @@ class DeckEditToolsTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Only rotation"):
             self.tools["apply_picture_effects"](file=deck_id, slide_index=1, shape_index=0,
                                                 effects={"shadow": {}})
+
+    def _chart_deck(self):
+        built = self.tools["build_deck"](
+            template="corporate-2slide.pptx", title="Charts",
+            slides=[{"title": "Intro", "bullets": ["a"]},
+                    {"title": "Revenue", "chart": {"type": "column", "categories": ["Q1", "Q2"],
+                                                      "series": [{"name": "2025", "values": [1, 2]}]}}])
+        return built["deck_id"]
+
+    def test_chart_updates_find_the_chart_without_a_shape_index(self):
+        """The outline gives slide numbers but not shape indexes, so guessing one used to fail with
+        "Shape is not a chart" and the model reported it could not find the graph."""
+        deck_id = self._chart_deck()
+        self.assertNotIn("shape_index",
+                         server.app._tool_manager.get_tool("update_chart_data").parameters["required"])
+        result = self.tools["update_chart_data"](file=deck_id, slide_index=3, categories=["Q1", "Q2"],
+                                                 series_data=[{"name": "2026", "values": [7, 8]}])
+        self.assertEqual(result["series_names"], ["2026"])
+        chart = Presentation(str(deck_preview.resolve_ref(result["deck_id"]))).slides[2].shapes[1].chart
+        self.assertEqual(list(chart.plots[0].series[0].values), [7.0, 8.0])
+
+    def test_a_wrong_chart_reference_says_where_the_chart_is(self):
+        deck_id = self._chart_deck()
+        with self.assertRaisesRegex(ValueError, r"slide 3, shape 1"):
+            self.tools["update_chart_data"](file=deck_id, slide_index=2, categories=["Q1"],
+                                             series_data=[{"name": "x", "values": [1]}])
+        with self.assertRaisesRegex(ValueError, r"shape 0.*slide 3, shape 1"):
+            self.tools["update_chart_data"](file=deck_id, slide_index=3, shape_index=0,
+                                             categories=["Q1"], series_data=[{"name": "x", "values": [1]}])
+        with self.assertRaisesRegex(ValueError, "no charts"):
+            # A file of its own: the id is derived from the path, so reusing self.source here would
+            # hand later tests an already-registered (different-owner) entry.
+            plain_path = TMP / "out" / f"no-charts-{uuid.uuid4().hex}.pptx"
+            plain_path.write_bytes(self.source.read_bytes())
+            plain = deck_preview.remember(plain_path)
+            self.tools["update_chart_data"](file=plain, slide_index=1, categories=["Q1"],
+                                             series_data=[{"name": "x", "values": [1]}])
 
 
 if __name__ == "__main__":

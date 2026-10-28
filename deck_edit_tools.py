@@ -58,6 +58,54 @@ def _image_path(image_id):
     return str(paths.resolve_image(image_id))
 
 
+def _charts(presentation):
+    """Every chart in the deck, with the indexes a caller must pass to reach it."""
+    rows = []
+    for i, slide in enumerate(presentation.slides, 1):
+        for j, shape in enumerate(slide.shapes):
+            if not getattr(shape, "has_chart", False):
+                continue
+            chart = shape.chart
+            kind = getattr(chart.chart_type, "name", None) or str(chart.chart_type).split()[0]
+            try:
+                series = [s.name for s in chart.plots[0].series][:8]
+            except Exception:  # noqa: BLE001 - an exotic chart must not break the locator
+                series = []
+            rows.append({"slide_index": i, "shape_index": j, "name": shape.name,
+                         "chart_type": str(kind).lower(), "series": series})
+    return rows
+
+
+def _chart_hint(charts):
+    if not charts:
+        return "This deck has no charts."
+    listed = "; ".join(f"slide {c['slide_index']}, shape {c['shape_index']} "
+                       f"({c['chart_type']}{', ' + ', '.join(c['series']) if c['series'] else ''})"
+                       for c in charts)
+    return f"Charts in this deck: {listed}."
+
+
+def _resolve_chart(presentation, slide_index, shape_index):
+    """Translate a caller's chart reference into a shape index, or say where the charts actually are.
+
+    The model sees slide numbers in the outline but not shape indexes, so a wrong guess used to fail
+    with the unhelpful "Shape is not a chart". Now an omitted shape_index means "the chart on this
+    slide", and every failure names the real location.
+    """
+    charts = _charts(presentation)
+    on_slide = [c for c in charts if c["slide_index"] == slide_index]
+    if shape_index is None:
+        if len(on_slide) == 1:
+            return on_slide[0]["shape_index"]
+        if not on_slide:
+            raise ValueError(f"No chart on slide {slide_index}. {_chart_hint(charts)}")
+        raise ValueError(f"Slide {slide_index} has {len(on_slide)} charts; pass shape_index. "
+                         f"{_chart_hint(on_slide)}")
+    if not any(c["slide_index"] == slide_index and c["shape_index"] == shape_index for c in charts):
+        raise ValueError(f"No chart at slide {slide_index}, shape {shape_index}. {_chart_hint(charts)}")
+    return int(shape_index)
+
+
 def _operation_app(group, deck_id, presentation):
     """Bind upstream operations to one request's presentation, without shared global state."""
     app = FastMCP("deck-edit")
@@ -89,7 +137,14 @@ def register_edit_tools(app, upstream_tools):
             omitted.update({"background_type", "background_colors", "gradient_direction", "color_scheme"})
         params = [p.replace(name="images") if p.name == "image_paths" else p
                   for p in signature.parameters.values() if p.name not in omitted]
+        if name == "update_chart_data":
+            # Make shape_index optional: the chart is unambiguous when its slide has one chart.
+            # Drop it and re-add it after the required arguments so the signature stays valid.
+            params = [p for p in params if p.name != "shape_index"]
         params.append(inspect.Parameter("file", inspect.Parameter.KEYWORD_ONLY, annotation=str))
+        if name == "update_chart_data":
+            params.insert(-1, inspect.Parameter("shape_index", inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                                                default=None, annotation=int | None))
 
         def make_tool(tool_name, tool_group, writes, tool_signature, tool_doc):
             def edit(**kwargs):
@@ -100,6 +155,9 @@ def register_edit_tools(app, upstream_tools):
                 if "images" in kwargs:
                     kwargs["image_paths"] = {role: _image_path(image_id)
                                              for role, image_id in (kwargs.pop("images") or {}).items()}
+                if tool_name == "update_chart_data":
+                    kwargs["shape_index"] = _resolve_chart(presentation, kwargs.get("slide_index"),
+                                                           kwargs.get("shape_index"))
                 if kwargs.get("slide_index") is not None:
                     if not 1 <= kwargs["slide_index"] <= len(presentation.slides):
                         raise ValueError(f"slide_index must be 1..{len(presentation.slides)}")
@@ -157,6 +215,10 @@ def register_edit_tools(app, upstream_tools):
                 edit.__doc__ += "\nimages maps image roles to image IDs returned by render_svg."
             if tool_name == "apply_picture_effects":
                 edit.__doc__ += "\nOnly the rotation effect is supported."
+            if tool_name == "update_chart_data":
+                edit.__doc__ = ("Replace the data of an existing chart. shape_index is optional when "
+                                "the slide has exactly one chart; an error lists every chart's "
+                                "slide/shape index.\n\n" + edit.__doc__)
             if tool_name == "add_slide":
                 edit.__doc__ = "Add a slide using a layout from the existing deck. Use the returned deck_id for later calls."
             if tool_name == "get_slide_info":

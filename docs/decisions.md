@@ -85,3 +85,22 @@ Short, dated, and reversible-with-reason. The long-form trail lives in the opera
   `test_security` / `test_audit` still passed filesystem paths and asserted `PathNotAllowed`; they now
   register the deck first and assert the refusal the contract actually produces. Lesson: when an
   input contract tightens, the old tests are the first place the old contract is still alive.
+
+### Chart edits locate the chart instead of demanding a shape index
+
+`update_chart_data` used to require `shape_index`, but the only thing that reports shape indexes is
+`get_slide_info` — `get_deck_outline` gives slide numbers, and the model was told to "apply only the
+requested changes using editing tools". So the model guessed a shape index, got a bare
+"Shape is not a chart", and told the user it could not find the graph to edit (reported 2026-10-27;
+no `update_chart_data` call ever reached the server, so the failure was in locating, not in writing).
+
+- `shape_index` is now optional; with one chart on the slide it is resolved automatically.
+- A wrong slide/shape raises with the deck's real chart map:
+  `No chart on slide 2. Charts in this deck: slide 3, shape 1 (column_clustered, 2025).`
+- Two tests pin it (`test_chart_updates_find_the_chart_without_a_shape_index`,
+  `test_a_wrong_chart_reference_says_where_the_chart_is`).
+
+Caveat found while testing: `deck_registry.record` keeps the first `.source` entry for a path, so a
+file rewritten in place under a *different* identity keeps the old owner and reads as "unknown deck".
+Build and import always write unique names, so this only bites a reused fixed path; noted, not changed
+(owner immutability is the safer default for the asset route).

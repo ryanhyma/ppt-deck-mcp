@@ -35,6 +35,9 @@ mcpServers:
       editing tools. Make edits sequentially, pass each returned deck_id to the next call, and preview
       the final deck_id. Content editing tools create a copy; style_slide and style_text update the
       selected deck in place.
+      CHART EDIT: update_chart_data(file, slide_index, categories, series_data) — shape_index is only
+      needed when the slide has more than one chart. A wrong slide/shape returns the real location of
+      every chart; use it instead of guessing.
       Slide indexes are 1-based; shape indexes are 0-based. Transitions, applying a PowerPoint theme to an
       existing deck, font-file processing and picture effects other than rotation are unavailable.
       Do not claim unavailable effects were applied.

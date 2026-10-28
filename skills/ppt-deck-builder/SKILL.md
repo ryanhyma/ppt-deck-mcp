@@ -96,7 +96,10 @@ Slide numbers are 1-based. Shape indexes are 0-based; `get_slide_info` reports p
 - Visuals: `add_shape`, `add_connector`, `add_image`, `enhance_image`, and `apply_picture_effects`
   add or adjust visuals. Picture effects support rotation only.
 - Charts and tables: `add_chart` and `add_table` add visuals to an existing slide;
-  `update_chart_data` and `format_table_cell` edit existing visuals.
+  `update_chart_data` and `format_table_cell` edit existing visuals. `update_chart_data(file, slide_index,
+  categories, series_data)` does not need `shape_index` when the slide has exactly one chart; if you
+  target the wrong slide or shape, the error names every chart's real slide/shape index — use that
+  rather than guessing again.
 - Slides and metadata: `add_slide` uses a deck layout; `list_slide_templates`, `get_template_info`,
   `apply_slide_template`, and `create_slide_from_template` use slide templates. `manage_slide_masters`
   inspects masters and layouts; `set_core_properties` updates deck metadata.
