@@ -879,6 +879,20 @@ def register_verify_tools(app) -> None:
             problems.append("no chart in the deck: add a 'chart' object to one slide spec")
         if image and pictures == 0:
             problems.append("no image in the deck: render_svg then pass 'image': <png path>")
+        # The density rule is part of the brief (max 5 bullets per slide). It was the one repeated
+        # failure in the 2026-10-27 corpus: build_deck accepts a 6th bullet, and nothing told the
+        # agent to fix it, so the deck shipped dense.
+        for index, slide in enumerate(slides, 1):
+            for placeholder in slide.placeholders:
+                if not placeholder.has_text_frame or not placeholder.text_frame.text.strip():
+                    continue
+                if placeholder.placeholder_format.idx != 1:
+                    continue
+                bullets = [line for line in placeholder.text_frame.text.split("\n") if line.strip()]
+                if len(bullets) > 5:
+                    problems.append(
+                        f"slide {index} has {len(bullets)} bullets, max 5 — move some onto another "
+                        f"slide or tighten them")
 
         return {
             "ok": not problems,

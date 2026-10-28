@@ -6,7 +6,7 @@ interactive pane inside LibreChat for previewing, restyling and downloading them
 Designed for a **small local model** (Qwen3.6-27B in 3-bit) as the driver: the model emits structure,
 the server owns layout. It also works with any MCP client.
 
-**Status (2026-10-27):** 8 regression cases **8/8** in LibreChat · **212 unit tests** · **20 browser checks** · 36 tools · 108-case corpus being re-run in batches of 10 ([`docs/SUITE-REPORT.md`](docs/SUITE-REPORT.md)) · concurrency probe **6/6 parallel renders** · previews render **warm** (one LibreOffice, direct PNG, per-slide cache) · CI-shaped suite green on Python 3.12 & 3.13 (`tests/preflight.sh`).
+**Status (2026-10-28):** 108-case corpus **106/108 first pass, 108/108** after the density guard · regression cases **8/8** in LibreChat · **216 unit tests** · **20 browser checks** · 36 tools · concurrency probe **6/6 parallel renders** · previews render **warm** (one LibreOffice, direct PNG, per-slide cache) · CI-shaped suite green on Python 3.12 & 3.13 (`tests/preflight.sh`). Details: [`docs/SUITE-REPORT.md`](docs/SUITE-REPORT.md).
 
 ```mermaid
 flowchart LR
@@ -508,7 +508,7 @@ config, the instructions or a skill still call it by the old name, and the insta
 ## Tests
 
 ```sh
-.venv/bin/python -m unittest discover -s tests -v     # 212 unit tests, ~11 s, no services
+.venv/bin/python -m unittest discover -s tests -v     # 216 unit tests, ~11 s, no services
 RUN_E2E=1 CONVO=<id> tests/run_all.sh                 # + 20 browser checks (needs the stack)
 .venv/bin/python tests/run_suite.py --limit 10        # behaviour corpus, one chat per case
 ```

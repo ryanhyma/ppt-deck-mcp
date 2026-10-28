@@ -159,3 +159,23 @@ class DeckEditToolsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class VerifyDensityTest(unittest.TestCase):
+    """A 6th bullet shipped twice in the 2026-10-27 corpus: build_deck accepts it and nothing said so."""
+
+    def setUp(self):
+        self.tools = {tool.name: tool.fn for tool in server.app._tool_manager.list_tools()}
+
+    def _build(self, bullets):
+        return self.tools["build_deck"](template="corporate-2slide.pptx", title="Density",
+                                        slides=[{"title": "One", "bullets": bullets}])["deck_id"]
+
+    def test_six_bullets_are_reported_as_a_problem(self):
+        data = self.tools["verify_deck"](file=self._build([f"b{i}" for i in range(6)]), expected_slides=2)
+        self.assertFalse(data["ok"])
+        self.assertTrue(any("6 bullets" in problem for problem in data["problems"]), data["problems"])
+
+    def test_five_bullets_are_fine(self):
+        data = self.tools["verify_deck"](file=self._build([f"b{i}" for i in range(5)]), expected_slides=2)
+        self.assertTrue(data["ok"], data["problems"])
