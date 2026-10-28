@@ -500,6 +500,10 @@ def _build_preview_locked(src: Path, deck_id: str, outdir: Path, title: str) -> 
     preview_error = None
     try:
         render_info = _prepare_previews(src, outdir, prs)
+    except RendererUnavailable as exc:
+        # No renderer on this host is not a failure: the deck is complete, the pictures are not.
+        print(f"[preview] renderer unavailable: {exc}", file=sys.stderr, flush=True)
+        preview_error = "Slide images are unavailable. The deck is available to download."
     except Exception as exc:  # noqa: BLE001 - surface, don't crash
         print(f"[preview] render failed: {type(exc).__name__}: {exc}", file=sys.stderr, flush=True)
         preview_error = "Preview rendering failed. The deck is available to download."

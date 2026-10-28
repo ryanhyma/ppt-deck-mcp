@@ -75,28 +75,29 @@ class PathScopeRegressions(unittest.TestCase):
     def test_preview_deck_does_not_copy_an_outside_file(self):
         outside = _outside_deck()
         before = {p.name for p in deck_preview.preview_root().iterdir()}
-        with self.assertRaises(paths.PathNotAllowed):
+        with self.assertRaises(FileNotFoundError):
             TOOLS["preview_deck"](file=str(outside))
         after = {p.name for p in deck_preview.preview_root().iterdir()}
         self.assertEqual(before, after, "a rejected path must not create a preview directory")
 
     def test_import_deck_refuses_an_outside_file(self):
-        with self.assertRaises(paths.PathNotAllowed):
+        with self.assertRaises(FileNotFoundError):
             TOOLS["import_deck"](file=str(_outside_deck()))
 
     def test_tools_that_edit_a_deck_use_the_same_scope(self):
-        """get_deck_outline / style_slide / style_text / verify_deck all take a path."""
+        """get_deck_outline / style_slide / style_text / verify_deck take a deck id, never a path."""
         outside = str(_outside_deck())
         for tool, extra in (("get_deck_outline", {}), ("style_slide", {"slide_index": 1, "title_size": 30}),
                             ("style_text", {"slide_index": 1, "phrase": "x"}),
                             ("verify_deck", {"expected_slides": 2})):
-            with self.subTest(tool=tool), self.assertRaises(paths.PathNotAllowed):
+            with self.subTest(tool=tool), self.assertRaises(FileNotFoundError):
                 TOOLS[tool](file=outside, **extra)
 
     def test_an_outside_image_cannot_be_embedded_in_a_deck(self):
         outside_png = Path(tempfile.mkdtemp(prefix="outside-img-")) / "x.png"
         outside_png.write_bytes(b"\x89PNG\r\n\x1a\n")
-        with self.assertRaises(paths.PathNotAllowed):
+        # Images are addressed by the id render_svg returns; a filesystem path is refused outright.
+        with self.assertRaises(ValueError):
             TOOLS["build_deck"](template="corporate-2slide.pptx", title="t",
                                 slides=[{"title": "a", "image": str(outside_png)}])
 
@@ -172,7 +173,7 @@ class StartupAndOwnershipRegressions(unittest.TestCase):
         try:
             deck = _TMP / "out" / "download.pptx"
             shutil.copyfile(TEMPLATE, deck)
-            data = TOOLS["preview_deck"](file=str(deck))
+            data = TOOLS["preview_deck"](file=deck_preview.remember(deck))
             url = urlsplit(data["download"])
             exp, sig, sub, owner = signed_query(data["download"])
             name = url.path.rsplit("/", 1)[-1]
@@ -199,7 +200,7 @@ class StartupAndOwnershipRegressions(unittest.TestCase):
             try:
                 deck = _TMP / "out" / "bound.pptx"
                 shutil.copyfile(TEMPLATE, deck)
-                data = TOOLS["preview_deck"](file=str(deck))
+                data = TOOLS["preview_deck"](file=deck_preview.remember(deck))
             finally:
                 auth.reset_current(token)
             exp, sig, sub, owner = signed_query(data["download"])
@@ -422,7 +423,7 @@ class AssetRouteRegressions(unittest.TestCase):
     def setUp(self):
         deck = _TMP / "out" / "asset.pptx"
         shutil.copyfile(TEMPLATE, deck)
-        self.data = TOOLS["preview_deck"](file=str(deck))
+        self.data = TOOLS["preview_deck"](file=deck_preview.remember(deck))
         self.deck_id = self.data["deck_id"]
         self.directory = deck_preview.preview_root() / self.deck_id
         (self.directory / "slide-1.png").write_bytes(b"\x89PNG\r\n\x1a\n")  # renderer may be absent
@@ -489,7 +490,7 @@ class PreviewMetadataRegressions(unittest.TestCase):
     def test_deck_json_on_disk_carries_no_open_download_path(self):
         deck = _TMP / "out" / "meta.pptx"
         shutil.copyfile(TEMPLATE, deck)
-        data = TOOLS["preview_deck"](file=str(deck))
+        data = TOOLS["preview_deck"](file=deck_preview.remember(deck))
         on_disk = json.loads((deck_preview.preview_root() / data["deck_id"] / "deck.json").read_text())
         self.assertIn("sig=", on_disk["download"])
         for slide in on_disk["slides"]:

@@ -29,6 +29,7 @@ from _env import TMP  # noqa: E402,F401
 
 import audit  # noqa: E402  (this import is what fails first)
 import auth  # noqa: E402
+import deck_preview  # noqa: E402
 
 
 def read_events(path: Path) -> list[dict]:
@@ -147,7 +148,7 @@ class AuditCoverageRegressions(unittest.TestCase):
     def test_an_asset_request_is_recorded_with_its_decision(self):
         deck = TMP / "out" / "audited.pptx"
         shutil.copyfile(ROOT / "templates" / "corporate-2slide.pptx", deck)
-        data = self.tools["preview_deck"](file=str(deck))
+        data = self.tools["preview_deck"](file=deck_preview.remember(deck))
         audit.record_asset(deck_id=data["deck_id"], name="slide-1.png", outcome="ok")
         audit.record_asset(deck_id=data["deck_id"], name="deck.json", outcome="denied")
         events = [e for e in read_events(self.log) if e["event"] == "asset.get"]
