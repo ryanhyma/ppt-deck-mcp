@@ -6,7 +6,7 @@ interactive pane inside LibreChat for previewing, restyling and downloading them
 Designed for a **small local model** (Qwen3.6-27B in 3-bit) as the driver: the model emits structure,
 the server owns layout. It also works with any MCP client.
 
-**Status (2026-10-26):** 100-case corpus **97/100**, plus 8 regression cases **8/8** (all 3 former failures now pass) · **159 unit tests** · 16 browser checks · concurrency probe **6/6 parallel renders** · previews render **warm** (one LibreOffice, direct PNG, per-slide cache) · CI green on Python 3.12 & 3.13.
+**Status (2026-10-27):** 8 regression cases **8/8** in LibreChat · **212 unit tests** · **20 browser checks** · 36 tools · 108-case corpus being re-run in batches of 10 ([`docs/SUITE-REPORT.md`](docs/SUITE-REPORT.md)) · concurrency probe **6/6 parallel renders** · previews render **warm** (one LibreOffice, direct PNG, per-slide cache) · CI-shaped suite green on Python 3.12 & 3.13 (`tests/preflight.sh`).
 
 ```mermaid
 flowchart LR
@@ -33,6 +33,11 @@ flowchart LR
 | `import_deck` | bring a chat-uploaded `.pptx` into the workspace |
 | `get_last_deck` / `list_decks` | find decks for editing |
 | `render_svg` | SVG markup → transparent PNG for slide graphics |
+
+**36 tools total:** the 10 above plus 26 vendored slide-editing tools. Every deck tool takes an opaque
+`d…` deck id and returns a new one; a filesystem path is refused. Image arguments take the `i…` id
+returned by `render_svg` / `enhance_image`, never a path. The only path-shaped input is `import_deck`,
+and only for a file the user uploaded to the chat.
 
 **Concurrency:** builds write unique names atomically, renders serialise per deck id, and each
 LibreOffice run uses a throwaway profile — several users can render at once (`tests/concurrency_check.py`).
@@ -270,6 +275,9 @@ LibreChat side — `deploy/librechat/mcpServers.ppt.yaml`:
   `PPT_ALLOWED_ROOTS`; paths are resolved first, so a symlink cannot escape.
 - Tool results never contain a filesystem path: callers get opaque ids (`d…` for decks, `i…` for rendered
   images) and the id → file index lives in `previews/.index/`, outside the served tree.
+- No tool accepts a filesystem path for a deck or an image: `preview_deck`, `style_slide`, `style_text`,
+  `verify_deck`, `get_deck_outline` and `build_deck`'s `image` all take the ids above. `import_deck` is
+  the one exception, and it only resolves inside `PPT_UPLOAD_DIR`.
 - Slide images and the `.pptx` require an HMAC signature (`?exp=&sig=&sub=`) when authentication is on;
   nothing else in a preview directory is served.
 
@@ -500,8 +508,8 @@ config, the instructions or a skill still call it by the old name, and the insta
 ## Tests
 
 ```sh
-.venv/bin/python -m unittest discover -s tests -v     # 159 unit tests, ~8 s, no services
-RUN_E2E=1 CONVO=<id> tests/run_all.sh                 # + 7 browser checks (needs the stack)
+.venv/bin/python -m unittest discover -s tests -v     # 212 unit tests, ~11 s, no services
+RUN_E2E=1 CONVO=<id> tests/run_all.sh                 # + 20 browser checks (needs the stack)
 .venv/bin/python tests/run_suite.py --limit 10        # behaviour corpus, one chat per case
 ```
 
@@ -509,7 +517,7 @@ RUN_E2E=1 CONVO=<id> tests/run_all.sh                 # + 7 browser checks (need
 |---|---|
 | `tests/test_regressions.py` | one test per defect ever found (layout, styling, validation, renderers, import) |
 | `tests/e2e/deck-studio.js` | the pane actually renders: iframe, CSP/CORS, thumbnails, gallery, controls, download |
-| `tests/run_suite.py` + `tests/cases.json` | 100-case corpus against the local model, judged on the artefact |
+| `tests/run_suite.py` + `tests/cases.json` | 108-case corpus against the local model, judged on the artefact |
 
 CI (`.github/workflows/tests.yml`) runs the unit layer on 3.12 and 3.13. Results:
 [`docs/SUITE-REPORT.md`](docs/SUITE-REPORT.md).
@@ -524,7 +532,7 @@ deck_preview.py      renderers (soffice/powerpoint/aspose/none), previews, downl
 apps/deck_studio/    the MCP App: HTML/JS view + vendored ext-apps 1.5.7 bundle
 templates/           5 themed .pptx files + sidecar theme manifests
 upstream/            vendored MIT server (unmodified)
-tests/               unit, e2e, 100-case corpus + runner
+tests/               unit, e2e, 108-case corpus + runner
 prompts/             the agent system prompt + the MCP serverInstructions (drift-tested)
 skills/              LibreChat deployment skills (ppt-deck-builder, svg-graphics)
 deploy/librechat/    librechat.yaml mcp block + agent config to import

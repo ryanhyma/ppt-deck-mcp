@@ -64,3 +64,24 @@ Short, dated, and reversible-with-reason. The long-form trail lives in the opera
   bridge kills and restarts it rather than wedging the server.
 - **`PPT_RENDERER` still wins.** `none`/`powerpoint`/`aspose` disable the warm path entirely — the
   warm renderer is only used when the chosen backend is `soffice`.
+
+## 2026-10-27 — Deck ids only; the legacy presentation handles are gone
+
+- **A deck is addressed by its id, never by a path.** `resolve_ref` refuses anything that is not a
+  `d…` id (`allow_path` exists only for `import_deck`, and only inside `PPT_UPLOAD_DIR`). The model
+  never sees, and is never trusted with, a filesystem path — the pattern that made `preview_deck` a
+  file-read primitive.
+- **Images too.** `paths.resolve_image` accepts only an `i…` id registered by `render_svg` /
+  `enhance_image`, and the registry records the owner next to it, so an id from another subject reads
+  as "unknown". `build_deck`'s `image` is therefore an id, not a path.
+- **The vendored `presentation_N` handles are not exposed.** They keep a `str(id) -> Presentation`
+  dict that cannot resolve a deck id, so they are removed at startup; the 26 editing tools are
+  re-registered as `file=<deck id>`, 1-based `slide_index`, and return a new deck id after a write
+  (the source deck is never mutated). Total surface: 36 tools.
+- **A disabled renderer is unavailable, not failed.** `RendererUnavailable` gets
+  "Slide images are unavailable…"; any other exception gets the generic "Preview rendering failed…"
+  message, so a host path or an exception string is never echoed into the pane.
+- **The 2026-10-27 sync left the unit suite red (18 errors + 1 failure) purely through stale tests.**
+  `test_security` / `test_audit` still passed filesystem paths and asserted `PathNotAllowed`; they now
+  register the deck first and assert the refusal the contract actually produces. Lesson: when an
+  input contract tightens, the old tests are the first place the old contract is still alive.
